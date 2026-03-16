@@ -1,0 +1,174 @@
+package repository
+
+import (
+	"context"
+
+	"blendpos/internal/tenantctx"
+	"blendpos/internal/model"
+
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
+)
+
+type CajaRepository interface {
+	CreateSesion(ctx context.Context, s *model.SesionCaja) error
+	FindSesionAbiertaPorPDV(ctx context.Context, puntoDeVenta int) (*model.SesionCaja, error)
+	FindSesionAbiertaPorUsuario(ctx context.Context, usuarioID uuid.UUID) (*model.SesionCaja, error)
+	FindSesionByID(ctx context.Context, id uuid.UUID) (*model.SesionCaja, error)
+	UpdateSesion(ctx context.Context, s *model.SesionCaja) error
+	CreateMovimiento(ctx context.Context, m *model.MovimientoCaja) error
+	// CreateMovimientoTx creates a movimiento within an existing DB transaction.
+	// The caller must set m.TenantID before calling this method.
+	CreateMovimientoTx(tx *gorm.DB, m *model.MovimientoCaja) error
+	ListMovimientos(ctx context.Context, sesionCajaID uuid.UUID) ([]model.MovimientoCaja, error)
+	SumMovimientosByMetodo(ctx context.Context, sesionCajaID uuid.UUID) (map[string]decimal.Decimal, error)
+	CountVentasBySesion(ctx context.Context, sesionCajaID uuid.UUID) (int64, error)
+	ListSesiones(ctx context.Context, page, limit int) ([]model.SesionCaja, int64, error)
+}
+
+type cajaRepo struct{ db *gorm.DB }
+
+func NewCajaRepository(db *gorm.DB) CajaRepository { return &cajaRepo{db: db} }
+
+func (r *cajaRepo) CreateSesion(ctx context.Context, s *model.SesionCaja) error {
+	tid, err := tenantctx.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+	s.TenantID = tid
+	return r.db.WithContext(ctx).Create(s).Error
+}
+
+func (r *cajaRepo) FindSesionAbiertaPorPDV(ctx context.Context, puntoDeVenta int) (*model.SesionCaja, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	var s model.SesionCaja
+	err = db.Preload("Usuario").Where("punto_de_venta = ? AND estado = 'abierta'", puntoDeVenta).First(&s).Error
+	return &s, err
+}
+
+func (r *cajaRepo) FindSesionByID(ctx context.Context, id uuid.UUID) (*model.SesionCaja, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	var s model.SesionCaja
+	err = db.Preload("Movimientos").Preload("Usuario").First(&s, id).Error
+	return &s, err
+}
+
+func (r *cajaRepo) UpdateSesion(ctx context.Context, s *model.SesionCaja) error {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return err
+	}
+	return db.Save(s).Error
+}
+
+func (r *cajaRepo) CreateMovimiento(ctx context.Context, m *model.MovimientoCaja) error {
+	tid, err := tenantctx.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+	m.TenantID = tid
+	return r.db.WithContext(ctx).Create(m).Error
+}
+
+// CreateMovimientoTx creates a movimiento within an existing DB transaction.
+// TenantID is extracted from the transaction's context automatically.
+func (r *cajaRepo) CreateMovimientoTx(tx *gorm.DB, m *model.MovimientoCaja) error {
+	if m.TenantID == (uuid.UUID{}) && tx.Statement != nil && tx.Statement.Context != nil {
+		if tid, err := tenantctx.FromContext(tx.Statement.Context); err == nil {
+			m.TenantID = tid
+		}
+	}
+	return tx.Create(m).Error
+}
+
+func (r *cajaRepo) ListMovimientos(ctx context.Context, sesionCajaID uuid.UUID) ([]model.MovimientoCaja, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	var movs []model.MovimientoCaja
+	err = db.Where("sesion_caja_id = ?", sesionCajaID).Order("created_at ASC").Find(&movs).Error
+	return movs, err
+}
+
+func (r *cajaRepo) SumMovimientosByMetodo(ctx context.Context, sesionCajaID uuid.UUID) (map[string]decimal.Decimal, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	type row struct {
+		MetodoPago string
+		Total      decimal.Decimal
+	}
+	var rows []row
+	err = db.
+		Model(&model.MovimientoCaja{}).
+		Select("metodo_pago, SUM(monto) as total").
+		Where("sesion_caja_id = ? AND metodo_pago IS NOT NULL", sesionCajaID).
+		Group("metodo_pago").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]decimal.Decimal{
+		"efectivo":      decimal.Zero,
+		"debito":        decimal.Zero,
+		"credito":       decimal.Zero,
+		"transferencia": decimal.Zero,
+		"qr":            decimal.Zero,
+	}
+	for _, row := range rows {
+		key := row.MetodoPago
+		result[key] = result[key].Add(row.Total)
+	}
+	return result, nil
+}
+
+func (r *cajaRepo) FindSesionAbiertaPorUsuario(ctx context.Context, usuarioID uuid.UUID) (*model.SesionCaja, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	var s model.SesionCaja
+	err = db.Preload("Usuario").Where("usuario_id = ? AND estado = 'abierta'", usuarioID).First(&s).Error
+	return &s, err
+}
+
+func (r *cajaRepo) ListSesiones(ctx context.Context, page, limit int) ([]model.SesionCaja, int64, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	var sesiones []model.SesionCaja
+	var total int64
+	offset := (page - 1) * limit
+	if err := db.Model(&model.SesionCaja{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err = db.
+		Preload("Usuario").
+		Order("opened_at DESC").
+		Offset(offset).Limit(limit).
+		Find(&sesiones).Error
+	return sesiones, total, err
+}
+
+func (r *cajaRepo) CountVentasBySesion(ctx context.Context, sesionCajaID uuid.UUID) (int64, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = db.
+		Model(&model.Venta{}).
+		Where("sesion_caja_id = ? AND estado = 'completada'", sesionCajaID).
+		Count(&count).Error
+	return count, err
+}

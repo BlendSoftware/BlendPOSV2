@@ -1,0 +1,54 @@
+package model
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+)
+
+// SesionCaja represents the lifecycle of a cash register session.
+// Estado: "abierta" | "cerrada"
+type SesionCaja struct {
+	ID           uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	TenantID     uuid.UUID       `gorm:"type:uuid;not null;index"`
+	PuntoDeVenta int             `gorm:"not null;index"`
+	UsuarioID    uuid.UUID       `gorm:"type:uuid;not null"`
+	MontoInicial decimal.Decimal `gorm:"type:decimal(15,2);not null"`
+	// MontoEsperado is computed on close: SUM(movimientos) + MontoInicial
+	MontoEsperado  *decimal.Decimal `gorm:"type:decimal(15,2)"`
+	MontoDeclarado *decimal.Decimal `gorm:"type:decimal(15,2)"`
+	// Detailed cash count breakdown by payment method
+	MontoDeclaradoEfectivo      *decimal.Decimal `gorm:"type:decimal(15,2)"`
+	MontoDeclaradoDebito        *decimal.Decimal `gorm:"type:decimal(15,2)"`
+	MontoDeclaradoCredito       *decimal.Decimal `gorm:"type:decimal(15,2)"`
+	MontoDeclaradoTransferencia *decimal.Decimal `gorm:"type:decimal(15,2)"`
+	MontoDeclaradoQR            *decimal.Decimal `gorm:"type:decimal(15,2)"`
+	Desvio                      *decimal.Decimal `gorm:"type:decimal(15,2)"`
+	DesvioPct                   *decimal.Decimal `gorm:"type:decimal(5,2)"`
+	Estado                      string           `gorm:"type:varchar(20);not null;default:'abierta'"`
+	// ClasificacionDesvio: "normal" | "advertencia" | "critico"
+	ClasificacionDesvio *string `gorm:"type:varchar(20)"`
+	Observaciones       *string
+	OpenedAt            time.Time  `gorm:"not null;default:now()"`
+	ClosedAt            *time.Time
+
+	Movimientos []MovimientoCaja `gorm:"foreignKey:SesionCajaID"`
+	Usuario     Usuario          `gorm:"foreignKey:UsuarioID;references:ID"`
+}
+
+// MovimientoCaja is an immutable event in the cash register ledger.
+// Tipo: "venta" | "ingreso_manual" | "egreso_manual" | "anulacion"
+// Movements are NEVER modified or deleted — cancellations create inverse entries.
+type MovimientoCaja struct {
+	ID           uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	TenantID     uuid.UUID       `gorm:"type:uuid;not null;index"`
+	SesionCajaID uuid.UUID       `gorm:"type:uuid;index;not null"`
+	Tipo         string          `gorm:"type:varchar(20);not null"`
+	MetodoPago   *string         `gorm:"type:varchar(20)"`
+	Monto        decimal.Decimal `gorm:"type:decimal(15,2);not null"`
+	Descripcion  string          `gorm:"not null"`
+	// ReferenciaID links to the originating Venta or manual operation
+	ReferenciaID *uuid.UUID `gorm:"type:uuid"`
+	CreatedAt    time.Time
+}

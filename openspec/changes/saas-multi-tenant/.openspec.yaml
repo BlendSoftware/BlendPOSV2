@@ -1,0 +1,8 @@
+name: saas-multi-tenant
+schema: spec-driven
+status: in-progress
+created: 2026-03-16
+artifacts:
+  - proposal.md
+  - design.md
+  - tasks.md

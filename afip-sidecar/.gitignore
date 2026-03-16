@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Entorno virtual
+.venv/
+venv/
+ENV/
+env/
+
+# Variables de entorno (CRÍTICO: nunca commitear)
+.env
+
+# Certificados AFIP (CRÍTICO: nunca commitear)
+*.crt
+*.key
+*.csr
+*.pem
+*.p12
+*.pfx
+
+# Permitir carpeta certs/ vacía con .gitkeep (para builds en Railway/Render)
+certs/*
+!certs/.gitkeep
+!certs/README.md
+!certs/generar_base64.ps1
+
+# Archivos temporales de base64 (generados por script)
+*_base64.txt
+cert_base64.txt
+key_base64.txt
+
+# Cache de AFIP
+/tmp/
+*.xml
+ta_*.xml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json

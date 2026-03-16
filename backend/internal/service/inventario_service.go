@@ -1,0 +1,309 @@
+package service
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"blendpos/internal/dto"
+	"blendpos/internal/model"
+	"blendpos/internal/repository"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+// InventarioService defines the contract for stock and hierarchy management.
+type InventarioService interface {
+	CrearVinculo(ctx context.Context, req dto.CrearVinculoRequest) (*dto.VinculoResponse, error)
+	ListarVinculos(ctx context.Context) ([]dto.VinculoResponse, error)
+	DesarmeManual(ctx context.Context, req dto.DesarmeManualRequest) (*dto.DesarmeManualResponse, error)
+	ObtenerAlertas(ctx context.Context) ([]dto.AlertaStockResponse, error)
+	// DescontarStockTx is called within a sale transaction — requires a live *gorm.DB tx.
+	// Using *gorm.DB directly (not interface{}) catches type errors at compile time (P2-003).
+	DescontarStockTx(ctx context.Context, productoID uuid.UUID, cantidad int, tx *gorm.DB) error
+	// EliminarVinculo deletes a parent-child product link by id.
+	EliminarVinculo(ctx context.Context, id string) error
+	// ActualizarVinculo updates the unidades_por_padre and desarme_auto fields of a link.
+	ActualizarVinculo(ctx context.Context, id string, req dto.ActualizarVinculoRequest) (*dto.VinculoResponse, error)
+	// ListarMovimientos returns stock movement history with optional filters
+	ListarMovimientos(ctx context.Context, filter dto.MovimientoStockFilter) (*dto.MovimientoStockListResponse, error)
+	// RegistrarMovimientoTx records a stock movement inside an existing transaction
+	RegistrarMovimientoTx(tx *gorm.DB, m *model.MovimientoStock) error
+}
+
+type inventarioService struct {
+	repo    repository.ProductoRepository
+	movRepo repository.MovimientoStockRepository
+}
+
+func NewInventarioService(repo repository.ProductoRepository, movRepo repository.MovimientoStockRepository) InventarioService {
+	return &inventarioService{repo: repo, movRepo: movRepo}
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+func toVinculoResponse(v *model.ProductoHijo) dto.VinculoResponse {
+	resp := dto.VinculoResponse{
+		ID:               v.ID.String(),
+		ProductoPadreID:  v.ProductoPadreID.String(),
+		ProductoHijoID:   v.ProductoHijoID.String(),
+		UnidadesPorPadre: v.UnidadesPorPadre,
+		DesarmeAuto:      v.DesarmeAuto,
+	}
+	if v.Padre != nil {
+		resp.NombrePadre = v.Padre.Nombre
+	}
+	if v.Hijo != nil {
+		resp.NombreHijo = v.Hijo.Nombre
+	}
+	return resp
+}
+
+// ── Service methods ──────────────────────────────────────────────────────────
+
+func (s *inventarioService) CrearVinculo(ctx context.Context, req dto.CrearVinculoRequest) (*dto.VinculoResponse, error) {
+	padreID, err := uuid.Parse(req.ProductoPadreID)
+	if err != nil {
+		return nil, fmt.Errorf("producto_padre_id inválido: %w", err)
+	}
+	hijoID, err := uuid.Parse(req.ProductoHijoID)
+	if err != nil {
+		return nil, fmt.Errorf("producto_hijo_id inválido: %w", err)
+	}
+	if padreID == hijoID {
+		return nil, errors.New("un producto no puede ser hijo de sí mismo")
+	}
+
+	// Validate both products exist
+	padre, err := s.repo.FindByID(ctx, padreID)
+	if err != nil {
+		return nil, fmt.Errorf("producto padre no encontrado: %w", err)
+	}
+	hijo, err := s.repo.FindByID(ctx, hijoID)
+	if err != nil {
+		return nil, fmt.Errorf("producto hijo no encontrado: %w", err)
+	}
+
+	v := &model.ProductoHijo{
+		ProductoPadreID:  padreID,
+		ProductoHijoID:   hijoID,
+		UnidadesPorPadre: req.UnidadesPorPadre,
+		DesarmeAuto:      req.DesarmeAuto,
+		Padre:            padre,
+		Hijo:             hijo,
+	}
+
+	if err := s.repo.CreateVinculo(ctx, v); err != nil {
+		return nil, err
+	}
+
+	resp := toVinculoResponse(v)
+	return &resp, nil
+}
+
+func (s *inventarioService) ListarVinculos(ctx context.Context) ([]dto.VinculoResponse, error) {
+	vinculos, err := s.repo.ListVinculos(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]dto.VinculoResponse, 0, len(vinculos))
+	for i := range vinculos {
+		result = append(result, toVinculoResponse(&vinculos[i]))
+	}
+	return result, nil
+}
+
+func (s *inventarioService) DesarmeManual(ctx context.Context, req dto.DesarmeManualRequest) (*dto.DesarmeManualResponse, error) {
+	vinculoID, err := uuid.Parse(req.VinculoID)
+	if err != nil {
+		return nil, fmt.Errorf("vinculo_id inválido: %w", err)
+	}
+
+	vinculo, err := s.repo.FindVinculoByID(ctx, vinculoID)
+	if err != nil {
+		return nil, fmt.Errorf("vínculo no encontrado: %w", err)
+	}
+
+	padre, err := s.repo.FindByID(ctx, vinculo.ProductoPadreID)
+	if err != nil {
+		return nil, fmt.Errorf("producto padre no encontrado: %w", err)
+	}
+
+	if padre.StockActual < req.CantidadPadres {
+		return nil, fmt.Errorf("stock insuficiente: disponible %d, solicitado %d",
+			padre.StockActual, req.CantidadPadres)
+	}
+
+	unidadesGeneradas := req.CantidadPadres * vinculo.UnidadesPorPadre
+
+	// Execute both stock changes in a single DB transaction
+	txErr := runTx(ctx, s.repo.DB(), func(tx *gorm.DB) error {
+		if err := s.repo.UpdateStockTx(tx, vinculo.ProductoPadreID, -req.CantidadPadres); err != nil {
+			return err
+		}
+		return s.repo.UpdateStockTx(tx, vinculo.ProductoHijoID, unidadesGeneradas)
+	})
+	if txErr != nil {
+		return nil, txErr
+	}
+
+	return &dto.DesarmeManualResponse{
+		VinculoID:         vinculoID.String(),
+		PadresDesarmados:  req.CantidadPadres,
+		UnidadesGeneradas: unidadesGeneradas,
+	}, nil
+}
+
+func (s *inventarioService) ObtenerAlertas(ctx context.Context) ([]dto.AlertaStockResponse, error) {
+	// Use List with a high Limit and filter in-memory.
+	// A dedicated DB query will replace this in Phase 4 when the read model is ready.
+	filter := dto.ProductoFilter{Page: 1, Limit: 1000}
+	productos, _, err := s.repo.List(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	alertas := make([]dto.AlertaStockResponse, 0)
+	for _, p := range productos {
+		if p.StockActual <= p.StockMinimo {
+			alertas = append(alertas, dto.AlertaStockResponse{
+				ProductoID:  p.ID.String(),
+				Nombre:      p.Nombre,
+				StockActual: p.StockActual,
+				StockMinimo: p.StockMinimo,
+				PrecioVenta: p.PrecioVenta,
+			})
+		}
+	}
+	return alertas, nil
+}
+
+func (s *inventarioService) DescontarStockTx(ctx context.Context, productoID uuid.UUID, cantidad int, tx *gorm.DB) error {
+	// Read current stock INSIDE the transaction
+	producto, err := s.repo.FindByIDTx(tx, productoID)
+	if err != nil {
+		return fmt.Errorf("producto no encontrado: %w", err)
+	}
+
+	// If sufficient stock, simple decrement
+	if producto.StockActual >= cantidad {
+		return s.repo.UpdateStockTx(tx, productoID, -cantidad)
+	}
+
+	// Insufficient stock — attempt automatic disassembly if a vinculo with desarme_auto exists
+	vinculo, err := s.repo.FindVinculoByHijoIDTx(tx, productoID)
+	if err != nil {
+		// No auto-desarme link; record conflict but still decrement (may go negative — flagged as conflictoStock)
+		return s.repo.UpdateStockTx(tx, productoID, -cantidad)
+	}
+
+	// Verify desarme_auto flag (double-check even though query filters it)
+	if !vinculo.DesarmeAuto {
+		return s.repo.UpdateStockTx(tx, productoID, -cantidad)
+	}
+
+	// Calculate how many parent units to disassemble to cover the deficit
+	deficit := cantidad - producto.StockActual
+	padresNecesarios := (deficit + vinculo.UnidadesPorPadre - 1) / vinculo.UnidadesPorPadre // ceiling div
+
+	// Read parent stock INSIDE the transaction
+	padre, err := s.repo.FindByIDTx(tx, vinculo.ProductoPadreID)
+	if err != nil {
+		return fmt.Errorf("producto padre no encontrado: %w", err)
+	}
+
+	if padre.StockActual < padresNecesarios {
+		// Not enough parents either — proceed with conflict flag (caller tracks conflictoStock)
+		return s.repo.UpdateStockTx(tx, productoID, -cantidad)
+	}
+
+	// Disassemble: decrement padre, add units to hijo, then decrement hijo
+	unidadesGeneradas := padresNecesarios * vinculo.UnidadesPorPadre
+	if err := s.repo.UpdateStockTx(tx, vinculo.ProductoPadreID, -padresNecesarios); err != nil {
+		return err
+	}
+	if err := s.repo.UpdateStockTx(tx, productoID, unidadesGeneradas); err != nil {
+		return err
+	}
+	// Now decrement requested quantity
+	return s.repo.UpdateStockTx(tx, productoID, -cantidad)
+}
+
+// RegistrarMovimientoTx records a stock movement inside an existing transaction.
+func (s *inventarioService) RegistrarMovimientoTx(tx *gorm.DB, m *model.MovimientoStock) error {
+	if s.movRepo == nil {
+		return nil
+	}
+	return s.movRepo.CreateTx(tx, m)
+}
+
+func (s *inventarioService) EliminarVinculo(ctx context.Context, id string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return fmt.Errorf("id inválido: %w", err)
+	}
+	return s.repo.DeleteVinculo(ctx, uid)
+}
+
+func (s *inventarioService) ActualizarVinculo(ctx context.Context, id string, req dto.ActualizarVinculoRequest) (*dto.VinculoResponse, error) {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("id inválido: %w", err)
+	}
+	if err := s.repo.UpdateVinculo(ctx, uid, req.UnidadesPorPadre, req.DesarmeAuto); err != nil {
+		return nil, err
+	}
+	vinculo, err := s.repo.FindVinculoByID(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	resp := toVinculoResponse(vinculo)
+	return &resp, nil
+}
+
+// ListarMovimientos returns a paginated list of stock movements.
+func (s *inventarioService) ListarMovimientos(ctx context.Context, filter dto.MovimientoStockFilter) (*dto.MovimientoStockListResponse, error) {
+	repoFilter := repository.MovimientoStockFilter{
+		Tipo:  filter.Tipo,
+		Page:  filter.Page,
+		Limit: filter.Limit,
+	}
+	if filter.ProductoID != "" {
+		pid, err := uuid.Parse(filter.ProductoID)
+		if err == nil {
+			repoFilter.ProductoID = &pid
+		}
+	}
+
+	movs, total, err := s.movRepo.List(ctx, repoFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]dto.MovimientoStockResponse, 0, len(movs))
+	for _, m := range movs {
+		nombre := ""
+		if m.Producto != nil {
+			nombre = m.Producto.Nombre
+		}
+		data = append(data, dto.MovimientoStockResponse{
+			ID:             m.ID.String(),
+			ProductoID:     m.ProductoID.String(),
+			ProductoNombre: nombre,
+			Tipo:           m.Tipo,
+			Cantidad:       m.Cantidad,
+			StockAnterior:  m.StockAnterior,
+			StockNuevo:     m.StockNuevo,
+			Motivo:         m.Motivo,
+			CreatedAt:      m.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	return &dto.MovimientoStockListResponse{
+		Data:  data,
+		Total: total,
+		Page:  filter.Page,
+		Limit: filter.Limit,
+	}, nil
+}

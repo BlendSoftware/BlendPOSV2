@@ -1,0 +1,650 @@
+﻿package service
+
+import (
+	"bytes"
+	"context"
+	"encoding/csv"
+	"fmt"
+	"io"
+	"strconv"
+	"strings"
+
+	"blendpos/internal/dto"
+	"blendpos/internal/model"
+	"blendpos/internal/repository"
+
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
+)
+
+type ProveedorService interface {
+	Crear(ctx context.Context, req dto.CrearProveedorRequest) (*dto.ProveedorResponse, error)
+	ObtenerPorID(ctx context.Context, id uuid.UUID) (*dto.ProveedorResponse, error)
+	Listar(ctx context.Context) ([]dto.ProveedorResponse, error)
+	Actualizar(ctx context.Context, id uuid.UUID, req dto.CrearProveedorRequest) (*dto.ProveedorResponse, error)
+	Eliminar(ctx context.Context, id uuid.UUID) error
+	ActualizarPreciosMasivo(ctx context.Context, id uuid.UUID, req dto.ActualizarPreciosMasivoRequest) (*dto.ActualizacionMasivaResponse, error)
+	ImportarCSV(ctx context.Context, proveedorID uuid.UUID, csvData []byte) (*dto.CSVImportResponse, error)
+}
+
+type proveedorService struct {
+	repo          repository.ProveedorRepository
+	productoRepo  repository.ProductoRepository
+	categoriaRepo repository.CategoriaRepository
+}
+
+func NewProveedorService(repo repository.ProveedorRepository, productoRepo repository.ProductoRepository, categoriaRepo repository.CategoriaRepository) ProveedorService {
+	return &proveedorService{repo: repo, productoRepo: productoRepo, categoriaRepo: categoriaRepo}
+}
+
+//  CRUD
+
+func (s *proveedorService) Crear(ctx context.Context, req dto.CrearProveedorRequest) (*dto.ProveedorResponse, error) {
+	p := &model.Proveedor{
+		RazonSocial:   req.RazonSocial,
+		CUIT:          req.CUIT,
+		Telefono:      req.Telefono,
+		Email:         req.Email,
+		Direccion:     req.Direccion,
+		CondicionPago: req.CondicionPago,
+		Activo:        true,
+	}
+	if err := s.repo.Create(ctx, p); err != nil {
+		if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate") {
+			return nil, fmt.Errorf("ya existe un proveedor con el CUIT %s", req.CUIT)
+		}
+		return nil, fmt.Errorf("error al crear proveedor: %w", err)
+	}
+	// Save contacts
+	if len(req.Contactos) > 0 {
+		contactos := buildContactos(p.ID, req.Contactos)
+		if err := s.repo.ReplaceContactos(ctx, p.ID, contactos); err != nil {
+			return nil, fmt.Errorf("error al guardar contactos: %w", err)
+		}
+		p.Contactos = contactos
+	}
+	return proveedorToResponse(p), nil
+}
+
+func (s *proveedorService) ObtenerPorID(ctx context.Context, id uuid.UUID) (*dto.ProveedorResponse, error) {
+	p, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("proveedor no encontrado")
+	}
+	if !p.Activo {
+		return nil, fmt.Errorf("proveedor no encontrado")
+	}
+	return proveedorToResponse(p), nil
+}
+
+func (s *proveedorService) Listar(ctx context.Context) ([]dto.ProveedorResponse, error) {
+	proveedores, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error al listar proveedores: %w", err)
+	}
+	resp := make([]dto.ProveedorResponse, len(proveedores))
+	for i, p := range proveedores {
+		resp[i] = *proveedorToResponse(&p)
+	}
+	return resp, nil
+}
+
+func (s *proveedorService) Actualizar(ctx context.Context, id uuid.UUID, req dto.CrearProveedorRequest) (*dto.ProveedorResponse, error) {
+	p, err := s.repo.FindByID(ctx, id)
+	if err != nil || !p.Activo {
+		return nil, fmt.Errorf("proveedor no encontrado")
+	}
+	p.RazonSocial = req.RazonSocial
+	p.CUIT = req.CUIT
+	p.Telefono = req.Telefono
+	p.Email = req.Email
+	p.Direccion = req.Direccion
+	p.CondicionPago = req.CondicionPago
+	if err := s.repo.Update(ctx, p); err != nil {
+		return nil, fmt.Errorf("error al actualizar proveedor: %w", err)
+	}
+	// Replace contacts if provided
+	if req.Contactos != nil {
+		contactos := buildContactos(id, req.Contactos)
+		if err := s.repo.ReplaceContactos(ctx, id, contactos); err != nil {
+			return nil, fmt.Errorf("error al actualizar contactos: %w", err)
+		}
+		p.Contactos = contactos
+	}
+	return proveedorToResponse(p), nil
+}
+
+func (s *proveedorService) Eliminar(ctx context.Context, id uuid.UUID) error {
+	p, err := s.repo.FindByID(ctx, id)
+	if err != nil || !p.Activo {
+		return fmt.Errorf("proveedor no encontrado")
+	}
+	return s.repo.SoftDelete(ctx, id)
+}
+
+//  Actualización masiva de precios (AC-07.2, AC-07.3)
+
+// ActualizarPreciosMasivo actualiza el precio_costo de todos los productos de un proveedor
+// por un porcentaje dado. Si req.Preview = true, retorna el cálculo sin aplicar cambios.
+// Si req.RecalcularVenta = true y req.MargenDefault > 0, recalcula precio_venta.
+// Registra historial inmutable para cada producto afectado (RF-26).
+func (s *proveedorService) ActualizarPreciosMasivo(
+	ctx context.Context,
+	proveedorID uuid.UUID,
+	req dto.ActualizarPreciosMasivoRequest,
+) (*dto.ActualizacionMasivaResponse, error) {
+	prov, err := s.repo.FindByID(ctx, proveedorID)
+	if err != nil || !prov.Activo {
+		return nil, fmt.Errorf("proveedor no encontrado")
+	}
+
+	productos, err := s.productoRepo.FindByProveedorID(ctx, proveedorID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener productos del proveedor: %w", err)
+	}
+	if len(productos) == 0 {
+		return &dto.ActualizacionMasivaResponse{
+			Proveedor:          prov.RazonSocial,
+			Porcentaje:         req.Porcentaje,
+			ProductosAfectados: 0,
+			Preview:            []dto.PrecioPreviewItem{},
+		}, nil
+	}
+
+	cien := decimal.NewFromInt(100)
+	multiplier := decimal.NewFromInt(1).Add(req.Porcentaje.Div(cien))
+
+	previews := make([]dto.PrecioPreviewItem, 0, len(productos))
+	for _, prod := range productos {
+		costoNuevo := prod.PrecioCosto.Mul(multiplier).Round(2)
+		ventaNueva := prod.PrecioVenta
+		if req.RecalcularVenta && req.MargenDefault.GreaterThan(decimal.Zero) {
+			ventaNueva = costoNuevo.Mul(decimal.NewFromInt(1).Add(req.MargenDefault.Div(cien))).Round(2)
+		}
+
+		previews = append(previews, dto.PrecioPreviewItem{
+			ProductoID:        prod.ID.String(),
+			Nombre:            prod.Nombre,
+			PrecioCostoActual: prod.PrecioCosto,
+			PrecioCostoNuevo:  costoNuevo,
+			PrecioVentaActual: prod.PrecioVenta,
+			PrecioVentaNuevo:  ventaNueva,
+			DiferenciaCosto:   costoNuevo.Sub(prod.PrecioCosto).Round(2),
+			MargenNuevo:       calcularMargen(costoNuevo, ventaNueva),
+		})
+	}
+
+	resp := &dto.ActualizacionMasivaResponse{
+		Proveedor:          prov.RazonSocial,
+		Porcentaje:         req.Porcentaje,
+		ProductosAfectados: len(previews),
+		Preview:            previews,
+	}
+
+	// Modo preview: devolver cálculo sin modificar la BD (AC-07.3)
+	if req.Preview {
+		return resp, nil
+	}
+
+	// Aplicar en una única transacción ACID y registrar historial (RF-26)
+	// runTx handles nil DB gracefully for unit tests (see venta_service.go)
+	err = runTx(ctx, s.productoRepo.DB(), func(tx *gorm.DB) error {
+		for i, item := range previews {
+			prodID, _ := uuid.Parse(item.ProductoID)
+			margen := calcularMargen(item.PrecioCostoNuevo, item.PrecioVentaNuevo)
+
+			if err := s.productoRepo.UpdatePreciosTx(tx, prodID,
+				item.PrecioCostoNuevo, item.PrecioVentaNuevo, margen); err != nil {
+				return fmt.Errorf("error al actualizar %s: %w", item.Nombre, err)
+			}
+
+			// Registrar historial (omitir cuando tx es nil en tests)
+			if tx != nil {
+				h := &model.HistorialPrecio{
+					ProductoID:         prodID,
+					ProveedorID:        &proveedorID,
+					CostoAntes:         productos[i].PrecioCosto,
+					CostoDespues:       item.PrecioCostoNuevo,
+					VentaAntes:         productos[i].PrecioVenta,
+					VentaDespues:       item.PrecioVentaNuevo,
+					PorcentajeAplicado: req.Porcentaje,
+					Motivo:             "actualizacion_masiva",
+				}
+				if err := tx.Create(h).Error; err != nil {
+					return fmt.Errorf("error al registrar historial: %w", err)
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Respuesta final sin preview (ya se aplicó)
+	resp.Preview = nil
+	return resp, nil
+}
+
+//  Import CSV (AC-07.4, AC-07.5)
+
+// ImportarCSV procesa un archivo CSV con productos y realiza upsert por codigo_barras.
+// Formato: codigo_barras,nombre,precio_costo,precio_venta[,unidades_por_bulto][,categoria]
+// Las filas con error se registran individualmente sin abortar el lote.
+func (s *proveedorService) ImportarCSV(ctx context.Context, proveedorID uuid.UUID, csvData []byte) (*dto.CSVImportResponse, error) {
+	prov, err := s.repo.FindByID(ctx, proveedorID)
+	if err != nil || !prov.Activo {
+		return nil, fmt.Errorf("proveedor no encontrado")
+	}
+
+	// Validar que no sea un archivo binario (AC-07.5)
+	if !isValidCSVBytes(csvData) {
+		return nil, fmt.Errorf("formato de archivo inválido. Se esperaba texto CSV")
+	}
+
+	// Auto-detect delimiter: semicolons are common in Spanish-locale Excel exports
+	firstLine := string(bytes.SplitN(csvData, []byte{'\n'}, 2)[0])
+	delimiter := ','
+	if strings.Count(firstLine, ";") > strings.Count(firstLine, ",") {
+		delimiter = ';'
+	}
+
+	reader := csv.NewReader(bytes.NewReader(csvData))
+	reader.Comma = rune(delimiter)
+	reader.TrimLeadingSpace = true
+	reader.Comment = '#'
+
+	header, err := reader.Read()
+	if err != nil {
+		return nil, fmt.Errorf("CSV vacío o encabezado inválido")
+	}
+	if err := validarEncabezadoCSV(header); err != nil {
+		return nil, err
+	}
+
+	result := &dto.CSVImportResponse{
+		DetalleErrores: []dto.CSVErrorRow{},
+	}
+	fila := 0                            // encabezado no cuenta; datos empiezan en fila 1
+	seenBarcodes := make(map[string]int) // barcode → first fila seen (for duplicate detection)
+
+	for {
+		fila++
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			result.TotalFilas++
+			result.Errores++
+			result.DetalleErrores = append(result.DetalleErrores, dto.CSVErrorRow{
+				Fila:      fila,
+				ErrorCode: "READ_ERROR",
+				Motivo:    fmt.Sprintf("error de lectura: %v", err),
+			})
+			continue
+		}
+		result.TotalFilas++
+
+		fRow, errCode, errMsg := parsearFilaCSV(record)
+		if errCode != "" {
+			result.Errores++
+			barcode := ""
+			nombre := ""
+			if len(record) > 0 {
+				barcode = strings.TrimSpace(record[0])
+			}
+			if len(record) > 1 {
+				nombre = strings.TrimSpace(record[1])
+			}
+			result.DetalleErrores = append(result.DetalleErrores, dto.CSVErrorRow{
+				Fila:         fila,
+				CodigoBarras: barcode,
+				Nombre:       nombre,
+				ErrorCode:    errCode,
+				Motivo:       errMsg,
+			})
+			continue
+		}
+
+		// Check for duplicates within this batch
+		if prevFila, seen := seenBarcodes[fRow.CodigoBarras]; seen {
+			result.Errores++
+			result.DetalleErrores = append(result.DetalleErrores, dto.CSVErrorRow{
+				Fila:         fila,
+				CodigoBarras: fRow.CodigoBarras,
+				Nombre:       fRow.Nombre,
+				ErrorCode:    "BARCODE_DUPLICATE",
+				Motivo:       fmt.Sprintf("codigo_barras '%s' duplicado (primera aparición en fila %d)", fRow.CodigoBarras, prevFila),
+			})
+			continue
+		}
+		seenBarcodes[fRow.CodigoBarras] = fila
+
+		created, upsertErr := s.upsertProductoDesdeCSV(ctx, fRow, proveedorID)
+		if upsertErr != nil {
+			result.Errores++
+			result.DetalleErrores = append(result.DetalleErrores, dto.CSVErrorRow{
+				Fila:         fila,
+				CodigoBarras: fRow.CodigoBarras,
+				Nombre:       fRow.Nombre,
+				ErrorCode:    "UPSERT_ERROR",
+				Motivo:       upsertErr.Error(),
+			})
+			continue
+		}
+
+		result.Procesadas++
+		if created {
+			result.Creadas++
+		} else {
+			result.Actualizadas++
+		}
+	}
+
+	return result, nil
+}
+
+//  helpers
+
+// isValidCSVBytes detecta archivos binarios (ZIP/XLSX, OLE2/XLS) y bytes nulos.
+func isValidCSVBytes(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	// ZIP signature  XLSX/DOCX/ODS
+	if len(data) >= 4 && data[0] == 0x50 && data[1] == 0x4B {
+		return false
+	}
+	// OLE2 signature  XLS antiguo
+	if len(data) >= 8 && data[0] == 0xD0 && data[1] == 0xCF {
+		return false
+	}
+	for _, b := range data {
+		if b == 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// validarEncabezadoCSV verifica que el encabezado contiene las columnas obligatorias.
+// Formato nuevo (C-16): codigo_barras, nombre, precio_desactualizado, precio_actualizado
+// Formato completo:     codigo_barras, nombre, precio_costo, precio_venta [, unidades_por_bulto] [, categoria]
+// Formato simplificado: codigo_barras, nombre, precio_nuevo
+func validarEncabezadoCSV(header []string) error {
+	normalizado := make(map[string]bool, len(header))
+	for _, h := range header {
+		normalizado[strings.TrimSpace(strings.ToLower(h))] = true
+	}
+	// Nuevo formato (C-16): precio_desactualizado + precio_actualizado
+	if normalizado["precio_desactualizado"] && normalizado["precio_actualizado"] {
+		return nil
+	}
+	// Formato completo: precio_costo + precio_venta
+	if normalizado["precio_costo"] && normalizado["precio_venta"] {
+		return nil
+	}
+	// Formato simplificado: precio_nuevo
+	if normalizado["precio_nuevo"] {
+		return nil
+	}
+	return fmt.Errorf("el CSV debe tener columnas 'precio_desactualizado' y 'precio_actualizado', o 'precio_costo' y 'precio_venta', o una columna 'precio_nuevo'")
+}
+
+// csvFilaData contiene los datos parseados de una fila CSV.
+type csvFilaData struct {
+	CodigoBarras     string
+	Nombre           string
+	PrecioCosto      decimal.Decimal
+	PrecioVenta      decimal.Decimal
+	UnidadesPorBulto int
+	Categoria        string
+}
+
+// parsearFilaCSV convierte un record CSV en csvFilaData.
+// Formato nuevo:        codigo_barras, nombre, precio_desactualizado, precio_actualizado
+// Formato completo:     codigo_barras, nombre, precio_costo, precio_venta[, unidades_por_bulto][, categoria]
+// Formato simplificado: codigo_barras, nombre, precio_nuevo  (precio_costo = precio_nuevo * 0.8)
+// Returns (data, errorCode, errorMsg). errorCode is empty when no error.
+func parsearFilaCSV(record []string) (*csvFilaData, string, string) {
+	if len(record) < 3 {
+		return nil, "ROW_FORMAT", "fila con menos de 3 columnas (mínimo requerido)"
+	}
+	barcode := strings.TrimSpace(record[0])
+	nombre := strings.TrimSpace(record[1])
+	if barcode == "" {
+		return nil, "BARCODE_MISSING", "codigo_barras vacío o faltante"
+	}
+	if nombre == "" {
+		return nil, "NAME_MISSING", "nombre vacío o faltante"
+	}
+
+	var costo, venta decimal.Decimal
+	if len(record) >= 4 && strings.TrimSpace(record[3]) != "" {
+		// Formato completo: precio_costo/precio_desactualizado en col 2, precio_venta/precio_actualizado en col 3
+		costoStr := strings.TrimSpace(record[2])
+		ventaStr := strings.TrimSpace(record[3])
+		var err error
+		costo, err = decimal.NewFromString(costoStr)
+		if err != nil {
+			return nil, "PRICE_NOT_NUMBER", fmt.Sprintf("precio_desactualizado '%s' no es un número válido", costoStr)
+		}
+		if costo.LessThanOrEqual(decimal.Zero) {
+			return nil, "PRICE_NEGATIVE", fmt.Sprintf("precio_desactualizado (%.2f) debe ser mayor a 0", costo.InexactFloat64())
+		}
+		venta, err = decimal.NewFromString(ventaStr)
+		if err != nil {
+			return nil, "PRICE_NOT_NUMBER", fmt.Sprintf("precio_actualizado '%s' no es un número válido", ventaStr)
+		}
+		if venta.LessThanOrEqual(decimal.Zero) {
+			return nil, "PRICE_NEGATIVE", fmt.Sprintf("precio_actualizado (%.2f) debe ser mayor a 0", venta.InexactFloat64())
+		}
+		if venta.LessThan(costo) {
+			return nil, "PRICE_NEGATIVE", fmt.Sprintf("precio_actualizado (%.2f) no puede ser menor al precio_desactualizado (%.2f)",
+				venta.InexactFloat64(), costo.InexactFloat64())
+		}
+	} else {
+		// Formato simplificado: precio_nuevo en col 2
+		nuevoStr := strings.TrimSpace(record[2])
+		nuevo, err := decimal.NewFromString(nuevoStr)
+		if err != nil {
+			return nil, "PRICE_NOT_NUMBER", fmt.Sprintf("precio '%s' no es un número válido", nuevoStr)
+		}
+		if nuevo.LessThanOrEqual(decimal.Zero) {
+			return nil, "PRICE_NEGATIVE", fmt.Sprintf("precio (%.2f) debe ser mayor a 0", nuevo.InexactFloat64())
+		}
+		venta = nuevo
+		// precio_costo = 80% del precio_nuevo (20% margen por defecto) — ajustable
+		costo = nuevo.Mul(decimal.NewFromFloat(0.8)).Round(2)
+	}
+
+	unidades := 1
+	colUnidades := 4
+	if len(record) < 5 {
+		colUnidades = -1 // no column
+	}
+	if colUnidades >= 0 && colUnidades < len(record) && strings.TrimSpace(record[colUnidades]) != "" {
+		if u, err := strconv.Atoi(strings.TrimSpace(record[colUnidades])); err == nil && u > 0 {
+			unidades = u
+		}
+	}
+	categoria := "general"
+	colCategoria := 5
+	if len(record) > colCategoria && strings.TrimSpace(record[colCategoria]) != "" {
+		categoria = strings.TrimSpace(strings.ToLower(record[colCategoria]))
+	}
+
+	return &csvFilaData{
+		CodigoBarras:     barcode,
+		Nombre:           nombre,
+		PrecioCosto:      costo,
+		PrecioVenta:      venta,
+		UnidadesPorBulto: unidades,
+		Categoria:        categoria,
+	}, "", ""
+}
+
+// upsertProductoDesdeCSV crea o actualiza un producto por código de barras.
+// Retorna (true, nil) si fue creado, (false, nil) si fue actualizado.
+func (s *proveedorService) upsertProductoDesdeCSV(
+	ctx context.Context,
+	row *csvFilaData,
+	proveedorID uuid.UUID,
+) (created bool, err error) {
+	margen := calcularMargen(row.PrecioCosto, row.PrecioVenta)
+
+	// Buscar o crear la categoría basada en el nombre del CSV
+	var categoriaID uuid.UUID
+	if row.Categoria != "" {
+		cat, findErr := s.categoriaRepo.ObtenerPorNombre(ctx, row.Categoria)
+		if findErr != nil {
+			// Categoría no existe — NO crear automáticamente, usar "Sin Categoría" como fallback
+			fallback, fallbackErr := s.categoriaRepo.ObtenerPorNombre(ctx, "Sin Categoría")
+			if fallbackErr != nil {
+				// Si "Sin Categoría" tampoco existe, crearla una única vez
+				nuevaCat := &model.Categoria{Nombre: "Sin Categoría", Activo: true}
+				if err := s.categoriaRepo.Crear(ctx, nuevaCat); err != nil {
+					return false, fmt.Errorf("error al crear categoría por defecto: %w", err)
+				}
+				categoriaID = nuevaCat.ID
+			} else {
+				categoriaID = fallback.ID
+			}
+		} else {
+			categoriaID = cat.ID
+		}
+	} else {
+		// Si no se especifica categoría, buscar o crear "Sin Categoría"
+		cat, findErr := s.categoriaRepo.ObtenerPorNombre(ctx, "Sin Categoría")
+		if findErr != nil {
+			nuevaCat := &model.Categoria{
+				Nombre: "Sin Categoría",
+				Activo: true,
+			}
+			if err := s.categoriaRepo.Crear(ctx, nuevaCat); err != nil {
+				return false, fmt.Errorf("error al crear categoría por defecto: %w", err)
+			}
+			categoriaID = nuevaCat.ID
+		} else {
+			categoriaID = cat.ID
+		}
+	}
+
+	existing, findErr := s.productoRepo.FindByBarcode(ctx, row.CodigoBarras)
+	if findErr != nil {
+		// Producto no existe — crear
+		nuevo := &model.Producto{
+			CodigoBarras: row.CodigoBarras,
+			Nombre:       row.Nombre,
+			Categoria:    row.Categoria,
+			CategoriaID:  categoriaID,
+			PrecioCosto:  row.PrecioCosto,
+			PrecioVenta:  row.PrecioVenta,
+			MargenPct:    margen,
+			ProveedorID:  &proveedorID,
+			Activo:       true,
+			UnidadMedida: "unidad",
+		}
+		if err := s.productoRepo.Create(ctx, nuevo); err != nil {
+			return false, fmt.Errorf("error al crear producto: %w", err)
+		}
+		_ = s.repo.CreateHistorialPrecio(ctx, &model.HistorialPrecio{
+			ProductoID:         nuevo.ID,
+			ProveedorID:        &proveedorID,
+			CostoAntes:         decimal.Zero,
+			CostoDespues:       row.PrecioCosto,
+			VentaAntes:         decimal.Zero,
+			VentaDespues:       row.PrecioVenta,
+			PorcentajeAplicado: decimal.Zero,
+			Motivo:             "csv_import",
+		})
+		return true, nil
+	}
+
+	// Actualizar si hay cambio de precios
+	costoAntes := existing.PrecioCosto
+	ventaAntes := existing.PrecioVenta
+	existing.Nombre = row.Nombre
+	existing.Categoria = row.Categoria
+	existing.CategoriaID = categoriaID
+	existing.PrecioCosto = row.PrecioCosto
+	existing.PrecioVenta = row.PrecioVenta
+	existing.MargenPct = margen
+	if existing.ProveedorID == nil {
+		existing.ProveedorID = &proveedorID
+	}
+
+	if err := s.productoRepo.Update(ctx, existing); err != nil {
+		return false, fmt.Errorf("error al actualizar producto: %w", err)
+	}
+
+	// Registrar historial solo si hubo cambio de precios
+	if !costoAntes.Equal(row.PrecioCosto) || !ventaAntes.Equal(row.PrecioVenta) {
+		var pctCambio decimal.Decimal
+		if !costoAntes.IsZero() {
+			pctCambio = row.PrecioCosto.Sub(costoAntes).Div(costoAntes).Mul(decimal.NewFromInt(100)).Round(2)
+		}
+		_ = s.repo.CreateHistorialPrecio(ctx, &model.HistorialPrecio{
+			ProductoID:         existing.ID,
+			ProveedorID:        &proveedorID,
+			CostoAntes:         costoAntes,
+			CostoDespues:       row.PrecioCosto,
+			VentaAntes:         ventaAntes,
+			VentaDespues:       row.PrecioVenta,
+			PorcentajeAplicado: pctCambio,
+			Motivo:             "csv_import",
+		})
+	}
+
+	return false, nil
+}
+
+// calcularMargen calcula (venta - costo) / costo * 100. Retorna zero si costo = 0.
+func calcularMargen(costo, venta decimal.Decimal) decimal.Decimal {
+	if costo.IsZero() {
+		return decimal.Zero
+	}
+	return venta.Sub(costo).Div(costo).Mul(decimal.NewFromInt(100)).Round(2)
+}
+
+// buildContactos converts DTO contact inputs to model slices.
+func buildContactos(proveedorID uuid.UUID, inputs []dto.ContactoProveedorInput) []model.ContactoProveedor {
+	result := make([]model.ContactoProveedor, 0, len(inputs))
+	for _, inp := range inputs {
+		result = append(result, model.ContactoProveedor{
+			ProveedorID: proveedorID,
+			Nombre:      inp.Nombre,
+			Cargo:       inp.Cargo,
+			Telefono:    inp.Telefono,
+			Email:       inp.Email,
+		})
+	}
+	return result
+}
+
+// proveedorToResponse convierte model.Proveedor a dto.ProveedorResponse.
+func proveedorToResponse(p *model.Proveedor) *dto.ProveedorResponse {
+	contactos := make([]dto.ContactoProveedorResponse, 0, len(p.Contactos))
+	for _, c := range p.Contactos {
+		contactos = append(contactos, dto.ContactoProveedorResponse{
+			ID:       c.ID.String(),
+			Nombre:   c.Nombre,
+			Cargo:    c.Cargo,
+			Telefono: c.Telefono,
+			Email:    c.Email,
+		})
+	}
+	return &dto.ProveedorResponse{
+		ID:            p.ID.String(),
+		RazonSocial:   p.RazonSocial,
+		CUIT:          p.CUIT,
+		Telefono:      p.Telefono,
+		Email:         p.Email,
+		Direccion:     p.Direccion,
+		CondicionPago: p.CondicionPago,
+		Activo:        p.Activo,
+		Contactos:     contactos,
+	}
+}

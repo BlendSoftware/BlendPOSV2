@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkaWQiOiIiLCJleHAiOjE3NzM3MTc2MjcsImlhdCI6MTc3MzY4ODgyNywianRpIjoiMWI0MTgwZDctNWRhMi00MmFjLThiN2ItMDMwM2M5YzE2Y2UwIiwicHVudG9fZGVfdmVudGEiOm51bGwsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJ0aWQiOiI2YjllMWRiMS0wMDlmLTQzNTUtYWFmNS1mZjY0NzU5OTJjZGUiLCJ0eXBlIjoiYWNjZXNzIiwidXNlcl9pZCI6ImZhNDU0MTliLTA4YzItNGIxMy1iMTI1LWJhMGYxNTZjYzU4OCIsInVzZXJuYW1lIjoiYWRtaW4ifQ.14fghHUN4PkkoaSL0jdnfyw3Fh08Rs-4AOceMgTNc0E\")",
+      "Bash(curl -s -w \"\\\\nHTTP:%{http_code}\" http://localhost:8000/v1/productos -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkaWQiOiIiLCJleHAiOjE3NzM3MTc2MjcsImlhdCI6MTc3MzY4ODgyNywianRpIjoiMWI0MTgwZDctNWRhMi00MmFjLThiN2ItMDMwM2M5YzE2Y2UwIiwicHVudG9fZGVfdmVudGEiOm51bGwsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJ0aWQiOiI2YjllMWRiMS0wMDlmLTQzNTUtYWFmNS1mZjY0NzU5OTJjZGUiLCJ0eXBlIjoiYWNjZXNzIiwidXNlcl9pZCI6ImZhNDU0MTliLTA4YzItNGIxMy1iMTI1LWJhMGYxNTZjYzU4OCIsInVzZXJuYW1lIjoiYWRtaW4ifQ.14fghHUN4PkkoaSL0jdnfyw3Fh08Rs-4AOceMgTNc0E\" curl -sv http://localhost:8000/v1/productos -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(grep -n \"Error al listar productos\" /home/juani/ProyectosStartup/BlendPOSV2/backend/internal/handler/*.go)",
+      "Bash(curl -s http://localhost:8000/v1/categorias -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(curl -s http://localhost:8000/v1/ventas -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(claude mcp:*)",
+      "Bash(ls ~/.local/bin/claude*)",
+      "Bash(ls /usr/local/bin/claude*)",
+      "Bash(/home/juani/.vscode-server/extensions/anthropic.claude-code-2.1.76-linux-x64/resources/native-binary/claude mcp:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -rn \"generateOfflineId\\\\|getOrCreateDeviceId\\\\|tenantId\" /home/juani/ProyectosStartup/BlendPOSV2/frontend/src/ --include=*.ts --include=*.tsx)",
+      "Bash(grep -rn generateOfflineId /home/juani/ProyectosStartup/BlendPOSV2/frontend/src/ --include=*.ts --include=*.tsx)",
+      "Bash(grep -rn \"offline_id\\\\|offlineId\\\\|sale\\\\.id\\\\|sale_id\\\\|enqueueSale\\\\|crypto\\\\.randomUUID\\\\|uuid\" /home/juani/ProyectosStartup/BlendPOSV2/frontend/src/store/ --include=*.ts --include=*.tsx)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(go build:*)",
+      "Bash(docker exec:*)",
+      "Bash(ls -la /home/juani/ProyectosStartup/BlendPOSV2/afip-sidecar/*.py)",
+      "Bash(xargs ls:*)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\(''schemas.py''\\).read\\(\\)\\); ast.parse\\(open\\(''afip_client.py''\\).read\\(\\)\\); ast.parse\\(open\\(''main.py''\\).read\\(\\)\\); print\\(''all Python files parse OK''\\)\")"
+    ]
+  }
+}

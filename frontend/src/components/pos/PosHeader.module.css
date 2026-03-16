@@ -1,0 +1,27 @@
+.header {
+  background-color: var(--mantine-color-dark-8);
+  border-bottom: 1px solid var(--mantine-color-dark-4);
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.brand {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--mantine-color-blue-4);
+  line-height: 1;
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 100px;
+}
+
+/* ─── Light mode ─────────────────────────────────── */
+:global([data-mantine-color-scheme='light']) .header {
+  background-color: var(--mantine-color-white);
+  border-bottom-color: var(--mantine-color-gray-3);
+}

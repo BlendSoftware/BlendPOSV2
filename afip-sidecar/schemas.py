@@ -1,0 +1,144 @@
+"""
+BlendPOS — AFIP Sidecar Schemas
+Pydantic models for request/response validation
+"""
+
+from decimal import Decimal
+from typing import Optional, List
+from pydantic import BaseModel, Field, validator
+
+
+class ConfigurarRequest(BaseModel):
+    """
+    Payload para reconfigurar el sidecar de AFIP en caliente.
+    Enviado desde el backend Go cuando el dueño sube nuevos certificados desde la UI.
+    Los certificados se envían en base64 para transporte seguro sobre HTTP interno.
+    """
+    cuit_emisor: str = Field(..., description="CUIT del emisor (sin guiones)")
+    modo: str = Field("homologacion", description="'homologacion' o 'produccion'")
+    crt_base64: str = Field(..., description="Contenido del .crt en base64")
+    key_base64: str = Field(..., description="Contenido del .key en base64")
+
+
+
+class ItemFacturaRequest(BaseModel):
+    """
+    Representa un item dentro de una factura.
+    Usado para enviar detalle de productos al WSFEV1.
+    """
+    codigo: str = Field(..., description="Código del producto (interno)")
+    descripcion: str = Field(..., max_length=200, description="Descripción del producto")
+    cantidad: float = Field(..., gt=0, description="Cantidad vendida")
+    precio_unitario: float = Field(..., ge=0, description="Precio unitario sin IVA")
+    importe_total: float = Field(..., ge=0, description="Cantidad × Precio unitario")
+    alicuota_iva: float = Field(..., ge=0, description="% de IVA (ej: 21.0)")
+
+
+class FacturarRequest(BaseModel):
+    """
+    Payload que recibe el sidecar desde el worker de Go.
+    Contiene todos los datos necesarios para emitir una factura en AFIP.
+
+    Los campos de importe usan Decimal en lugar de float para evitar errores
+    de redondeo IEEE-754 en montos fiscales (P1-005).
+    """
+    cuit_emisor: str = Field(..., description="CUIT del emisor (sin guiones, ej: 20123456789)")
+    punto_de_venta: int = Field(..., ge=1, le=9999, description="Punto de venta autorizado por AFIP")
+    tipo_comprobante: int = Field(..., description="Código AFIP: 1=FacturaA, 6=FacturaB, 11=FacturaC")
+    tipo_doc_receptor: int = Field(..., description="80=CUIT, 86=CUIL, 96=DNI, 99=ConsumidorFinal")
+    nro_doc_receptor: str = Field(..., description="DNI/CUIT del receptor, '0' para Consumidor Final")
+    nombre_receptor: Optional[str] = Field(None, max_length=200, description="Razón social o nombre del cliente")
+
+    # Conceptos: 1=Productos, 2=Servicios, 3=Ambos
+    concepto: int = Field(1, ge=1, le=3, description="1=Productos, 2=Servicios, 3=Ambos")
+
+    # Montos — Decimal con 2 decimales para exactitud fiscal
+    importe_neto: Decimal = Field(..., ge=Decimal('0'), description="Monto gravado (sin IVA)")
+    importe_exento: Decimal = Field(Decimal('0'), ge=Decimal('0'), description="Monto exento de IVA")
+    importe_iva: Decimal = Field(Decimal('0'), ge=Decimal('0'), description="Monto de IVA")
+    importe_tributos: Decimal = Field(Decimal('0'), ge=Decimal('0'), description="Otros tributos (IIBB, percepciones)")
+    importe_total: Decimal = Field(..., gt=Decimal('0'), description="Neto + IVA + Tributos")
+
+    # Moneda
+    moneda: str = Field("PES", description="PES=Pesos argentinos, DOL=Dólar")
+    cotizacion_moneda: float = Field(1.0, gt=0, description="Cotización de la moneda (1.0 para pesos)")
+
+    # Items (opcional, según requerimiento)
+    items: Optional[List[ItemFacturaRequest]] = Field(None, description="Detalle de productos vendidos")
+
+    # ── Multi-tenant stateless mode (F1-4) ────────────────────────────────────
+    # Cuando el Go backend pasa cert_pem + key_pem, el sidecar crea un AFIPClient
+    # efímero por request en lugar de usar el cliente global configurado al startup.
+    # Los campos son opcionales para mantener compatibilidad con el modo legacy.
+    cert_pem: Optional[str] = Field(None, description="Contenido PEM del certificado AFIP (modo stateless multi-tenant)")
+    key_pem: Optional[str] = Field(None, description="Contenido PEM de la clave privada AFIP (modo stateless multi-tenant)")
+    modo: str = Field("homologacion", description="'homologacion' o 'produccion' (aplica solo en modo stateless)")
+
+    @validator('cert_pem', 'key_pem')
+    def validar_pem_no_es_ruta(cls, v):
+        """
+        Previene path traversal: el campo debe ser contenido PEM real, no una ruta de archivo.
+        Un PEM válido siempre empieza con '-----BEGIN'.
+        """
+        if v is not None and not v.strip().startswith('-----BEGIN'):
+            raise ValueError(
+                'El campo debe contener contenido PEM (debe comenzar con -----BEGIN), no una ruta de archivo'
+            )
+        return v
+
+    @validator('cuit_emisor', 'nro_doc_receptor')
+    def validar_formato_cuit(cls, v):
+        """Valida que el CUIT/DNI no contenga guiones ni puntos"""
+        if '-' in v or '.' in v:
+            raise ValueError('El CUIT/DNI debe ser solo números, sin guiones ni puntos')
+        return v
+
+    @validator('importe_total')
+    def validar_total(cls, v, values):
+        """Valida que el total sea coherente con los componentes"""
+        neto = values.get('importe_neto', Decimal('0'))
+        exento = values.get('importe_exento', Decimal('0'))
+        iva = values.get('importe_iva', Decimal('0'))
+        tributos = values.get('importe_tributos', Decimal('0'))
+        esperado = neto + exento + iva + tributos
+
+        # Tolerancia de 0.01 por redondeos de presentación
+        if abs(v - esperado) > Decimal('0.01'):
+            raise ValueError(
+                f'El importe_total ({v}) no coincide con la suma de componentes ({esperado})'
+            )
+        return v
+
+
+class ObservacionAFIP(BaseModel):
+    """Representa una observación o error retornado por AFIP"""
+    codigo: int = Field(..., description="Código de observación AFIP")
+    mensaje: str = Field(..., description="Descripción de la observación")
+
+
+class FacturarResponse(BaseModel):
+    """
+    Respuesta del sidecar al worker de Go.
+    Contiene el CAE o los errores de AFIP.
+    """
+    resultado: str = Field(..., description="A=Aprobado, R=Rechazado, P=Pendiente")
+    numero_comprobante: int = Field(..., ge=1, description="Número de comprobante asignado por AFIP")
+    fecha_comprobante: str = Field(..., description="Fecha del comprobante (YYYYMMDD)")
+    
+    cae: Optional[str] = Field(None, description="Código de Autorización Electrónico (14 dígitos)")
+    cae_vencimiento: Optional[str] = Field(None, description="Fecha de vencimiento del CAE (YYYYMMDD)")
+    
+    observaciones: Optional[List[ObservacionAFIP]] = Field(None, description="Observaciones o errores de AFIP")
+    reproceso: Optional[str] = Field(None, description="Tipo de reproceso (S=Sí, N=No)")
+    
+    # Metadata para logging
+    afip_request_id: Optional[str] = Field(None, description="ID interno de AFIP para trazabilidad")
+
+
+class HealthResponse(BaseModel):
+    """Response del endpoint /health"""
+    ok: bool = Field(..., description="Estado general del servicio")
+    service: str = Field("afip-sidecar", description="Nombre del servicio")
+    mode: str = Field(..., description="homologacion o produccion")
+    afip_conectado: bool = Field(..., description="Si se pudo conectar a AFIP")
+    ultima_autenticacion: Optional[str] = Field(None, description="Timestamp de la última auth WSAA exitosa")
