@@ -56,13 +56,14 @@ type PagoRequest struct {
 }
 
 type RegistrarVentaRequest struct {
-	SesionCajaID string             `json:"sesion_caja_id" validate:"required,uuid"`
+	SesionCajaID string             `json:"sesion_caja_id" validate:"omitempty"`
 	Items        []ItemVentaRequest `json:"items"          validate:"required,min=1,dive"`
 	Pagos        []PagoRequest      `json:"pagos"          validate:"required,min=1,dive"`
 	// ClienteID: optional — when a pago has metodo="fiado", this identifies the customer account to charge.
 	ClienteID *string `json:"cliente_id"    validate:"omitempty,uuid"`
-	// OfflineID is set by the PWA when registering a sale created offline
-	OfflineID *string `json:"offline_id"    validate:"omitempty,uuid"`
+	// OfflineID is set by the PWA when registering a sale created offline.
+	// Format: {tenantId}:{deviceId}:{timestamp}:{random} — NOT a UUID.
+	OfflineID *string `json:"offline_id"    validate:"omitempty"`
 	// ClienteEmail: optional — when present, the facturacion worker mails the PDF receipt.
 	ClienteEmail *string `json:"cliente_email" validate:"omitempty,email"`
 	// Fiscal comprobante fields — optional; defaults to ticket_interno when omitted.
