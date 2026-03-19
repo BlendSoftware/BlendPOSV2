@@ -1,0 +1,1 @@
+ALTER TABLE ventas ALTER COLUMN offline_id TYPE VARCHAR(36);

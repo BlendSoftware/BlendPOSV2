@@ -266,16 +266,15 @@ func New(d Deps) *gin.Engine {
 		v1.GET("/ventas/reporte", middleware.RequireRole("administrador", "supervisor"), ventaReporteH.GetReporte)
 
 		// Analytics — reportes agregados (T5.1+T5.2, read replica)
-		// resumen + medios-pago: available to all plans (basic dashboard)
-		// top-productos + ventas-periodo: require analytics_avanzados feature flag
+		// All reports available to all plans — "analytics desde el plan gratuito" (SDD principle)
 		reportes := v1.Group("/reportes", middleware.RequireRole("administrador", "supervisor"))
 		{
 			reportes.GET("/resumen", reportesH.GetResumen)
-			reportes.GET("/top-productos", middleware.RequireFeature("analytics_avanzados", d.TenantRepo, d.RDB), reportesH.GetTopProductos)
+			reportes.GET("/top-productos", reportesH.GetTopProductos)
 			reportes.GET("/medios-pago", reportesH.GetMediosPago)
-			reportes.GET("/ventas-periodo", middleware.RequireFeature("analytics_avanzados", d.TenantRepo, d.RDB), reportesH.GetVentasPeriodo)
-			reportes.GET("/cajeros", middleware.RequireFeature("analytics_avanzados", d.TenantRepo, d.RDB), reportesH.GetCajeros)
-			reportes.GET("/turnos", middleware.RequireFeature("analytics_avanzados", d.TenantRepo, d.RDB), reportesH.GetTurnos)
+			reportes.GET("/ventas-periodo", reportesH.GetVentasPeriodo)
+			reportes.GET("/cajeros", reportesH.GetCajeros)
+			reportes.GET("/turnos", reportesH.GetTurnos)
 		}
 
 		// Categorías — administrador can write, all authenticated can read
