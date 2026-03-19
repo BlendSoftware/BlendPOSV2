@@ -11,6 +11,8 @@ interface ProductSearchProps {
     onClose: () => void;
     inputRef: React.RefObject<HTMLInputElement | null>;
     initialQuery?: string;
+    /** When provided, this callback handles adding the product (including weight prompt for kg/gramo). */
+    onAddProduct?: (product: { id: string; nombre: string; precio: number; codigoBarras: string; unidadMedida?: string }) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -21,7 +23,7 @@ function formatCurrency(value: number): string {
     }).format(value);
 }
 
-export function ProductSearch({ onClose, inputRef, initialQuery = '' }: ProductSearchProps) {
+export function ProductSearch({ onClose, inputRef, initialQuery = '', onAddProduct }: ProductSearchProps) {
     const [query, setQuery] = useState(initialQuery);
     const [highlightIndex, setHighlightIndex] = useState(0);
     const deferredQuery = useDeferredValue(query);
@@ -98,10 +100,20 @@ export function ProductSearch({ onClose, inputRef, initialQuery = '' }: ProductS
 
     const selectProduct = useCallback(
         (product: LocalProduct) => {
-            addItem({ id: product.id, nombre: product.nombre, precio: product.precio, codigoBarras: product.codigoBarras });
+            if (onAddProduct) {
+                onAddProduct({
+                    id: product.id,
+                    nombre: product.nombre,
+                    precio: product.precio,
+                    codigoBarras: product.codigoBarras,
+                    unidadMedida: product.unidadMedida,
+                });
+            } else {
+                addItem({ id: product.id, nombre: product.nombre, precio: product.precio, codigoBarras: product.codigoBarras });
+            }
             onClose();
         },
-        [addItem, onClose]
+        [addItem, onClose, onAddProduct]
     );
 
     const handleKeyDown = useCallback(
@@ -181,7 +193,11 @@ export function ProductSearch({ onClose, inputRef, initialQuery = '' }: ProductS
                                 </Text>
                             </Stack>
                         ) : (
-                            results.map((product, index) => (
+                            results.map((product, index) => {
+                                const um = product.unidadMedida;
+                                const isWeight = um === 'kg' || um === 'gramo';
+                                const suffix = um === 'kg' ? '/kg' : um === 'gramo' ? '/g' : '';
+                                return (
                                 <div
                                     key={product.id}
                                     data-index={index}
@@ -191,9 +207,16 @@ export function ProductSearch({ onClose, inputRef, initialQuery = '' }: ProductS
                                 >
                                     <Group justify="space-between" gap="md">
                                         <div>
-                                            <Text size="sm" fw={600}>
-                                                {product.nombre}
-                                            </Text>
+                                            <Group gap="xs">
+                                                <Text size="sm" fw={600}>
+                                                    {product.nombre}
+                                                </Text>
+                                                {isWeight && (
+                                                    <Badge size="xs" variant="light" color="blue">
+                                                        {um === 'kg' ? 'Kg' : 'Gramo'}
+                                                    </Badge>
+                                                )}
+                                            </Group>
                                             <Text size="xs" c="dimmed" ff="monospace">
                                                 {product.codigoBarras}
                                             </Text>
@@ -204,11 +227,12 @@ export function ProductSearch({ onClose, inputRef, initialQuery = '' }: ProductS
                                             size="lg"
                                             className={styles.priceBadge}
                                         >
-                                            {formatCurrency(product.precio)}
+                                            {formatCurrency(product.precio)}{suffix}
                                         </Badge>
                                     </Group>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
 

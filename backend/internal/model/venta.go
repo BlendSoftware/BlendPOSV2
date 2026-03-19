@@ -19,6 +19,7 @@ type Venta struct {
 	DescuentoTotal decimal.Decimal `gorm:"type:decimal(12,2);not null;default:0"`
 	Total          decimal.Decimal `gorm:"type:decimal(12,2);not null"`
 	Estado         string          `gorm:"type:varchar(20);not null;default:'completada'"`
+	ClienteID      *uuid.UUID      `gorm:"type:uuid;index"`
 	ComprobanteID  *uuid.UUID      `gorm:"type:uuid"`
 	// TipoComprobante is the receipt type requested at POS time.
 	// "ticket_interno" (default) | "factura_a" | "factura_b" | "factura_c"
@@ -36,15 +37,18 @@ type Venta struct {
 func (Venta) TableName() string { return "ventas" }
 
 // VentaItem is one line of a sale. Price is captured at sale time.
+// For weight-based products (kg/gramo), Peso holds the weight and Cantidad is 1.
 type VentaItem struct {
-	ID             uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	TenantID       uuid.UUID       `gorm:"type:uuid;not null;index"`
-	VentaID        uuid.UUID       `gorm:"type:uuid;not null;index"`
-	ProductoID     uuid.UUID       `gorm:"type:uuid;not null"`
-	Cantidad       int             `gorm:"not null"`
-	PrecioUnitario decimal.Decimal `gorm:"type:decimal(10,2);not null"`
-	DescuentoItem  decimal.Decimal `gorm:"type:decimal(10,2);not null;default:0"`
-	Subtotal       decimal.Decimal `gorm:"type:decimal(12,2);not null"`
+	ID             uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	TenantID       uuid.UUID        `gorm:"type:uuid;not null;index"`
+	VentaID        uuid.UUID        `gorm:"type:uuid;not null;index"`
+	ProductoID     uuid.UUID        `gorm:"type:uuid;not null"`
+	Cantidad       int              `gorm:"not null"`
+	PrecioUnitario decimal.Decimal  `gorm:"type:decimal(10,2);not null"`
+	DescuentoItem  decimal.Decimal  `gorm:"type:decimal(10,2);not null;default:0"`
+	Subtotal       decimal.Decimal  `gorm:"type:decimal(12,2);not null"`
+	// Peso is set for weight-based products (unidad_medida = kg | gramo). Nullable.
+	Peso           *decimal.Decimal `gorm:"type:decimal(10,3)"`
 
 	Producto *Producto `gorm:"foreignKey:ProductoID"`
 }
@@ -52,7 +56,7 @@ type VentaItem struct {
 func (VentaItem) TableName() string { return "venta_items" }
 
 // VentaPago records one payment method applied to a sale.
-// Metodo: "efectivo" | "debito" | "credito" | "transferencia"
+// Metodo: "efectivo" | "debito" | "credito" | "transferencia" | "qr" | "fiado"
 type VentaPago struct {
 	ID      uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	VentaID uuid.UUID       `gorm:"type:uuid;not null;index"`

@@ -10,6 +10,12 @@ import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAuthStore } from './store/useAuthStore';
 
+// PWA
+import { InstallBanner } from './components/InstallBanner';
+
+// SEC-03: Forced password change on first login
+import { ForcePasswordChangeModal } from './components/ForcePasswordChangeModal';
+
 // Layouts
 import { AdminLayout } from './layouts/AdminLayout';
 
@@ -36,7 +42,10 @@ const NuevaCompraPage = lazy(() => import('./pages/admin/NuevaCompraPage').then(
 const DetalleCompraPage = lazy(() => import('./pages/admin/DetalleCompraPage').then(m => ({ default: m.DetalleCompraPage })));
 const GuiaAfipPage = lazy(() => import('./pages/admin/GuiaAfipPage').then(m => ({ default: m.GuiaAfipPage })));
 const ConfiguracionFiscalPage = lazy(() => import('./pages/admin/ConfiguracionFiscalPage').then(m => ({ default: m.ConfiguracionFiscalPage })));
+const ReportesPage = lazy(() => import('./pages/admin/ReportesPage').then(m => ({ default: m.ReportesPage })));
 const SuperadminPage = lazy(() => import('./pages/admin/SuperadminPage').then(m => ({ default: m.SuperadminPage })));
+const VencimientosPage = lazy(() => import('./pages/admin/VencimientosPage').then(m => ({ default: m.VencimientosPage })));
+const ClientesPage = lazy(() => import('./pages/admin/ClientesPage').then(m => ({ default: m.ClientesPage })));
 
 function LoadingSpinner() {
     return <Center h="100vh"><Loader size="xl" /></Center>;
@@ -50,7 +59,9 @@ function App() {
 
     return (
         <ErrorBoundary>
+            <InstallBanner />
             <BrowserRouter>
+                <ForcePasswordChangeModal />
                 <Routes>
                     {/* ── Rutas públicas ─────────────────────────────────── */}
                     <Route path="/login" element={<LoginPage />} />
@@ -161,6 +172,27 @@ function App() {
                             <RouteErrorBoundary>
                                 <Suspense fallback={<LoadingSpinner />}>
                                     <GuiaAfipPage />
+                                </Suspense>
+                            </RouteErrorBoundary>
+                        } />
+                        <Route path="reportes" element={
+                            <RouteErrorBoundary>
+                                <Suspense fallback={<LoadingSpinner />}>
+                                    <ReportesPage />
+                                </Suspense>
+                            </RouteErrorBoundary>
+                        } />
+                        <Route path="vencimientos" element={
+                            <RouteErrorBoundary>
+                                <Suspense fallback={<LoadingSpinner />}>
+                                    <VencimientosPage />
+                                </Suspense>
+                            </RouteErrorBoundary>
+                        } />
+                        <Route path="clientes" element={
+                            <RouteErrorBoundary>
+                                <Suspense fallback={<LoadingSpinner />}>
+                                    <ClientesPage />
                                 </Suspense>
                             </RouteErrorBoundary>
                         } />

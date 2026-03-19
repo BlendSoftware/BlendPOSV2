@@ -13,7 +13,7 @@ import {
 import type { IUser, Rol } from '../../types';
 
 const ROL_COLOR: Record<Rol, string> = {
-    admin: 'red', supervisor: 'yellow', cajero: 'teal',
+    admin: 'red', supervisor: 'yellow', cajero: 'teal', superadmin: 'grape',
 };
 
 function mapRolFE(backendRol: string): Rol {

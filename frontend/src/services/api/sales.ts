@@ -24,17 +24,26 @@ function toRegistrarVentaRequest(sale: LocalSale): Record<string, unknown> {
     // Se aplican en cascada: subtotal = lineTotal * (1 - perItemPct) * (1 - globalPct)
     // El monto de descuento total = lineTotal - subtotal
     const globalPct = (sale.descuentoGlobal ?? 0) / 100;
-    const items = sale.items.map((item) => ({
-        producto_id: item.id,
-        cantidad: item.cantidad,
-        descuento: (() => {
-            const lineTotal = item.precio * item.cantidad;
-            const perItemPct = Math.max(item.descuento, (item as unknown as { promoDescuento?: number }).promoDescuento ?? 0) / 100;
-            const effectiveSubtotal = lineTotal * (1 - perItemPct) * (1 - globalPct);
-            const discountAmount = lineTotal - effectiveSubtotal;
-            return discountAmount > 0 ? +discountAmount.toFixed(2) : 0;
-        })(),
-    }));
+    const items = sale.items.map((item) => {
+        // Weight items have a composite ID: {productId}__w_{random}
+        const isWeightItem = item.id.includes('__w_');
+        const realProductId = isWeightItem ? item.id.split('__w_')[0] : item.id;
+        const peso = (item as unknown as { peso?: number }).peso;
+        const lineTotal = peso != null ? item.precio * peso : item.precio * item.cantidad;
+        const perItemPct = Math.max(item.descuento, (item as unknown as { promoDescuento?: number }).promoDescuento ?? 0) / 100;
+        const effectiveSubtotal = lineTotal * (1 - perItemPct) * (1 - globalPct);
+        const discountAmount = lineTotal - effectiveSubtotal;
+
+        const mapped: Record<string, unknown> = {
+            producto_id: realProductId,
+            cantidad: item.cantidad,
+            descuento: discountAmount > 0 ? +discountAmount.toFixed(2) : 0,
+        };
+        if (peso != null) {
+            mapped.peso = +peso.toFixed(3);
+        }
+        return mapped;
+    });
 
     // Construir pagos: usar sale.pagos si existe, sino construir desde metodoPago + total
     let pagos: { metodo: string; monto: number }[];
@@ -52,6 +61,11 @@ function toRegistrarVentaRequest(sale: LocalSale): Record<string, unknown> {
         pagos,
         offline_id: sale.id,
     };
+
+    // Include cliente_id for fiado (credit) sales
+    if (sale.clienteId) {
+        payload.cliente_id = sale.clienteId;
+    }
 
     // Include customer email if present (RF-21)
     if (sale.clienteEmail && sale.clienteEmail.trim() !== '') {

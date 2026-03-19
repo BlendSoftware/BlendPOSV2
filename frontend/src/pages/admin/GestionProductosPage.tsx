@@ -8,7 +8,8 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { Plus, Search, Edit, PowerOff, Power, X, AlertCircle, PackagePlus, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Tag, Package } from 'lucide-react';
+import { Plus, Search, Edit, PowerOff, Power, X, AlertCircle, PackagePlus, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Tag, Package, Upload, CalendarClock } from 'lucide-react';
+import { ImportProductosModal } from '../../components/ImportProductosModal';
 import { PromocionesTab } from './PromocionesTab';
 import { formatARS } from '../../utils/format';
 import {
@@ -16,6 +17,7 @@ import {
     type ProductoResponse,
 } from '../../services/api/products';
 import { listarCategorias, type CategoriaResponse } from '../../services/api/categorias';
+import { listarLotes, crearLote, eliminarLote, type LoteResponse, type CrearLoteRequest } from '../../services/api/lotes';
 import type { IProducto, CategoriaProducto } from '../../types';
 
 // ── Mapper ────────────────────────────────────────────────────────────────────
@@ -31,7 +33,9 @@ function mapProducto(p: ProductoResponse): IProducto {
         precioVenta: typeof p.precio_venta === 'number' ? p.precio_venta : Number(p.precio_venta),
         stock: p.stock_actual,
         stockMinimo: p.stock_minimo,
+        unidadMedida: (p.unidad_medida as 'unidad' | 'kg' | 'gramo') || 'unidad',
         activo: p.activo,
+        controlaVencimiento: p.controla_vencimiento ?? false,
         creadoEn: new Date().toISOString(),
         actualizadoEn: new Date().toISOString(),
     };
@@ -46,6 +50,8 @@ const ESTADO_BADGE = (activo: boolean) =>
 
 // ── Form values ───────────────────────────────────────────────────────────────
 
+type UnidadMedida = 'unidad' | 'kg' | 'gramo';
+
 interface FormValues {
     codigoBarras: string;
     nombre: string;
@@ -55,14 +61,22 @@ interface FormValues {
     precioVenta: number;
     stock: number;
     stockMinimo: number;
+    unidadMedida: UnidadMedida;
     activo: boolean;
+    controlaVencimiento: boolean;
 }
 
 const EMPTY_FORM: FormValues = {
     codigoBarras: '', nombre: '', descripcion: '',
     categoria: 'otros', precioCosto: 0, precioVenta: 0,
-    stock: 0, stockMinimo: 5, activo: true,
+    stock: 0, stockMinimo: 5, unidadMedida: 'unidad', activo: true, controlaVencimiento: false,
 };
+
+const UNIDAD_MEDIDA_OPTIONS = [
+    { value: 'unidad', label: 'Unidad' },
+    { value: 'kg', label: 'Kilogramo (kg)' },
+    { value: 'gramo', label: 'Gramo (g)' },
+];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -84,6 +98,23 @@ export function GestionProductosPage() {
     // ── Stock adjustment modal state ───────────────────────────────────────
     const [stockModalOpen, setStockModalOpen] = useState(false);
     const [stockTarget, setStockTarget] = useState<IProducto | null>(null);
+
+    // ── CSV Import modal state ────────────────────────────────────────────
+    const [importModalOpen, setImportModalOpen] = useState(false);
+
+    // ── Lotes (vencimiento) modal state ─────────────────────────────────
+    const [lotesModalOpen, setLotesModalOpen] = useState(false);
+    const [lotesTarget, setLotesTarget] = useState<IProducto | null>(null);
+    const [lotes, setLotes] = useState<LoteResponse[]>([]);
+    const [lotesLoading, setLotesLoading] = useState(false);
+    const [creandoLote, setCreandoLote] = useState(false);
+    const loteForm = useForm<{ codigo_lote: string; fecha_vencimiento: string; cantidad: number }>({
+        initialValues: { codigo_lote: '', fecha_vencimiento: '', cantidad: 1 },
+        validate: {
+            fecha_vencimiento: (v) => (v ? null : 'Requerido'),
+            cantidad: (v) => (v >= 1 ? null : 'Mínimo 1'),
+        },
+    });
 
     // ── Delete state ──────────────────────────────────────────────────────
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -250,7 +281,9 @@ export function GestionProductosPage() {
             precioVenta: Number(p.precioVenta),
             stock: p.stock,
             stockMinimo: p.stockMinimo,
+            unidadMedida: (p.unidadMedida as UnidadMedida) || 'unidad',
             activo: p.activo,
+            controlaVencimiento: p.controlaVencimiento ?? false,
         });
         setModalOpen(true);
     };
@@ -333,6 +366,54 @@ export function GestionProductosPage() {
         }
     });
 
+    const openLotesModal = async (p: IProducto) => {
+        setLotesTarget(p);
+        setLotesModalOpen(true);
+        setLotesLoading(true);
+        try {
+            const data = await listarLotes(p.id);
+            setLotes(data ?? []);
+        } catch {
+            notifications.show({ title: 'Error', message: 'No se pudieron cargar los lotes', color: 'red' });
+        } finally {
+            setLotesLoading(false);
+        }
+    };
+
+    const handleCrearLote = loteForm.onSubmit(async (values) => {
+        if (!lotesTarget) return;
+        setCreandoLote(true);
+        try {
+            const req: CrearLoteRequest = {
+                producto_id: lotesTarget.id,
+                fecha_vencimiento: values.fecha_vencimiento,
+                cantidad: values.cantidad,
+            };
+            if (values.codigo_lote.trim()) req.codigo_lote = values.codigo_lote.trim();
+            await crearLote(req);
+            notifications.show({ title: 'Lote creado', message: `${lotesTarget.nombre} — ${values.fecha_vencimiento}`, color: 'teal' });
+            loteForm.reset();
+            const data = await listarLotes(lotesTarget.id);
+            setLotes(data ?? []);
+        } catch (err) {
+            notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'No se pudo crear el lote', color: 'red' });
+        } finally {
+            setCreandoLote(false);
+        }
+    });
+
+    const handleEliminarLote = async (loteId: string) => {
+        if (!lotesTarget) return;
+        try {
+            await eliminarLote(loteId);
+            notifications.show({ title: 'Lote eliminado', message: 'El lote fue dado de baja', color: 'orange' });
+            const data = await listarLotes(lotesTarget.id);
+            setLotes(data ?? []);
+        } catch (err) {
+            notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'No se pudo eliminar el lote', color: 'red' });
+        }
+    };
+
     const handleSubmit = form.onSubmit(async (values) => {
         try {
             if (editTarget) {
@@ -343,6 +424,8 @@ export function GestionProductosPage() {
                     precio_costo: values.precioCosto,
                     precio_venta: values.precioVenta,
                     stock_minimo: values.stockMinimo,
+                    unidad_medida: values.unidadMedida,
+                    controla_vencimiento: values.controlaVencimiento,
                 });
                 notifications.show({ title: 'Producto actualizado', message: values.nombre, color: 'blue' });
             } else {
@@ -355,6 +438,8 @@ export function GestionProductosPage() {
                     precio_venta: values.precioVenta,
                     stock_actual: values.stock,
                     stock_minimo: values.stockMinimo,
+                    unidad_medida: values.unidadMedida,
+                    controla_vencimiento: values.controlaVencimiento,
                 });
                 notifications.show({ title: 'Producto creado', message: values.nombre, color: 'teal' });
             }
@@ -403,6 +488,9 @@ export function GestionProductosPage() {
                         checked={mostrarInactivos}
                         onChange={(e) => setMostrarInactivos(e.currentTarget.checked)}
                     />
+                    <Button variant="light" leftSection={<Upload size={16} />} onClick={() => setImportModalOpen(true)}>
+                        Importar CSV
+                    </Button>
                     <Button leftSection={<Plus size={16} />} onClick={openCreate}>
                         Nuevo producto
                     </Button>
@@ -570,6 +658,13 @@ export function GestionProductosPage() {
                                                         <PackagePlus size={15} />
                                                     </ActionIcon>
                                                 </Tooltip>
+                                                {p.controlaVencimiento && (
+                                                    <Tooltip label="Gestionar lotes" withArrow>
+                                                        <ActionIcon variant="subtle" color="orange" onClick={() => openLotesModal(p)}>
+                                                            <CalendarClock size={15} />
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                )}
                                                 <Tooltip label={p.activo ? 'Desactivar' : 'Activar'} withArrow>
                                                     <ActionIcon
                                                         variant="subtle"
@@ -658,6 +753,16 @@ export function GestionProductosPage() {
                             </Text>
                         )}
 
+                        <Divider label="Unidad de medida" labelPosition="left" />
+
+                        <Select
+                            label="Unidad de medida"
+                            description="Para carnicerías y verdulerías: seleccionar Kilogramo o Gramo"
+                            data={UNIDAD_MEDIDA_OPTIONS}
+                            allowDeselect={false}
+                            {...form.getInputProps('unidadMedida')}
+                        />
+
                         <Divider label="Stock" labelPosition="left" />
 
                         <Group grow>
@@ -670,6 +775,26 @@ export function GestionProductosPage() {
                             checked={form.values.activo}
                             onChange={(e) => form.setFieldValue('activo', e.currentTarget.checked)}
                         />
+
+                        <Divider label="Vencimiento" labelPosition="left" />
+
+                        <Switch
+                            label="Controla vencimiento"
+                            description="Habilita el seguimiento de lotes con fecha de vencimiento (leche, fiambres, cigarrillos, etc.)"
+                            checked={form.values.controlaVencimiento}
+                            onChange={(e) => form.setFieldValue('controlaVencimiento', e.currentTarget.checked)}
+                        />
+
+                        {editTarget && form.values.controlaVencimiento && (
+                            <Button
+                                variant="light"
+                                color="orange"
+                                leftSection={<CalendarClock size={14} />}
+                                onClick={() => { setModalOpen(false); openLotesModal(editTarget); }}
+                            >
+                                Gestionar lotes
+                            </Button>
+                        )}
 
                         <Group justify="flex-end" mt="sm">
                             <Button variant="subtle" onClick={() => setModalOpen(false)}>Cancelar</Button>
@@ -742,6 +867,123 @@ export function GestionProductosPage() {
                     <PromocionesTab />
                 </Tabs.Panel>
             </Tabs>
+
+            {/* ── Modal Importar CSV ───────────────────────────────────── */}
+            <ImportProductosModal
+                opened={importModalOpen}
+                onClose={() => setImportModalOpen(false)}
+                onImported={fetchProductos}
+            />
+
+            {/* ── Modal Gestionar Lotes ──────────────────────────────── */}
+            <Modal
+                opened={lotesModalOpen}
+                onClose={() => setLotesModalOpen(false)}
+                title={
+                    <Group gap="xs">
+                        <CalendarClock size={16} />
+                        <Text fw={700}>Lotes — {lotesTarget?.nombre}</Text>
+                    </Group>
+                }
+                size="lg"
+                centered
+            >
+                <Stack gap="md">
+                    {/* Formulario para agregar lote */}
+                    <Paper p="md" radius="md" withBorder>
+                        <Text size="sm" fw={600} mb="sm">Agregar lote</Text>
+                        <form onSubmit={handleCrearLote}>
+                            <Group grow align="flex-end">
+                                <TextInput
+                                    label="Código de lote"
+                                    placeholder="Opcional"
+                                    {...loteForm.getInputProps('codigo_lote')}
+                                />
+                                <TextInput
+                                    label="Fecha de vencimiento"
+                                    type="date"
+                                    required
+                                    {...loteForm.getInputProps('fecha_vencimiento')}
+                                />
+                                <NumberInput
+                                    label="Cantidad"
+                                    min={1}
+                                    {...loteForm.getInputProps('cantidad')}
+                                />
+                                <Button type="submit" loading={creandoLote} leftSection={<Plus size={14} />}>
+                                    Agregar
+                                </Button>
+                            </Group>
+                        </form>
+                    </Paper>
+
+                    {/* Lista de lotes existentes */}
+                    {lotesLoading ? (
+                        <Stack gap="sm">
+                            {[1, 2, 3].map((i) => <Skeleton key={i} h={40} radius="sm" />)}
+                        </Stack>
+                    ) : lotes.length === 0 ? (
+                        <Alert color="blue" variant="light" title="Sin lotes">
+                            Este producto no tiene lotes registrados. Agregá uno arriba.
+                        </Alert>
+                    ) : (
+                        <Paper radius="md" withBorder style={{ overflow: 'hidden' }}>
+                            <Table highlightOnHover verticalSpacing="sm">
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th>Código lote</Table.Th>
+                                        <Table.Th>Vencimiento</Table.Th>
+                                        <Table.Th>Cantidad</Table.Th>
+                                        <Table.Th>Estado</Table.Th>
+                                        <Table.Th>Acción</Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {lotes.map((l) => {
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        const venc = new Date(l.fecha_vencimiento + 'T00:00:00');
+                                        const dias = Math.ceil((venc.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                        const estado = dias < 0 ? 'vencido' : dias <= 3 ? 'critico' : dias <= 7 ? 'proximo' : 'ok';
+                                        const estadoColor = estado === 'vencido' ? 'red' : estado === 'critico' ? 'orange' : estado === 'proximo' ? 'yellow' : 'teal';
+                                        const estadoLabel = estado === 'vencido' ? 'Vencido' : estado === 'critico' ? 'Crítico' : estado === 'proximo' ? 'Próximo' : 'Vigente';
+                                        const [y, m, d] = l.fecha_vencimiento.split('-');
+                                        return (
+                                            <Table.Tr key={l.id}>
+                                                <Table.Td>
+                                                    <Text size="sm" ff="monospace">{l.codigo_lote ?? '—'}</Text>
+                                                </Table.Td>
+                                                <Table.Td>
+                                                    <Text size="sm">{`${d}/${m}/${y}`}</Text>
+                                                </Table.Td>
+                                                <Table.Td>
+                                                    <Text size="sm" fw={600}>{l.cantidad} ud</Text>
+                                                </Table.Td>
+                                                <Table.Td>
+                                                    <Badge color={estadoColor} size="sm" variant="light">
+                                                        {estadoLabel} {dias < 0 ? `(${Math.abs(dias)}d)` : dias === 0 ? '(hoy)' : `(${dias}d)`}
+                                                    </Badge>
+                                                </Table.Td>
+                                                <Table.Td>
+                                                    <Button
+                                                        size="xs"
+                                                        variant="light"
+                                                        color="red"
+                                                        leftSection={<Trash2 size={12} />}
+                                                        onClick={() => handleEliminarLote(l.id)}
+                                                    >
+                                                        Dar de baja
+                                                    </Button>
+                                                </Table.Td>
+                                            </Table.Tr>
+                                        );
+                                    })}
+                                </Table.Tbody>
+                            </Table>
+                        </Paper>
+                    )}
+                </Stack>
+            </Modal>
         </Stack>
     );
 }

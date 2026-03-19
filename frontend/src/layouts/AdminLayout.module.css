@@ -247,3 +247,18 @@
 :global([data-mantine-color-scheme='light']) .content {
     background: var(--mantine-color-gray-1);
 }
+
+/* ── Tablet: reduce padding, allow horizontal scroll on tables ─────── */
+@media (max-width: 48em) {
+    .content {
+        padding: var(--mantine-spacing-sm);
+    }
+
+    .navLink {
+        min-height: 44px;
+    }
+
+    .navLinkDanger {
+        min-height: 44px;
+    }
+}

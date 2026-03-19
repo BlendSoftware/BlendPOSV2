@@ -18,3 +18,10 @@
     background-color: var(--mantine-color-white);
     border-top-color: var(--mantine-color-gray-3);
 }
+
+/* Hide hotkeys footer on touch devices — F-keys don't work on touch */
+@media (pointer: coarse) {
+    .footer {
+        display: none;
+    }
+}

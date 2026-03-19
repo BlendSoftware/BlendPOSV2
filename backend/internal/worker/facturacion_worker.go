@@ -7,6 +7,7 @@ package worker
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -214,11 +215,14 @@ func (w *FacturacionWorker) buildAFIPPayload(ctx context.Context, venta *model.V
 			cuitEmisor = fiscalCfg.CUITEmsior
 			puntoDeVenta = fiscalCfg.PuntoDeVenta
 			condicionFiscal = fiscalCfg.CondicionFiscal
+			// F1-4: Certificates are stored as base64 in the DB.
+			// Decode them back to PEM before sending to the sidecar,
+			// which expects raw PEM content (-----BEGIN ...).
 			if fiscalCfg.CertificadoCrt != nil {
-				certPEM = *fiscalCfg.CertificadoCrt
+				certPEM = decodeBase64OrPassthrough(*fiscalCfg.CertificadoCrt)
 			}
 			if fiscalCfg.CertificadoKey != nil {
-				keyPEM = *fiscalCfg.CertificadoKey
+				keyPEM = decodeBase64OrPassthrough(*fiscalCfg.CertificadoKey)
 			}
 			modo = fiscalCfg.Modo
 		} else if err != nil {
@@ -468,4 +472,21 @@ func parseFechaCAE(s string) (*time.Time, error) {
 		return nil, err
 	}
 	return &t, nil
+}
+
+// decodeBase64OrPassthrough decodes a base64-encoded string back to its original
+// content (e.g. PEM text). If the input is already PEM (starts with "-----BEGIN"),
+// it is returned as-is — this makes the function safe for both legacy (PEM stored
+// directly) and current (base64-encoded) storage formats.
+func decodeBase64OrPassthrough(s string) string {
+	trimmed := strings.TrimSpace(s)
+	if strings.HasPrefix(trimmed, "-----BEGIN") {
+		return trimmed
+	}
+	decoded, err := base64.StdEncoding.DecodeString(trimmed)
+	if err != nil {
+		log.Warn().Err(err).Msg("facturacion_worker: failed to decode base64 cert, using raw value")
+		return trimmed
+	}
+	return string(decoded)
 }

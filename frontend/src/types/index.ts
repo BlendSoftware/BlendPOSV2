@@ -35,7 +35,10 @@ export interface IProducto {
     precioVenta: number;
     stock: number;
     stockMinimo: number;
+    /** Unit of measure: 'unidad' (default), 'kg', or 'gramo'. */
+    unidadMedida?: 'unidad' | 'kg' | 'gramo';
     activo: boolean;
+    controlaVencimiento?: boolean;
     imagenUrl?: string;
     /** Si este producto es la variante "unitaria" de un padre tipo caja */
     padreId?: string;

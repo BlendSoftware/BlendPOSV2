@@ -2,139 +2,221 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+**Project:** BlendPOS — Offline-first POS for Argentine kiosks. Spec-Driven Development (OpenSpec) workflow.
 
-**BlendPOS** is an offline-first Point-of-Sale system for Argentine kiosks and drugstores. It integrates with AFIP/ARCA (Argentine tax authority) for electronic invoicing.
+---
 
-## Services Architecture
+## Stack & Services
 
 ```
-Frontend (React+Vite :5173) → Backend (Go/Gin :8000) → PostgreSQL :5432
-                                        ↓
-                                  Redis :6379 (cache + job queue)
-                                        ↓
-                              AFIP Sidecar (Python/FastAPI :8001)
-                                        ↓
-                                AFIP/ARCA (external SOAP/XML)
+Frontend: React 19 + TypeScript + Zustand + Dexie.js (IndexedDB) + Mantine UI + react-router-dom v7
+Backend:  Go 1.24 + Gin + GORM + PostgreSQL + Redis + Viper config
+Sidecar:  Python/FastAPI wrapping pyafipws (AFIP invoicing) — port 8001
+PWA:      vite-plugin-pwa (injectManifest strategy, service worker at src/sw.ts)
 ```
 
-- **Backend** (`/backend`): Go 1.24, Gin framework, GORM ORM, golang-migrate
-- **Frontend** (`/frontend`): React 19, TypeScript, Vite, Mantine UI, Zustand, Dexie.js (IndexedDB)
-- **AFIP Sidecar** (`/afip-sidecar`): Python/FastAPI wrapping pyafipws library for WSAA + WSFEV1
+### Key Dependencies
+**Frontend:** `@mantine/core`, `zustand`, `dexie`, `axios`, `react-router-dom`, `lucide-react`, `vite-plugin-pwa`
+**Backend:** `gorm.io/gorm`, `gin-gonic/gin`, `redis/go-redis`, `golang-jwt/jwt`, `shopspring/decimal`
 
-## Development Commands
+---
 
-### Full Stack (Docker)
+## Build, Test & Lint Commands
+
+### Frontend (`cd frontend`)
 ```bash
-docker-compose up -d                              # Start all services (dev, with hot reload)
-docker-compose -f docker-compose.prod.yml up -d  # Production
+npm run dev              # Vite dev server on :5173 (HMR with polling for WSL/Docker)
+npm run build            # tsc -b && vite build → dist/
+npm run lint             # ESLint (flat config: TS + React rules)
+npm run test             # vitest run (single pass)
+npm run test:watch       # vitest watch mode
+npm run test:coverage    # vitest with coverage
 ```
 
-### Backend (Go)
+### Backend (`cd backend`)
 ```bash
-cd backend
-go run cmd/server/main.go                         # Run server directly
-go build -o ./tmp/blendpos ./cmd/server/main.go   # Build
-go test ./tests/...                               # Run all tests
-go test ./tests/... -run TestName                 # Run single test
+go run cmd/server/main.go                      # Start server
+air -c .air.toml                               # Hot reload (requires: go install github.com/air-verse/air@latest)
+go build -o ./blendpos ./cmd/server/main.go    # Production binary
+go test ./...                                  # Unit tests
+go test -tags integration ./tests/... -v       # Integration tests (real Postgres 15 + Redis 7 via testcontainers)
+go test -tags integration -run TestVentas ./tests/... -v  # Single test
 ```
-Backend tests use `testcontainers-go` (requires Docker) — they spin up real PostgreSQL and Redis instances.
 
-### Frontend
+### Migrations
 ```bash
-cd frontend
-npm install
-npm run dev          # Dev server on :5173
-npm run build        # tsc -b && vite build
-npm run lint         # ESLint
-npm run test         # Vitest (run once)
-npm run test:watch   # Vitest watch mode
-npm run test:coverage
+# Auto-runs in Docker via entrypoint
+migrate -path backend/migrations -database "$DATABASE_URL" up    # Manual (golang-migrate CLI)
+migrate -path backend/migrations -database "$DATABASE_URL" down 1 # Rollback one
 ```
+28 numbered SQL files in `backend/migrations/`. Exit code 1 from migrate = "already up to date" (not an error).
 
-### Database Migrations
+### Full Stack
 ```bash
-# Migrations run automatically on backend startup via entrypoint.sh
-# Manual run:
-migrate -path backend/migrations -database "$DATABASE_URL" up
-migrate -path backend/migrations -database "$DATABASE_URL" down 1
+docker-compose up -d          # All services (frontend, backend, postgres, redis, afip-sidecar)
+docker-compose up -d backend  # Backend only with deps
 ```
 
-## Backend Architecture
+Health check endpoint: `GET /health`
 
-### Layer Structure
+---
+
+## Current Change: SaaS Multi-Tenant
+
+**Status:** in-progress | **Scope:** Architecture + DB + Auth foundation
+**Goal:** Evolve from single-tenant to multi-tenant SaaS with offline-first, analytics-first positioning.
+
+### Implementation Phases (from design.md)
+1. **Phase 0:** SQL foundation — `tenant_id` on all tables, `tenants` table, RLS ✅
+2. **Phase 1:** Tenant auth + JWT extraction (in progress)
+3. **Phase 2:** Frontend PWA tenant context + offline sync per tenant
+4. **Phase 3:** Analytics (reportes completos desde plan gratuito)
+5. **Phase 4+:** Billing + subscription tiers
+
+**Design context:** stored in engram persistent memory (search `sdd/saas-multi-tenant/*`)
+
+---
+
+## Backend Architecture (Go)
+
+### DI & Composition
+All deps wired in `cmd/server/main.go` → injected into `router.New(deps)` via `router.Deps` struct. No DI framework — manual constructor injection.
+
+### Middleware Chain (order matters in `router.go`)
+1. MaxBodySize(10MB)
+2. Gzip compression
+3. RequestID — unique per request (audit trail)
+4. Logger — zerolog structured logging (uses request ID)
+5. Recovery — panic recovery
+6. CORS — parsed from `ALLOWED_ORIGINS` env (comma-separated)
+7. **Per-route:** tenant extraction (JWT), plan guards, IDOR guard, tenant audit
+
+RequestID MUST come before Logger for audit trail correlation.
+
+### Layer Responsibilities
+- **Handlers** (`internal/handler/`) — HTTP semantics, DTO marshaling, auth checks
+- **Services** (`internal/service/`) — business logic, transactions, worker dispatch
+- **Repositories** (`internal/repository/`) — queries only; mutations through services
+- **Middleware** (`internal/middleware/`) — tenant extraction, plan guards, IDOR prevention, audit
+- **Workers** (`internal/worker/`) — invoicing, email, PDF (async via goroutine pool + Redis)
+
+### Config (Viper)
+All env vars with defaults in `internal/config/config.go`. Notable:
+- `DATABASE_READ_REPLICA_URL` — optional read replica for analytics
+- `WORKER_POOL_SIZE`, `FACTURACION_WORKERS`, `EMAIL_WORKERS` — worker sizing (0 = fallback to pool)
+- `JWT_SECRET` — default is insecure; MUST override in production
+- `INTERNAL_API_TOKEN` — shared secret between Go backend and AFIP sidecar
+
+### Patterns
+- **Interface + impl** — `repository.ISalesRepo` + `repository.SalesRepo{}`
+- **No AutoMigrate** — numbered SQL migration files only
+- **Transactions for consistency** — sales never partial state; use `db.Transaction`
+- **Decimal arithmetic always** — `shopspring/decimal` for money, never float64
+- **Tenant context** — extracted from JWT in middleware, stored in `ctx`, explicit in WHERE + RLS belt-and-suspenders
+
+### Error Handling
+```go
+// Always: structured log + proper HTTP status + tenant context
+logger.Error("operation failed", zap.Error(err), zap.String("tenant_id", tenantID))
+c.AbortWithStatusJSON(getHTTPStatus(err), ErrorResponse{Message: err.Error()})
 ```
-cmd/server/main.go         → DI wiring, graceful shutdown
-internal/config/           → Viper-based env config
-internal/infra/            → DB, Redis, AFIP client, circuit breaker, mailer
-internal/model/            → GORM models
-internal/dto/              → Request/response DTOs
-internal/repository/       → Data access (GORM, interface + impl)
-internal/service/          → Business logic
-internal/handler/          → HTTP handlers (Gin)
-internal/middleware/        → Auth, CORS, rate limiting, logging
-internal/router/router.go  → Route registration
-internal/worker/           → Async workers (invoicing, email, PDF)
-migrations/                → SQL migration files (golang-migrate)
-```
 
-### Key Patterns
-- **Dependency injection**: All dependencies created in `main.go`, injected into handlers/services
-- **Repository pattern**: GORM repos behind interfaces — no `AutoMigrate`, only explicit SQL migrations
-- **ACID transactions**: Sales use `db.Transaction` (never partial state)
-- **Circuit breaker**: All AFIP sidecar calls are wrapped with a circuit breaker
-- **Worker pool**: Invoicing, PDF generation, and email are async via goroutine pool + Redis queue
-- **No AutoMigrate**: Schema changes go in numbered migration files under `migrations/`
-
-### Middleware Stack (order matters)
-MaxBodySize → Gzip → RequestID → Logger → Recovery → CORS → SecurityHeaders → Timeout(30s) → ErrorHandler → RateLimiter → JWT → Audit
-
-### Rate Limiting (Redis-backed, per IP)
-- Global: 1000 req/min
-- Login: 10/min, Refresh: 20/min
-- Price lookup: 60/min
+---
 
 ## Frontend Architecture
 
-### Key Directories
+### State Management (Zustand)
+- **Cart store** (`src/store/`): items, totals, tenant context
+- **Caja store** — session state, cash drawer, daily balance
+- **Auth store** — JWT, tenant ID, user role, expiry
+- **UI store** — modal visible/hidden, current screen
+- One store per domain. Prefer multiple small stores over one mega store.
+
+### Offline Pattern
+- **Dexie.js** — IndexedDB for catalog, sales draft, sync queue
+- **Sync queue** — `src/offline/sync.ts` uses `offline_id` (UUID) for deduplication
+- **Delete resilience** — write deletes to sync queue first, then local DB
+
+### Component Structure (Atomic + Container)
 ```
-src/pages/PosTerminal.tsx         → Main POS interface
-src/pages/admin/                  → Admin dashboard pages
-src/store/                        → Zustand stores (auth, cart, caja, POS UI)
-src/offline/db.ts                 → Dexie IndexedDB setup
-src/offline/catalog.ts            → Product catalog sync
-src/offline/sync.ts               → Offline sale queue (deduplication via offline_id)
-src/api/client.ts                 → Axios HTTP client
-src/services/api/                 → API service wrappers
+src/pages/PosTerminal.tsx          ← Page + container logic
+src/components/Drawer/
+  ├── index.tsx                    ← Container (hooks, state)
+  ├── Drawer.container.tsx         ← Pure component (props only)
+  └── Drawer.styles.ts             ← Styles export
 ```
 
-### Offline-First
-Sales can be registered without internet connectivity:
-1. Saved to IndexedDB via Dexie.js
-2. `sync.ts` queues them with `offline_id` for deduplication
-3. `POST /v1/ventas/sync-batch` uploads when connectivity is restored
+### TypeScript Rules
+- **No `any`** — use `unknown`, then narrow with type guards or `as const`
+- **Precise types** — domain models with discriminated unions
+- **Zustand selectors** — use `useShallow()` to prevent recreation
 
-## AFIP Sidecar
+---
 
-Issues CAE (electronic invoice codes) from AFIP. Called by the backend's `facturacion_service.go` via HTTP.
+## Testing
 
-Key endpoints:
-- `GET /health` — includes AFIP connectivity check
-- `POST /facturar` — issues invoice, returns `cae` + `cae_vencimiento`
+### Frontend (vitest + jsdom)
+- Environment: jsdom with globals enabled
+- Setup: `src/test/setup.ts` (polyfills for Mantine: `matchMedia`, `ResizeObserver`, `fake-indexeddb`)
+- Mock API: `vi.mock('src/api/client')`
+- **No snapshots** — test behavior not markup
 
-The sidecar requires X.509 certificates in `afip-sidecar/certs/` (gitignored). Set `AFIP_HOMOLOGACION=true` for testing against AFIP's homologation environment.
+### Backend (testcontainers-go)
+- Tag: `//go:build integration`
+- Creates real Postgres 15 + Redis 7 containers per test suite
+- Helpers in `tests/e2e/e2e_test.go`: `jsonBody()`, `do()` for HTTP requests
+- Integration tests take ~30s (container startup)
+- Transaction rollback ensures no test pollution
 
-## Environment Setup
+---
 
-Three `.env` files required (see `.env.example` files in each directory):
-- `/backend/.env` — DB, Redis, JWT, AFIP sidecar URL, SMTP
-- `/frontend/.env` — `VITE_API_BASE`, `VITE_API_URL`, `VITE_PRINTER_BAUD_RATE`
-- `/afip-sidecar/.env` — CUIT, cert paths, homologation flag
+## Code Review (GGA)
 
-Default dev credentials: `admin@blendpos.com` / `1234`
+Code review via Gentleman Guardian Angel. Rules in `AGENTS.md`.
+```bash
+gga review --pr {PR_NUMBER}   # Review PR
+gga review src/                # Review folder
+```
 
-## Database
+---
 
-PostgreSQL 15. Migrations are in `backend/migrations/` as numbered SQL files. The `entrypoint.sh` script runs `migrate ... up` on every container start (idempotent).
+## Common Gotchas
 
-Redis is used for: rate limiting, session cache, async job queue. In production, `appendfsync=always` is required to prevent losing sales on crash.
+| Issue | Fix |
+|-------|-----|
+| Float64 for money | Use `decimal.Decimal` always |
+| Forgot `tenant_id` in WHERE | RLS catches it (audit log fires), but explicit filter > implicit |
+| Zustand selector recreation | Use `useShallow()` or memoized selector |
+| Dexie query without index | Add to schema; unindexed = full-table scan |
+| RLS not enabled on table | Feature won't work; `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` |
+| Missing `offline_id` | Sync retries duplicate sales; always generate UUID client-side |
+| Migration exit code 1 | Means "already up to date", not an error |
+
+---
+
+## Where Things Live
+
+| What | Where |
+|------|-------|
+| Frontend entry | `src/pages/PosTerminal.tsx` + `src/pages/admin/` |
+| Zustand stores | `src/store/{auth,cart,caja,ui}.ts` |
+| Offline subsystem | `src/offline/` (db.ts, sync.ts, catalog.ts) |
+| Backend handlers | `internal/handler/` |
+| Services + repos | `internal/service/`, `internal/repository/` |
+| Middleware | `internal/middleware/` (tenant, plan, idor_guard, tenant_audit) |
+| Workers | `internal/worker/` (facturacion, retry_cron) |
+| Migrations | `backend/migrations/` (28 numbered SQL files) |
+| Config | Backend: `internal/config/config.go` + `.env`, Frontend: `.env` + `vite.config.ts` |
+| Code review rules | `AGENTS.md` (GGA) |
+
+---
+
+## Principles
+
+1. **Spec-driven** — propose → design → tasks → code; not code-first
+2. **Offline-first** — transaction completes locally first, syncs async
+3. **Type-safe** — TypeScript strict mode; Go panic only on bugs, never user data
+4. **Audit trail** — every tenant operation logged (tenant_id + request_id + user)
+5. **Performance** — sub-100ms local txns (IndexedDB); assume 300ms+ remote
+6. **Testing** — real DB containers, no mocks on infrastructure; behavior > snapshots
+7. **Tenant isolation is SECURITY** — every query needs `tenant_id`, not optional

@@ -20,8 +20,9 @@ import (
 type VentaService interface {
 	RegistrarVenta(ctx context.Context, usuarioID uuid.UUID, req dto.RegistrarVentaRequest) (*dto.VentaResponse, error)
 	AnularVenta(ctx context.Context, id uuid.UUID, motivo string) error
-	SyncBatch(ctx context.Context, usuarioID uuid.UUID, req dto.SyncBatchRequest) ([]dto.VentaResponse, error)
+	SyncBatch(ctx context.Context, usuarioID uuid.UUID, req dto.SyncBatchRequest) (*dto.SyncBatchResponse, error)
 	ListVentas(ctx context.Context, filter dto.VentaFilter) (*dto.VentaListResponse, error)
+	SetClienteService(cs ClienteService)
 }
 
 type ventaService struct {
@@ -33,6 +34,7 @@ type ventaService struct {
 	comprobanteRepo repository.ComprobanteRepository
 	configFiscalRepo repository.ConfiguracionFiscalRepository
 	dispatcher      *worker.Dispatcher
+	clienteSvc      ClienteService
 }
 
 func NewVentaService(
@@ -55,6 +57,13 @@ func NewVentaService(
 		configFiscalRepo: configFiscalRepo,
 		dispatcher:      dispatcher,
 	}
+}
+
+// SetClienteService injects the ClienteService after construction to avoid
+// circular dependency in the composition root (main.go). When nil, fiado
+// payment methods are rejected.
+func (s *ventaService) SetClienteService(cs ClienteService) {
+	s.clienteSvc = cs
 }
 
 // runTx executes fn inside a GORM transaction when db is available,
@@ -102,12 +111,14 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 
 	// 3. Resolve products and calculate totals (pre-flight, outside TX)
 	type resolvedItem struct {
-		productoID uuid.UUID
-		nombre     string
-		precio     decimal.Decimal
-		cantidad   int
-		descuento  decimal.Decimal
-		subtotal   decimal.Decimal
+		productoID   uuid.UUID
+		nombre       string
+		precio       decimal.Decimal
+		cantidad     int
+		descuento    decimal.Decimal
+		subtotal     decimal.Decimal
+		peso         *decimal.Decimal
+		unidadMedida string
 	}
 
 	var resolved []resolvedItem
@@ -127,7 +138,16 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 		if !p.Activo {
 			return nil, fmt.Errorf("producto %s está inactivo y no puede venderse", p.Nombre)
 		}
-		if p.StockActual < item.Cantidad {
+
+		// Weight-based validation: kg/gramo products require peso > 0
+		isWeightBased := p.UnidadMedida == "kg" || p.UnidadMedida == "gramo"
+		if isWeightBased {
+			if item.Peso == nil || !item.Peso.IsPositive() {
+				return nil, fmt.Errorf("producto %s se vende por %s: debe indicar el peso", p.Nombre, p.UnidadMedida)
+			}
+		}
+
+		if !isWeightBased && p.StockActual < item.Cantidad {
 			if !fromSync {
 				// Online sales: check if auto-desarme can supply the deficit before rejecting.
 				canDesarme := false
@@ -144,9 +164,17 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 			}
 			conflictoStock = true
 		}
-		// Descuento cap: no puede superar el 50% del valor de la línea (precio × cantidad).
+
+		// Calculate line total: weight-based uses precio * peso, unit-based uses precio * cantidad
+		var lineTotal decimal.Decimal
+		if isWeightBased && item.Peso != nil {
+			lineTotal = p.PrecioVenta.Mul(*item.Peso)
+		} else {
+			lineTotal = p.PrecioVenta.Mul(decimal.NewFromInt(int64(item.Cantidad)))
+		}
+
+		// Descuento cap: no puede superar el 50% del valor de la línea.
 		// Prevents negative subtotals and guards against client-side manipulation.
-		lineTotal := p.PrecioVenta.Mul(decimal.NewFromInt(int64(item.Cantidad)))
 		maxDescuento := lineTotal.Mul(decimal.NewFromFloat(0.50))
 		if item.Descuento.GreaterThan(maxDescuento) {
 			return nil, fmt.Errorf("descuento para %s excede el máximo permitido (50%% del precio de línea)", p.Nombre)
@@ -155,12 +183,14 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 		subtotal = subtotal.Add(lineSubtotal)
 		descuentoTotal = descuentoTotal.Add(item.Descuento)
 		resolved = append(resolved, resolvedItem{
-			productoID: pid,
-			nombre:     p.Nombre,
-			precio:     p.PrecioVenta,
-			cantidad:   item.Cantidad,
-			descuento:  item.Descuento,
-			subtotal:   lineSubtotal,
+			productoID:   pid,
+			nombre:       p.Nombre,
+			precio:       p.PrecioVenta,
+			cantidad:     item.Cantidad,
+			descuento:    item.Descuento,
+			subtotal:     lineSubtotal,
+			peso:         item.Peso,
+			unidadMedida: p.UnidadMedida,
 		})
 	}
 
@@ -175,6 +205,28 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 		return nil, errors.New("El monto total de pagos es insuficiente")
 	}
 	vuelto := totalPagos.Sub(total)
+
+	// 4b. Validate fiado payment — requires cliente_id and ClienteService
+	var clienteID *uuid.UUID
+	var montoFiado decimal.Decimal
+	for _, pago := range req.Pagos {
+		if pago.Metodo == "fiado" {
+			montoFiado = montoFiado.Add(pago.Monto)
+		}
+	}
+	if montoFiado.IsPositive() {
+		if req.ClienteID == nil || *req.ClienteID == "" {
+			return nil, errors.New("cliente_id es requerido para ventas con método de pago fiado")
+		}
+		if s.clienteSvc == nil {
+			return nil, errors.New("el sistema de fiado no está configurado")
+		}
+		cid, err := uuid.Parse(*req.ClienteID)
+		if err != nil {
+			return nil, fmt.Errorf("cliente_id inválido: %w", err)
+		}
+		clienteID = &cid
+	}
 
 	// Resolve tipo_comprobante — auto-determine from fiscal config if not specified
 	tipoComp := "ticket_interno"
@@ -237,6 +289,7 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 			NumeroTicket:    ticketNum,
 			SesionCajaID:    sesionID,
 			UsuarioID:       usuarioID,
+			ClienteID:       clienteID,
 			Subtotal:        subtotal,
 			DescuentoTotal:  descuentoTotal,
 			Total:           total,
@@ -254,6 +307,7 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 				PrecioUnitario: r.precio,
 				DescuentoItem:  r.descuento,
 				Subtotal:       r.subtotal,
+				Peso:           r.peso,
 			})
 		}
 
@@ -318,6 +372,18 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 	})
 	if txErr != nil {
 		return nil, txErr
+	}
+
+	// 5b. Post-TX: charge fiado to customer's credit account
+	if montoFiado.IsPositive() && clienteID != nil && s.clienteSvc != nil {
+		if err := s.clienteSvc.CargarFiado(ctx, *clienteID, venta.ID, montoFiado); err != nil {
+			log.Error().Err(err).
+				Str("venta_id", venta.ID.String()).
+				Str("cliente_id", clienteID.String()).
+				Msg("CRITICO: venta registrada pero fallo al cargar fiado en cuenta corriente")
+			// The sale is already committed. The fiado charge failure is logged for
+			// manual reconciliation — we don't rollback the sale.
+		}
 	}
 
 	// 6. Async facturacion job — error is handled: if Redis is down we create a
@@ -445,42 +511,91 @@ func (s *ventaService) AnularVenta(ctx context.Context, id uuid.UUID, motivo str
 // (ConflictoStock=true) for supervisor review, but never rejected.
 // Rejecting an offline sale would mean losing a financial record of a
 // transaction that already happened in the real world.
+//
+// F1-8: Multi-tenant sync-batch
+// - tenant_id is injected from JWT context, never from the request body
+// - Idempotency via batch-check of existing offline_ids, then INSERT ON CONFLICT DO NOTHING
+// - Returns structured SyncBatchResponse with synced/duplicated/failed classification
 
-func (s *ventaService) SyncBatch(ctx context.Context, usuarioID uuid.UUID, req dto.SyncBatchRequest) ([]dto.VentaResponse, error) {
-	results := make([]dto.VentaResponse, 0, len(req.Ventas))
+func (s *ventaService) SyncBatch(ctx context.Context, usuarioID uuid.UUID, req dto.SyncBatchRequest) (*dto.SyncBatchResponse, error) {
+	resp := &dto.SyncBatchResponse{
+		SyncedIDs:     make([]string, 0, len(req.Ventas)),
+		DuplicatedIDs: make([]string, 0),
+		FailedIDs:     make([]string, 0),
+	}
 
+	// Empty batch — return 200 with empty arrays
+	if len(req.Ventas) == 0 {
+		return resp, nil
+	}
+
+	// 1. Collect all offline_ids from the batch
+	offlineIDs := make([]string, 0, len(req.Ventas))
+	ventaByOfflineID := make(map[string]*dto.RegistrarVentaRequest, len(req.Ventas))
+	for i := range req.Ventas {
+		v := &req.Ventas[i]
+		oid := ""
+		if v.OfflineID != nil {
+			oid = *v.OfflineID
+		}
+		if oid != "" {
+			offlineIDs = append(offlineIDs, oid)
+			ventaByOfflineID[oid] = v
+		}
+	}
+
+	// 2. Batch-query existing offline_ids to identify duplicates upfront
+	existingIDs, err := s.repo.FindExistingOfflineIDs(ctx, offlineIDs)
+	if err != nil {
+		log.Error().Err(err).Msg("sync-batch: error checking existing offline_ids")
+		return nil, fmt.Errorf("error verificando duplicados: %w", err)
+	}
+
+	existingSet := make(map[string]bool, len(existingIDs))
+	for _, eid := range existingIDs {
+		existingSet[eid] = true
+	}
+
+	// 3. Separate duplicates from new ventas
+	for _, oid := range offlineIDs {
+		if existingSet[oid] {
+			resp.DuplicatedIDs = append(resp.DuplicatedIDs, oid)
+			resp.TotalDuplicated++
+		}
+	}
+
+	// 4. Process only new ventas — each one through registrarVentaInternal within
+	//    the same transactional context (per-venta TX for stock + caja integrity).
 	for i, ventaReq := range req.Ventas {
 		offlineID := ""
 		if ventaReq.OfflineID != nil {
 			offlineID = *ventaReq.OfflineID
 		}
 
-		resp, regErr := s.registrarVentaInternal(ctx, usuarioID, ventaReq, true)
+		// Skip already-synced ventas (duplicates)
+		if existingSet[offlineID] {
+			continue
+		}
+
+		_, regErr := s.registrarVentaInternal(ctx, usuarioID, ventaReq, true)
 		if regErr != nil {
 			log.Warn().
 				Int("index", i).
 				Str("offline_id", offlineID).
 				Err(regErr).
 				Msg("sync-batch: venta rechazada")
-			// Echo OfflineID in the error result so the frontend can correlate without
-			// relying on array-index alignment (P2-005).
-			results = append(results, dto.VentaResponse{
-				ConflictoStock: true,
-				Estado:         "error",
-				OfflineID:      ventaReq.OfflineID,
-			})
+			if offlineID != "" {
+				resp.FailedIDs = append(resp.FailedIDs, offlineID)
+			}
 			continue
 		}
-		if resp.ConflictoStock {
-			log.Info().
-				Int("index", i).
-				Str("offline_id", offlineID).
-				Int("ticket", resp.NumeroTicket).
-				Msg("sync-batch: venta aceptada con conflicto de stock")
+		resp.TotalProcessed++
+		if offlineID != "" {
+			resp.SyncedIDs = append(resp.SyncedIDs, offlineID)
 		}
-		results = append(results, *resp)
 	}
-	return results, nil
+
+	return resp, nil
 }
 
 // ListVentas returns a paginated list of sales, filtered by date and estado.
@@ -515,14 +630,20 @@ func ventaToListItem(v *model.Venta) *dto.VentaListItem {
 	items := make([]dto.ItemVentaResponse, 0, len(v.Items))
 	for _, item := range v.Items {
 		nombre := ""
+		unidadMedida := ""
 		if item.Producto != nil {
 			nombre = item.Producto.Nombre
+			if item.Producto.UnidadMedida != "unidad" {
+				unidadMedida = item.Producto.UnidadMedida
+			}
 		}
 		items = append(items, dto.ItemVentaResponse{
 			Producto:       nombre,
 			Cantidad:       item.Cantidad,
 			PrecioUnitario: item.PrecioUnitario,
 			Subtotal:       item.Subtotal,
+			Peso:           item.Peso,
+			UnidadMedida:   unidadMedida,
 		})
 	}
 	pagos := make([]dto.PagoRequest, 0, len(v.Pagos))
@@ -553,14 +674,20 @@ func ventaToResponse(v *model.Venta) *dto.VentaResponse {
 	items := make([]dto.ItemVentaResponse, 0, len(v.Items))
 	for _, item := range v.Items {
 		nombre := ""
+		unidadMedida := ""
 		if item.Producto != nil {
 			nombre = item.Producto.Nombre
+			if item.Producto.UnidadMedida != "unidad" {
+				unidadMedida = item.Producto.UnidadMedida
+			}
 		}
 		items = append(items, dto.ItemVentaResponse{
 			Producto:       nombre,
 			Cantidad:       item.Cantidad,
 			PrecioUnitario: item.PrecioUnitario,
 			Subtotal:       item.Subtotal,
+			Peso:           item.Peso,
+			UnidadMedida:   unidadMedida,
 		})
 	}
 	pagos := make([]dto.PagoRequest, 0, len(v.Pagos))

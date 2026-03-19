@@ -1,0 +1,2 @@
+ALTER TABLE venta_items DROP COLUMN IF EXISTS peso;
+ALTER TABLE productos DROP CONSTRAINT IF EXISTS chk_unidad_medida;

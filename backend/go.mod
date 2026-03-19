@@ -25,6 +25,7 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/redis v0.40.0
 	golang.org/x/crypto v0.47.0
 	gorm.io/driver/postgres v1.5.9
+	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
 )
 
@@ -90,6 +91,7 @@ require (
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/mdelapenya/tlscert v0.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect

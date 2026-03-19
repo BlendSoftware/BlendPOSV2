@@ -258,7 +258,8 @@ func (s *authService) Logout(ctx context.Context, jti string, remaining time.Dur
 // ChangePassword sets a new password and clears the must_change_password flag.
 // SEC-03: Called when a user with must_change_password=true submits their new password.
 func (s *authService) ChangePassword(ctx context.Context, userID uuid.UUID, req dto.ChangePasswordRequest) error {
-	user, err := s.repo.FindByID(ctx, userID)
+	// Unscoped: this endpoint runs without tenant middleware (auth-only route).
+	user, err := s.repo.FindByIDUnscoped(ctx, userID)
 	if err != nil {
 		return errors.New("usuario no encontrado")
 	}
@@ -268,7 +269,7 @@ func (s *authService) ChangePassword(ctx context.Context, userID uuid.UUID, req 
 	}
 	user.PasswordHash = string(hash)
 	user.MustChangePassword = false
-	return s.repo.Update(ctx, user)
+	return s.repo.UpdateUnscoped(ctx, user)
 }
 
 func (s *authService) generateToken(user *model.Usuario, duration time.Duration, tokenType string) (string, error) {

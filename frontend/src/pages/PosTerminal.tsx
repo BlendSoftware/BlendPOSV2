@@ -1,7 +1,8 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
-import { TextInput, Loader } from '@mantine/core';
+import { TextInput, Loader, ActionIcon, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { ScanLine, AlertCircle } from 'lucide-react';
+import { ScanLine, AlertCircle, Search, Percent, CreditCard, Clock } from 'lucide-react';
+import { useIsTouchDevice } from '../hooks/useIsTouchDevice';
 
 import { PosHeader } from '../components/pos/PosHeader';
 import { SalesTable } from '../components/pos/SalesTable';
@@ -16,8 +17,10 @@ import { DiscountModal } from '../components/pos/DiscountModal';
 import { SaleHistoryModal } from '../components/pos/SaleHistoryModal';
 import { PostSaleModal } from '../components/pos/PostSaleModal';
 import { AbrirCajaModal } from '../components/pos/AbrirCajaModal';
+import { WeightInputModal } from '../components/pos/WeightInputModal';
 
 import { useCartStore } from '../store/useCartStore';
+import type { UnidadMedida } from '../store/useCartStore';
 import { usePOSUIStore } from '../store/usePOSUIStore';
 import { useSaleStore } from '../store/useSaleStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -37,9 +40,20 @@ export function PosTerminal() {
     const [searchInitialQuery, setSearchInitialQuery] = useState('');
     const [historyOpen, setHistoryOpen] = useState(false);
 
+    // ── Weight input modal state ────────────────────────────────────────
+    const [weightModalOpen, setWeightModalOpen] = useState(false);
+    const [weightProduct, setWeightProduct] = useState<{
+        id: string;
+        nombre: string;
+        precio: number;
+        codigoBarras: string;
+        unidadMedida: 'kg' | 'gramo';
+    } | null>(null);
+
     const {
         cart,
         addItem,
+        addWeightItem,
         clearCart,
         moveSelectionUp,
         moveSelectionDown,
@@ -130,10 +144,32 @@ export function PosTerminal() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cartKey, promociones]);
 
-    const anyModalOpen = isPaymentModalOpen || isPriceCheckModalOpen || isDiscountModalOpen || historyOpen;
+    const { isTouch } = useIsTouchDevice();
+
+    const anyModalOpen = isPaymentModalOpen || isPriceCheckModalOpen || isDiscountModalOpen || historyOpen || weightModalOpen;
 
     // Sticky focus: auto-return to scanner after 2s inactivity
     usePosFocus(scannerRef, anyModalOpen);
+
+    // ── Helper: add product or open weight modal ─────────────────────
+    const addOrPromptWeight = useCallback(
+        (product: { id: string; nombre: string; precio: number; codigoBarras: string; unidadMedida?: string }) => {
+            const um = (product.unidadMedida ?? 'unidad') as UnidadMedida;
+            if (um === 'kg' || um === 'gramo') {
+                setWeightProduct({
+                    id: product.id,
+                    nombre: product.nombre,
+                    precio: product.precio,
+                    codigoBarras: product.codigoBarras,
+                    unidadMedida: um,
+                });
+                setWeightModalOpen(true);
+            } else {
+                addItem({ id: product.id, nombre: product.nombre, precio: product.precio, codigoBarras: product.codigoBarras, unidadMedida: um });
+            }
+        },
+        [addItem],
+    );
 
     // ── Añadir producto por código de barras o nombre ─────────────────
     const handleAddProduct = useCallback(
@@ -141,7 +177,7 @@ export function PosTerminal() {
             const trimmed = value.trim();
             if (!trimmed) return false;
 
-            // 1️⃣ Precio en tiempo real desde el backend (con datos frescos)
+            // 1. Precio en tiempo real desde el backend (con datos frescos)
             if (import.meta.env.VITE_API_BASE && navigator.onLine) {
                 try {
                     const apiProduct = await getPrecioPorBarcode(trimmed);
@@ -158,28 +194,28 @@ export function PosTerminal() {
                     }
                     const local = await findCatalogProductByBarcode(trimmed);
                     if (local) {
-                        addItem({ id: local.id, nombre: apiProduct.nombre, precio: apiProduct.precio_venta, codigoBarras: trimmed });
+                        addOrPromptWeight({ id: local.id, nombre: apiProduct.nombre, precio: apiProduct.precio_venta, codigoBarras: trimmed, unidadMedida: local.unidadMedida });
                         return true;
                     }
                 } catch {
-                    // No encontrado por barcode exacto → continuar
+                    // No encontrado por barcode exacto - continuar
                 }
             }
 
-            // 2️⃣ Catálogo local (IndexedDB sincronizado desde backend) — por barcode
+            // 2. Catalogo local (IndexedDB sincronizado desde backend) - por barcode
             // findCatalogProductByBarcode ya filtra stock > 0
             const product = await findCatalogProductByBarcode(trimmed);
             if (product) {
-                addItem({ id: product.id, nombre: product.nombre, precio: product.precio, codigoBarras: product.codigoBarras });
+                addOrPromptWeight({ id: product.id, nombre: product.nombre, precio: product.precio, codigoBarras: product.codigoBarras, unidadMedida: product.unidadMedida });
                 return true;
             }
 
-            // 3️⃣ Catálogo local — búsqueda por nombre parcial
+            // 3. Catalogo local - busqueda por nombre parcial
             // searchCatalogProducts ya filtra stock > 0
             const results = await searchCatalogProducts(trimmed, 1);
             const match = results[0];
             if (match) {
-                addItem({ id: match.id, nombre: match.nombre, precio: match.precio, codigoBarras: match.codigoBarras });
+                addOrPromptWeight({ id: match.id, nombre: match.nombre, precio: match.precio, codigoBarras: match.codigoBarras, unidadMedida: match.unidadMedida });
                 return true;
             }
 
@@ -193,7 +229,7 @@ export function PosTerminal() {
             });
             return false;
         },
-        [addItem]
+        [addOrPromptWeight]
     );
 
     // ── Scanner input handler ─────────────────────────────────────────
@@ -414,9 +450,88 @@ export function PosTerminal() {
                 onSuccess={() => setCajaModalOpen(false)}
             />
 
+            {/* ── Modal peso (báscula) ─────────────────────────────── */}
+            <WeightInputModal
+                opened={weightModalOpen}
+                onClose={() => { setWeightModalOpen(false); setWeightProduct(null); }}
+                onConfirm={(peso) => {
+                    if (weightProduct) {
+                        addWeightItem({
+                            id: weightProduct.id,
+                            nombre: weightProduct.nombre,
+                            precio: weightProduct.precio,
+                            codigoBarras: weightProduct.codigoBarras,
+                            unidadMedida: weightProduct.unidadMedida,
+                            peso,
+                        });
+                    }
+                    setWeightModalOpen(false);
+                    setWeightProduct(null);
+                }}
+                productName={weightProduct?.nombre ?? ''}
+                precioUnitario={weightProduct?.precio ?? 0}
+                unidadMedida={weightProduct?.unidadMedida ?? 'kg'}
+            />
+
             {/* ── Búsqueda flotante (F2) ──────────────────────────── */}
             {searchVisible && (
-                <ProductSearch onClose={closeSearch} inputRef={searchRef} initialQuery={searchInitialQuery} />
+                <ProductSearch onClose={closeSearch} inputRef={searchRef} initialQuery={searchInitialQuery} onAddProduct={addOrPromptWeight} />
+            )}
+
+            {/* ── Touch action bar (replaces F-key shortcuts on touch devices) ── */}
+            {isTouch && (
+                <div className={styles.touchActionBar}>
+                    <Tooltip label="Buscar producto">
+                        <ActionIcon
+                            size="xl"
+                            variant="light"
+                            color="blue"
+                            className={styles.touchActionBtn}
+                            onClick={() => openSearch()}
+                            aria-label="Buscar"
+                        >
+                            <Search size={22} />
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Descuento">
+                        <ActionIcon
+                            size="xl"
+                            variant="light"
+                            color="orange"
+                            className={styles.touchActionBtn}
+                            onClick={openDiscountModal}
+                            disabled={cart.length === 0}
+                            aria-label="Descuento"
+                        >
+                            <Percent size={22} />
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Cobrar">
+                        <ActionIcon
+                            size="xl"
+                            variant="filled"
+                            color="green"
+                            className={styles.touchActionBtn}
+                            onClick={openPaymentModal}
+                            disabled={cart.length === 0}
+                            aria-label="Cobrar"
+                        >
+                            <CreditCard size={22} />
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Historial">
+                        <ActionIcon
+                            size="xl"
+                            variant="light"
+                            color="gray"
+                            className={styles.touchActionBtn}
+                            onClick={() => setHistoryOpen(true)}
+                            aria-label="Historial"
+                        >
+                            <Clock size={22} />
+                        </ActionIcon>
+                    </Tooltip>
+                </div>
             )}
         </div>
     );

@@ -48,6 +48,13 @@ func TenantMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Inject a request-scoped *gorm.DB that already has the tenant_id WHERE
+		// clause baked in. This is a THIRD safety layer (on top of RLS + repo
+		// scopedDB) so that ad-hoc queries or new repos get automatic isolation.
+		scopedDB := db.WithContext(ctx).Where("tenant_id = ?", tenantID)
+		ctx = context.WithValue(ctx, tenantctx.ScopedDBKey, scopedDB)
+		c.Request = c.Request.WithContext(ctx)
+
 		c.Next()
 	}
 }

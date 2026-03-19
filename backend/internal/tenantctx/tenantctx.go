@@ -1,7 +1,7 @@
 // Package tenantctx provides a zero-dependency context key and helper for
 // propagating the tenant UUID through the request context.
 //
-// It is intentionally a leaf package (imports only stdlib + uuid) so that
+// It is intentionally a leaf package (imports only stdlib + uuid + gorm) so that
 // both middleware and repository can import it without creating an import cycle.
 package tenantctx
 
@@ -10,6 +10,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type contextKey string
@@ -19,6 +20,10 @@ type contextKey string
 // without either package importing the other.
 const Key contextKey = "tenant_id"
 
+// ScopedDBKey is the context key under which the request-scoped *gorm.DB
+// (already filtered by tenant_id) is stored. Set by TenantMiddleware.
+const ScopedDBKey contextKey = "scoped_db"
+
 // FromContext retrieves the tenant UUID injected by TenantMiddleware.
 // Returns an error if the context was not enriched (e.g. unauthenticated path).
 func FromContext(ctx context.Context) (uuid.UUID, error) {
@@ -27,4 +32,26 @@ func FromContext(ctx context.Context) (uuid.UUID, error) {
 		return uuid.Nil, errors.New("tenant_id not found in context — is TenantMiddleware active?")
 	}
 	return tid, nil
+}
+
+// ScopedDBFromContext retrieves the request-scoped *gorm.DB that already has
+// a WHERE tenant_id = ? clause applied. Returns an error if TenantMiddleware
+// did not inject it (e.g. the request bypassed the middleware chain).
+func ScopedDBFromContext(ctx context.Context) (*gorm.DB, error) {
+	db, ok := ctx.Value(ScopedDBKey).(*gorm.DB)
+	if !ok || db == nil {
+		return nil, errors.New("scoped DB not in context — is TenantMiddleware active?")
+	}
+	return db, nil
+}
+
+// MustScopedDB is like ScopedDBFromContext but panics if the scoped DB is not
+// present. Intended for use in tests and code paths where absence of tenant
+// context is a programming error, not a runtime condition.
+func MustScopedDB(ctx context.Context) *gorm.DB {
+	db, err := ScopedDBFromContext(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return db
 }

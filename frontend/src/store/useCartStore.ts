@@ -6,12 +6,14 @@ import { getLocalStock, deductLocalStock } from '../offline/catalog';
 // Exported here so other stores and services can import them without creating
 // a circular dependency through useSaleStore.
 
-export type MetodoPago = 'efectivo' | 'debito' | 'credito' | 'qr' | 'transferencia' | 'mixto';
+export type MetodoPago = 'efectivo' | 'debito' | 'credito' | 'qr' | 'transferencia' | 'mixto' | 'fiado';
 
 export interface PagoDetalle {
     metodo: Exclude<MetodoPago, 'mixto'>;
     monto: number;
 }
+
+export type UnidadMedida = 'unidad' | 'kg' | 'gramo';
 
 export interface CartItem {
     id: string;
@@ -23,6 +25,10 @@ export interface CartItem {
     descuento: number;        // porcentaje 0-100 — descuento MANUAL via DiscountModal
     promoDescuento?: number;  // porcentaje 0-100 — descuento aplicado por promoción automática
     promoNombre?: string;     // nombre de la promoción que aplica el descuento automático
+    /** Unit of measure — 'unidad' (default), 'kg', or 'gramo'. */
+    unidadMedida?: UnidadMedida;
+    /** Weight in product's unit. Only set for kg/gramo products. */
+    peso?: number;
 }
 
 // ── State interface ───────────────────────────────────────────────────────────
@@ -36,7 +42,9 @@ interface CartState {
     selectedRowIndex: number;
 
     // Cart actions
-    addItem: (item: Pick<CartItem, 'id' | 'nombre' | 'precio' | 'codigoBarras'>) => void;
+    addItem: (item: Pick<CartItem, 'id' | 'nombre' | 'precio' | 'codigoBarras'> & { unidadMedida?: UnidadMedida }) => void;
+    /** Add a weight-based product with a specific peso. Creates a new line each time. */
+    addWeightItem: (item: Pick<CartItem, 'id' | 'nombre' | 'precio' | 'codigoBarras'> & { unidadMedida: UnidadMedida; peso: number }) => void;
     removeItem: (id: string) => void;
     updateQuantity: (id: string, cantidad: number) => void;
     setItemDiscount: (id: string, descuento: number) => void;
@@ -133,6 +141,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
                 subtotal: item.precio,
                 descuento: 0,
                 promoDescuento: 0,
+                unidadMedida: item.unidadMedida,
             };
             updatedCart = [...cart, newItem];
         }
@@ -157,6 +166,41 @@ export const useCartStore = create<CartState>()((set, get) => ({
 
         setTimeout(() => {
             if (get().lastAdded?.id === item.id) {
+                set({ lastAdded: null });
+            }
+        }, 1500);
+    },
+
+    addWeightItem: (item) => {
+        const { cart } = get();
+        // Each weight entry is a unique line — use a UUID-suffixed key
+        const lineId = `${item.id}__w_${crypto.randomUUID().slice(0, 8)}`;
+        const subtotal = item.precio * item.peso;
+        const newItem: CartItem = {
+            id: lineId,
+            nombre: item.nombre,
+            precio: item.precio,
+            codigoBarras: item.codigoBarras,
+            cantidad: 1,
+            subtotal,
+            descuento: 0,
+            promoDescuento: 0,
+            unidadMedida: item.unidadMedida,
+            peso: item.peso,
+        };
+        const updatedCart = [...cart, newItem];
+        const total = computeTotal(updatedCart);
+
+        set({
+            cart: updatedCart,
+            total,
+            totalConDescuento: computeTotalConDescuento(total, get().descuentoGlobal),
+            lastAdded: newItem,
+            selectedRowIndex: updatedCart.length - 1,
+        });
+
+        setTimeout(() => {
+            if (get().lastAdded?.id === lineId) {
                 set({ lastAdded: null });
             }
         }, 1500);
@@ -215,7 +259,8 @@ export const useCartStore = create<CartState>()((set, get) => ({
         const updatedCart = get().cart.map((c) => {
             if (c.id !== id) return c;
             const effectivo = Math.max(descuento, c.promoDescuento ?? 0);
-            return { ...c, descuento, subtotal: c.cantidad * c.precio * (1 - effectivo / 100) };
+            const base = c.peso != null ? c.precio * c.peso : c.cantidad * c.precio;
+            return { ...c, descuento, subtotal: base * (1 - effectivo / 100) };
         });
         const total = computeTotal(updatedCart);
         set({
@@ -234,12 +279,13 @@ export const useCartStore = create<CartState>()((set, get) => ({
             if (c.promoDescuento === newPromo && c.promoNombre === newNombre) return c;
             changed = true;
             const effectivo = Math.max(c.descuento, newPromo);
+            const base = c.peso != null ? c.precio * c.peso : c.cantidad * c.precio;
             return {
                 ...c,
                 promoDescuento: newPromo,
                 promoNombre: newNombre,
                 // NOTE: descuento (manual) is intentionally NOT touched here
-                subtotal: c.cantidad * c.precio * (1 - effectivo / 100),
+                subtotal: base * (1 - effectivo / 100),
             };
         });
         if (!changed) return; // avoid unnecessary re-render

@@ -108,14 +108,16 @@ func (h *VentasHandler) ListarVentas(c *gin.Context) {
 }
 
 // SyncBatch godoc
-// @Summary      Sincronizar ventas offline
-// @Description  Procesa un lote de ventas creadas offline. Idempotente por offline_id. Aplica auto-compensación de stock (déficit ≤ 3 unidades).
+// @Summary      Sincronizar ventas offline (multi-tenant)
+// @Description  Procesa un lote de ventas creadas offline. Idempotente por (tenant_id, offline_id).
+//               tenant_id se inyecta desde JWT — cualquier tenant_id en el body es ignorado.
+//               Aplica auto-compensación de stock (offline-first: nunca rechaza).
 // @Tags         ventas
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Param        body body dto.SyncBatchRequest true "Lote de ventas"
-// @Success      200  {array}  dto.VentaResponse
+// @Success      200  {object} dto.SyncBatchResponse
 // @Failure      400  {object} apierror.APIError
 // @Router       /v1/ventas/sync-batch [post]
 func (h *VentasHandler) SyncBatch(c *gin.Context) {
@@ -135,5 +137,14 @@ func (h *VentasHandler) SyncBatch(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
 		return
 	}
+
+	// Audit log: batch sync summary
+	middleware.AuditLog(c, "sync-batch", "venta", nil, map[string]interface{}{
+		"synced":     len(resp.SyncedIDs),
+		"duplicated": len(resp.DuplicatedIDs),
+		"failed":     len(resp.FailedIDs),
+		"device_id":  req.DeviceID,
+	})
+
 	c.JSON(http.StatusOK, resp)
 }

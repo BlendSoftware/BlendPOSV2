@@ -31,9 +31,10 @@ type Producto struct {
 	UnidadMedida string          `gorm:"not null;default:'unidad'"`
 	EsPadre      bool            `gorm:"not null;default:false"`
 	ProveedorID  *uuid.UUID      `gorm:"type:uuid;index"`
-	Activo       bool            `gorm:"not null;default:true"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	Activo              bool            `gorm:"not null;default:true"`
+	ControlaVencimiento bool            `gorm:"not null;default:false"`
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 
 	CategoriaFK *Categoria `gorm:"foreignKey:CategoriaID"`
 	Proveedor   *Proveedor `gorm:"foreignKey:ProveedorID"`

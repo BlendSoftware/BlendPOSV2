@@ -94,3 +94,38 @@
 .rowSelected .deleteBtn {
     opacity: 1;
 }
+
+/* ── Tablet: horizontal scroll for wide table ─────────────────────── */
+@media (max-width: 1024px) {
+    .tableWrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        min-width: 600px;
+    }
+}
+
+/* ── Touch: always show delete button (no hover on touch) ─────────── */
+@media (pointer: coarse) {
+    .deleteBtn {
+        opacity: 1;
+    }
+
+    .quantityBadge {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .quantityControl {
+        gap: 8px;
+    }
+
+    .row {
+        height: 60px;
+    }
+}

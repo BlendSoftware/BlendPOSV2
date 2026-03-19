@@ -117,6 +117,7 @@ func (c *Config) validate() error {
 		knownDefaults := []string{
 			"super_secret_key_change_me_in_production_min_32_chars",
 			"dev_secret_change_in_production!_32chars",
+			"dev_secret_change_in_production",
 		}
 		for _, d := range knownDefaults {
 			if c.JWTSecret == d {

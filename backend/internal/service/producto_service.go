@@ -106,9 +106,10 @@ func toProductoResponse(p *model.Producto) *dto.ProductoResponse {
 		StockActual:  p.StockActual,
 		StockMinimo:  p.StockMinimo,
 		UnidadMedida: p.UnidadMedida,
-		EsPadre:      p.EsPadre,
-		Activo:       p.Activo,
-		ProveedorID:  provStr,
+		EsPadre:             p.EsPadre,
+		Activo:              p.Activo,
+		ControlaVencimiento: p.ControlaVencimiento,
+		ProveedorID:         provStr,
 	}
 }
 
@@ -237,6 +238,9 @@ func (s *productoService) Actualizar(ctx context.Context, id uuid.UUID, req dto.
 			return nil, fmt.Errorf("proveedor_id inválido: %w", err)
 		}
 		p.ProveedorID = &pid
+	}
+	if req.ControlaVencimiento != nil {
+		p.ControlaVencimiento = *req.ControlaVencimiento
 	}
 
 	if err := s.repo.Update(ctx, p); err != nil {

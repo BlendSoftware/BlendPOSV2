@@ -15,9 +15,12 @@ type UsuarioRepository interface {
 	// FindByUsername is intentionally non-scoped — called at login before a tenant JWT exists.
 	FindByUsername(ctx context.Context, username string) (*model.Usuario, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Usuario, error)
+	// FindByIDUnscoped is non-scoped — for auth operations (change-password, refresh) where tenant middleware may not be present.
+	FindByIDUnscoped(ctx context.Context, id uuid.UUID) (*model.Usuario, error)
 	List(ctx context.Context) ([]model.Usuario, error)
 	ListAll(ctx context.Context) ([]model.Usuario, error)
 	Update(ctx context.Context, u *model.Usuario) error
+	UpdateUnscoped(ctx context.Context, u *model.Usuario) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	Reactivar(ctx context.Context, id uuid.UUID) error
 }
@@ -42,6 +45,12 @@ func (r *usuarioRepo) FindByUsername(ctx context.Context, username string) (*mod
 	err := r.db.WithContext(ctx).
 		Where("(username = ? OR LOWER(email::text) = LOWER(?)) AND activo = true", username, username).
 		First(&u).Error
+	return &u, err
+}
+
+func (r *usuarioRepo) FindByIDUnscoped(ctx context.Context, id uuid.UUID) (*model.Usuario, error) {
+	var u model.Usuario
+	err := r.db.WithContext(ctx).First(&u, id).Error
 	return &u, err
 }
 
@@ -81,6 +90,10 @@ func (r *usuarioRepo) Update(ctx context.Context, u *model.Usuario) error {
 		return err
 	}
 	return db.Save(u).Error
+}
+
+func (r *usuarioRepo) UpdateUnscoped(ctx context.Context, u *model.Usuario) error {
+	return r.db.WithContext(ctx).Save(u).Error
 }
 
 func (r *usuarioRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {

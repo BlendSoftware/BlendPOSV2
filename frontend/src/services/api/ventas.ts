@@ -80,7 +80,7 @@ export interface ItemVentaRequest {
 }
 
 export interface PagoRequest {
-    metodo: 'efectivo' | 'debito' | 'credito' | 'transferencia' | 'qr';
+    metodo: 'efectivo' | 'debito' | 'credito' | 'transferencia' | 'qr' | 'fiado';
     monto: number;
 }
 
@@ -91,6 +91,8 @@ export interface RegistrarVentaRequest {
     offline_id?: string;
     /** Optional — when provided the backend emails the PDF receipt to this address. */
     cliente_email?: string;
+    /** Cliente ID for fiado (credit) sales. Required when pagos contains metodo='fiado'. */
+    cliente_id?: string;
     /** Fiscal receipt type. Defaults to 'ticket_interno' when omitted. */
     tipo_comprobante?: 'ticket_interno' | 'factura_a' | 'factura_b' | 'factura_c';
     /** 96=DNI, 80=CUIT, 99=ConsumidorFinal */

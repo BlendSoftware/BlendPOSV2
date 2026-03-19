@@ -47,3 +47,6 @@ docker-compose.override.yml
 test_output.txt
 test_err.txt
 tests.exe
+backend/server
+backend/main
+backend/tmp/

@@ -18,14 +18,15 @@ type CrearProductoRequest struct {
 }
 
 type ActualizarProductoRequest struct {
-	Nombre       *string          `json:"nombre"        validate:"omitempty,min=2,max=120"`
-	Descripcion  *string          `json:"descripcion"`
-	Categoria    *string          `json:"categoria"`
-	PrecioCosto  *decimal.Decimal `json:"precio_costo"`
-	PrecioVenta  *decimal.Decimal `json:"precio_venta"`
-	StockMinimo  *int             `json:"stock_minimo"  validate:"omitempty,min=0"`
-	UnidadMedida *string          `json:"unidad_medida"`
-	ProveedorID  *string          `json:"proveedor_id"  validate:"omitempty,uuid"`
+	Nombre              *string          `json:"nombre"                validate:"omitempty,min=2,max=120"`
+	Descripcion         *string          `json:"descripcion"`
+	Categoria           *string          `json:"categoria"`
+	PrecioCosto         *decimal.Decimal `json:"precio_costo"`
+	PrecioVenta         *decimal.Decimal `json:"precio_venta"`
+	StockMinimo         *int             `json:"stock_minimo"          validate:"omitempty,min=0"`
+	UnidadMedida        *string          `json:"unidad_medida"`
+	ProveedorID         *string          `json:"proveedor_id"          validate:"omitempty,uuid"`
+	ControlaVencimiento *bool            `json:"controla_vencimiento"`
 }
 
 // ─── Filter / Pagination ─────────────────────────────────────────────────────
@@ -58,9 +59,10 @@ type ProductoResponse struct {
 	StockActual  int             `json:"stock_actual"`
 	StockMinimo  int             `json:"stock_minimo"`
 	UnidadMedida string          `json:"unidad_medida"`
-	EsPadre      bool            `json:"es_padre"`
-	Activo       bool            `json:"activo"`
-	ProveedorID  *string         `json:"proveedor_id"`
+	EsPadre             bool            `json:"es_padre"`
+	Activo              bool            `json:"activo"`
+	ControlaVencimiento bool            `json:"controla_vencimiento"`
+	ProveedorID         *string         `json:"proveedor_id"`
 }
 
 type ProductoListResponse struct {
@@ -84,4 +86,27 @@ type ConsultaPreciosResponse struct {
 type AjustarStockRequest struct {
 	Delta  int    `json:"delta"  validate:"required,ne=0"`
 	Motivo string `json:"motivo" validate:"required,min=3"`
+}
+
+// ─── Bulk Import DTOs ───────────────────────────────────────────────────────
+
+// BulkCrearProductosRequest wraps an array of products for POST /v1/productos/bulk.
+type BulkCrearProductosRequest struct {
+	Productos []CrearProductoRequest `json:"productos" validate:"required,min=1,max=500,dive"`
+}
+
+// BulkImportResult represents the outcome of a single product in a bulk import.
+type BulkImportResult struct {
+	Index   int    `json:"index"`
+	Success bool   `json:"success"`
+	ID      string `json:"id,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
+
+// BulkImportResponse is the response for POST /v1/productos/bulk.
+type BulkImportResponse struct {
+	Total   int                `json:"total"`
+	Created int                `json:"created"`
+	Failed  int                `json:"failed"`
+	Results []BulkImportResult `json:"results"`
 }

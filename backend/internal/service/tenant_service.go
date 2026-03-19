@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"regexp"
+	"strings"
 	"time"
 
 	"blendpos/internal/config"
@@ -14,7 +17,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // starterPlanID is the fixed UUID of the Starter plan seeded in migration 000027.
@@ -31,8 +36,11 @@ type TenantService interface {
 	// ActualizarActual updates mutable fields of the caller's tenant.
 	ActualizarActual(ctx context.Context, req dto.ActualizarTenantRequest) (*dto.TenantResponse, error)
 
-	// ListarTodos returns all tenants (superadmin use only).
-	ListarTodos(ctx context.Context) ([]dto.SuperadminTenantListItem, error)
+	// ListarTodos returns paginated tenants with metrics (superadmin use only).
+	ListarTodos(ctx context.Context, req dto.TenantListRequest) (*dto.TenantListResponse, error)
+
+	// ObtenerTenantDetalle returns a single tenant with metrics (superadmin use only).
+	ObtenerTenantDetalle(ctx context.Context, tenantID uuid.UUID) (*dto.SuperadminTenantListItem, error)
 
 	// CambiarPlan assigns a new plan to a tenant (superadmin use only).
 	CambiarPlan(ctx context.Context, tenantID uuid.UUID, planID uuid.UUID) (*dto.TenantResponse, error)
@@ -66,33 +74,67 @@ func NewTenantService(
 	return &tenantService{repo: repo, usuRepo: usuRepo, cfg: cfg, rdb: rdb}
 }
 
+// slugRegex strips everything that is not lowercase alphanumeric or hyphen.
+var slugRegex = regexp.MustCompile(`[^a-z0-9-]+`)
+
+// GenerateSlug creates a URL-safe slug from a business name.
+// Exported so tests can validate the algorithm independently.
+func GenerateSlug(nombre string) string {
+	s := strings.ToLower(strings.TrimSpace(nombre))
+	s = strings.ReplaceAll(s, " ", "-")
+	s = slugRegex.ReplaceAllString(s, "")
+	// Collapse multiple hyphens
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+	s = strings.Trim(s, "-")
+	if len(s) > 63 {
+		s = s[:63]
+	}
+	return s
+}
+
 // ── Registration ──────────────────────────────────────────────────────────────
 
 func (s *tenantService) Registrar(ctx context.Context, req dto.RegisterTenantRequest) (*dto.RegisterTenantResponse, error) {
+	// Auto-generate slug from nombre_negocio if not provided
+	slug := req.Slug
+	if slug == "" {
+		slug = GenerateSlug(req.NombreNegocio)
+	}
+	if slug == "" {
+		return nil, errors.New("no se pudo generar un slug válido a partir del nombre del negocio")
+	}
+
 	// Check slug uniqueness
-	if existing, err := s.repo.FindTenantBySlug(ctx, req.Slug); err == nil && existing.ID != uuid.Nil {
+	if existing, err := s.repo.FindTenantBySlug(ctx, slug); err == nil && existing.ID != uuid.Nil {
 		return nil, errors.New("el slug ya está en uso")
 	}
 
-	planID := uuid.MustParse(starterPlanID)
-	tenant := &model.Tenant{
-		Slug:   req.Slug,
-		Nombre: req.NombreNegocio,
-		PlanID: &planID,
-		Activo: true,
-	}
-	if err := s.repo.CreateTenant(ctx, tenant); err != nil {
-		return nil, err
-	}
-
-	// Create admin user inside the new tenant context.
-	// We inject the new tenant_id into ctx so Create() stamps it correctly.
-	tenantCtx := context.WithValue(ctx, tenantctx.Key, tenant.ID)
-
+	// Hash password before entering the transaction
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
 	if err != nil {
 		return nil, err
 	}
+
+	planID := uuid.MustParse(starterPlanID)
+
+	tipoNegocio := req.TipoNegocio
+	if tipoNegocio == "" {
+		tipoNegocio = "kiosco"
+	}
+
+	tenant := &model.Tenant{
+		Slug:        slug,
+		Nombre:      req.NombreNegocio,
+		PlanID:      &planID,
+		TipoNegocio: tipoNegocio,
+		Activo:      true,
+	}
+	if req.CUIT != "" {
+		tenant.CUIT = &req.CUIT
+	}
+
 	admin := &model.Usuario{
 		Username:           req.Username,
 		Nombre:             req.Nombre,
@@ -104,8 +146,35 @@ func (s *tenantService) Registrar(ctx context.Context, req dto.RegisterTenantReq
 	if req.Email != "" {
 		admin.Email = &req.Email
 	}
-	if err := s.usuRepo.Create(tenantCtx, admin); err != nil {
-		return nil, err
+
+	// Use a GORM transaction when a real DB is available (production path).
+	// When DB() is nil (unit tests with stubs), fall back to sequential repo calls.
+	if db := s.repo.DB(); db != nil {
+		txErr := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(tenant).Error; err != nil {
+				log.Error().Err(err).Str("slug", slug).Msg("failed to create tenant")
+				return err
+			}
+			admin.TenantID = tenant.ID
+			if err := tx.Create(admin).Error; err != nil {
+				log.Error().Err(err).Str("slug", slug).Str("username", req.Username).Msg("failed to create admin user")
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			return nil, txErr
+		}
+	} else {
+		// Stub/test path — no real DB, use repo interface methods
+		if err := s.repo.CreateTenant(ctx, tenant); err != nil {
+			return nil, err
+		}
+		tenantCtx := context.WithValue(ctx, tenantctx.Key, tenant.ID)
+		admin.TenantID = tenant.ID
+		if err := s.usuRepo.Create(tenantCtx, admin); err != nil {
+			return nil, err
+		}
 	}
 
 	// Reload with Plan association
@@ -120,8 +189,28 @@ func (s *tenantService) Registrar(ctx context.Context, req dto.RegisterTenantReq
 		return nil, err
 	}
 
+	log.Info().
+		Str("tenant_id", tenant.ID.String()).
+		Str("slug", slug).
+		Str("admin_user", admin.Username).
+		Msg("tenant registered successfully")
+
+	// Seed preset categories and sample products in background.
+	// Best-effort: registration succeeds regardless of seeding outcome.
+	if db := s.repo.DB(); db != nil {
+		go SeedPresets(db, tenant.ID, tipoNegocio)
+	}
+
 	return &dto.RegisterTenantResponse{
 		Tenant:       toTenantResponse(tenant),
+		User: dto.UsuarioResponse{
+			ID:       admin.ID.String(),
+			Username: admin.Username,
+			Nombre:   admin.Nombre,
+			Email:    admin.Email,
+			Rol:      admin.Rol,
+			Activo:   admin.Activo,
+		},
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    "bearer",
@@ -194,32 +283,48 @@ func (s *tenantService) ListarPlanes(ctx context.Context) ([]dto.PlanResponse, e
 
 // ── Superadmin operations ─────────────────────────────────────────────────────
 
-func (s *tenantService) ListarTodos(ctx context.Context) ([]dto.SuperadminTenantListItem, error) {
-	tenants, err := s.repo.ListTenants(ctx)
+func (s *tenantService) ListarTodos(ctx context.Context, req dto.TenantListRequest) (*dto.TenantListResponse, error) {
+	req.Defaults()
+
+	filter := repository.TenantListFilter{
+		Page:     req.Page,
+		PageSize: req.PageSize,
+		Search:   req.Search,
+		Status:   req.Status,
+		PlanID:   req.PlanID,
+	}
+
+	tenants, total, err := s.repo.ListAllPaginated(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
+
 	items := make([]dto.SuperadminTenantListItem, len(tenants))
-	for i, t := range tenants {
-		tc := t
-		ventas, _ := s.repo.CountVentasByTenant(ctx, tc.ID)
-		usuarios, _ := s.repo.CountUsuariosByTenant(ctx, tc.ID)
-		items[i] = dto.SuperadminTenantListItem{
-			ID:            tc.ID.String(),
-			Slug:          tc.Slug,
-			Nombre:        tc.Nombre,
-			CUIT:          tc.CUIT,
-			Activo:        tc.Activo,
-			TotalVentas:   ventas,
-			TotalUsuarios: usuarios,
-			CreatedAt:     tc.CreatedAt.Format(time.RFC3339),
-		}
-		if tc.Plan != nil {
-			pr := toPlanResponse(tc.Plan)
-			items[i].Plan = &pr
-		}
+	for i, tw := range tenants {
+		items[i] = toSuperadminTenantItem(&tw)
 	}
-	return items, nil
+
+	totalPages := int(total) / req.PageSize
+	if int(total)%req.PageSize > 0 {
+		totalPages++
+	}
+
+	return &dto.TenantListResponse{
+		Tenants:    items,
+		Total:      total,
+		Page:       req.Page,
+		PageSize:   req.PageSize,
+		TotalPages: totalPages,
+	}, nil
+}
+
+func (s *tenantService) ObtenerTenantDetalle(ctx context.Context, tenantID uuid.UUID) (*dto.SuperadminTenantListItem, error) {
+	tw, err := s.repo.FindTenantWithMetrics(ctx, tenantID)
+	if err != nil {
+		return nil, errors.New("tenant no encontrado")
+	}
+	item := toSuperadminTenantItem(tw)
+	return &item, nil
 }
 
 func (s *tenantService) CambiarPlan(ctx context.Context, tenantID uuid.UUID, planID uuid.UUID) (*dto.TenantResponse, error) {
@@ -255,19 +360,22 @@ func (s *tenantService) ToggleActivo(ctx context.Context, tenantID uuid.UUID, ac
 }
 
 func (s *tenantService) ObtenerMetricas(ctx context.Context) (*dto.SuperadminMetricsResponse, error) {
-	tenants, err := s.repo.ListTenants(ctx)
+	m, err := s.repo.GetGlobalMetrics(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var activos int64
-	for _, t := range tenants {
-		if t.Activo {
-			activos++
-		}
+
+	planCounts := make([]dto.PlanCountDTO, len(m.TenantsPorPlan))
+	for i, pc := range m.TenantsPorPlan {
+		planCounts[i] = dto.PlanCountDTO{PlanNombre: pc.PlanNombre, Count: pc.Count}
 	}
+
 	return &dto.SuperadminMetricsResponse{
-		TotalTenants:  int64(len(tenants)),
-		TenantActivos: activos,
+		TotalTenants:    m.TotalTenants,
+		TenantActivos:   m.TenantActivos,
+		TotalVentas:     m.TotalVentas,
+		VentasUltimoMes: m.VentasUltimoMes,
+		TenantsPorPlan:  planCounts,
 	}, nil
 }
 
@@ -307,12 +415,13 @@ func (s *tenantService) generateToken(u *model.Usuario, dur time.Duration, token
 
 func toTenantResponse(t *model.Tenant) dto.TenantResponse {
 	resp := dto.TenantResponse{
-		ID:        t.ID.String(),
-		Slug:      t.Slug,
-		Nombre:    t.Nombre,
-		CUIT:      t.CUIT,
-		Activo:    t.Activo,
-		CreatedAt: t.CreatedAt.Format(time.RFC3339),
+		ID:          t.ID.String(),
+		Slug:        t.Slug,
+		Nombre:      t.Nombre,
+		CUIT:        t.CUIT,
+		TipoNegocio: t.TipoNegocio,
+		Activo:      t.Activo,
+		CreatedAt:   t.CreatedAt.Format(time.RFC3339),
 	}
 	if t.Plan != nil {
 		pr := toPlanResponse(t.Plan)
@@ -322,11 +431,38 @@ func toTenantResponse(t *model.Tenant) dto.TenantResponse {
 }
 
 func toPlanResponse(p *model.Plan) dto.PlanResponse {
+	features := make(map[string]bool)
+	if len(p.Features) > 0 && string(p.Features) != "null" {
+		_ = json.Unmarshal(p.Features, &features)
+	}
 	return dto.PlanResponse{
 		ID:            p.ID.String(),
 		Nombre:        p.Nombre,
 		MaxTerminales: p.MaxTerminales,
 		MaxProductos:  p.MaxProductos,
 		PrecioMensual: p.PrecioMensual,
+		Features:      features,
 	}
+}
+
+func toSuperadminTenantItem(tw *repository.TenantWithMetrics) dto.SuperadminTenantListItem {
+	item := dto.SuperadminTenantListItem{
+		ID:             tw.ID.String(),
+		Slug:           tw.Slug,
+		Nombre:         tw.Nombre,
+		CUIT:           tw.CUIT,
+		Activo:         tw.Activo,
+		TotalVentas:    tw.TotalVentas,
+		TotalProductos: tw.TotalProductos,
+		TotalUsuarios:  tw.TotalUsuarios,
+		CreatedAt:      tw.CreatedAt.Format(time.RFC3339),
+	}
+	if tw.Plan != nil {
+		pr := toPlanResponse(tw.Plan)
+		item.Plan = &pr
+	}
+	if tw.UltimaVenta != nil {
+		item.UltimaVenta = tw.UltimaVenta.Format(time.RFC3339)
+	}
+	return item
 }

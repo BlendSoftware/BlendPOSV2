@@ -146,6 +146,9 @@ func (r *stubVentaRepoFacturacion) List(_ context.Context, _ dto.VentaFilter) ([
 	return nil, 0, nil
 }
 func (r *stubVentaRepoFacturacion) DB() *gorm.DB { return nil }
+func (r *stubVentaRepoFacturacion) FindExistingOfflineIDs(_ context.Context, offlineIDs []string) ([]string, error) {
+	return nil, nil
+}
 
 // compile-time interface check
 var _ repository.VentaRepository = (*stubVentaRepoFacturacion)(nil)

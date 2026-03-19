@@ -90,9 +90,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 		tcPostgres.WithDatabase("blendpos_test"),
 		tcPostgres.WithUsername("blendpos"),
 		tcPostgres.WithPassword("blendpos"),
-		testcontainers.WithWaitStrategy(
-			tcPostgres.BasicWaitStrategies()...,
-		),
+		tcPostgres.BasicWaitStrategies(),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = pgC.Terminate(ctx) })
@@ -135,10 +133,10 @@ func setupTestEnv(t *testing.T) *testEnv {
 	require.NoError(t, infra.RunMigrations(db))
 
 	// Seed admin user via bcrypt password
-	_, err = db.Exec(`INSERT INTO usuarios (id, nombre, email, password_hash, rol, activo, created_at)
+	err = db.Exec(`INSERT INTO usuarios (id, nombre, email, password_hash, rol, activo, created_at)
 		VALUES (gen_random_uuid(), 'Admin E2E', 'admin@e2e.test',
 		        '$2a$12$6zcbRzN1cj4B7bqbIp.LOukxBkHZvhKFxrlDTqX61mzKFN7N0dJIi', 'administrador', true, NOW())
-		ON CONFLICT DO NOTHING`)
+		ON CONFLICT DO NOTHING`).Error
 	require.NoError(t, err)
 
 	// Build repositories + services (composition root, mirrors main.go)
@@ -161,15 +159,20 @@ func setupTestEnv(t *testing.T) *testEnv {
 	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb)
 	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo)
 	cajaSvc := service.NewCajaService(cajaRepo)
-	ventaSvc := service.NewVentaService(ventaRepo, inventarioSvc, cajaSvc, cajaRepo, productoRepo, dispatcher, comprobanteRepo)
+	configFiscalRepo := repository.NewConfiguracionFiscalRepository(db)
+	ventaSvc := service.NewVentaService(ventaRepo, inventarioSvc, cajaSvc, cajaRepo, productoRepo, dispatcher, comprobanteRepo, configFiscalRepo)
 	facturacionSvc := service.NewFacturacionService(comprobanteRepo, dispatcher)
-	proveedorSvc := service.NewProveedorService(proveedorRepo, productoRepo)
+	proveedorSvc := service.NewProveedorService(proveedorRepo, productoRepo, categoriaRepo)
 	categoriaSvc := service.NewCategoriaService(categoriaRepo)
+
+	// F1-9: read replica fallback to primary in tests
+	dbRead := infra.NewDatabaseReadReplica(db, cfg.DatabaseReadReplicaURL)
 
 	// Build router
 	r := router.New(router.Deps{
 		Cfg:                 cfg,
 		DB:                  db,
+		DBRead:              dbRead,
 		RDB:                 rdb,
 		AfipCB:              afipCB,
 		AuthSvc:             authSvc,

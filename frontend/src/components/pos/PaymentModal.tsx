@@ -1,14 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Modal, Stack, Text, Group, Button, Divider, Select, NumberInput,
-    Badge, Box, Alert, TextInput, Collapse
+    Badge, Box, Alert, TextInput, Collapse, Loader,
 } from '@mantine/core';
-import { CreditCard, Check, X, Wallet, AlertCircle, Mail, Receipt } from 'lucide-react';
+import { useMediaQuery } from '@mantine/hooks';
+import { CreditCard, Check, X, Wallet, AlertCircle, Mail, Receipt, UserCheck } from 'lucide-react';
 import { usePOSUIStore } from '../../store/usePOSUIStore';
 import { useCartStore } from '../../store/useCartStore';
 import type { MetodoPago, PagoDetalle } from '../../store/useCartStore';
 import { useSaleStore } from '../../store/useSaleStore';
 import { useConfiguracionFiscal } from '../../hooks/useConfiguracionFiscal';
+import { listarClientes, type ClienteResponse } from '../../services/api/clientes';
 import styles from './PaymentModal.module.css';
 
 function formatCurrency(value: number): string {
@@ -28,6 +30,7 @@ const DOCUMENTO_OPTIONS: Array<{ value: TipoDocumentoReceptor; label: string }> 
 ];
 
 export function PaymentModal() {
+    const isMobile = useMediaQuery('(max-width: 48em)');
     const isOpen = usePOSUIStore((s) => s.isPaymentModalOpen);
     const closePaymentModal = usePOSUIStore((s) => s.closePaymentModal);
     const tipoComprobanteSeleccionado = usePOSUIStore((s) => s.tipoComprobante);
@@ -51,6 +54,12 @@ export function PaymentModal() {
     const [documentoReceptor, setDocumentoReceptor] = useState('');
     const [nombreReceptor, setNombreReceptor] = useState('');
     const [domicilioReceptor, setDomicilioReceptor] = useState('');
+
+    // Fiado state
+    const [fiadoClientes, setFiadoClientes] = useState<ClienteResponse[]>([]);
+    const [fiadoClienteId, setFiadoClienteId] = useState<string | null>(null);
+    const [fiadoSearch, setFiadoSearch] = useState('');
+    const [fiadoLoading, setFiadoLoading] = useState(false);
 
     // Map ComprobanteModal selection to PaymentModal format
     useEffect(() => {
@@ -93,6 +102,30 @@ export function PaymentModal() {
         return baseOptions;
     }, [config]);
 
+    // Fiado: fetch clients when fiado is selected
+    const fetchFiadoClientes = useCallback(async (search?: string) => {
+        setFiadoLoading(true);
+        try {
+            const resp = await listarClientes({ search: search || undefined, limit: 20 });
+            setFiadoClientes(resp.data);
+        } catch {
+            setFiadoClientes([]);
+        } finally {
+            setFiadoLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (metodoPago === 'fiado' && isOpen) {
+            fetchFiadoClientes(fiadoSearch);
+        }
+    }, [metodoPago, isOpen, fiadoSearch, fetchFiadoClientes]);
+
+    const selectedFiadoCliente = useMemo(
+        () => fiadoClientes.find((c) => c.id === fiadoClienteId) ?? null,
+        [fiadoClientes, fiadoClienteId],
+    );
+
     const isEmailValid = clienteEmail === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail);
     const requiresFiscalBuyerData = tipoComprobante === 'factura_a' || tipoComprobante === 'factura_b' || tipoComprobante === 'factura_c';
     const resolvedDocType: TipoDocumentoReceptor = tipoComprobante === 'factura_a' ? 'cuit' : tipoDocumentoReceptor;
@@ -110,6 +143,13 @@ export function PaymentModal() {
 
     const finalTotal = descuentoGlobal > 0 ? totalConDescuento : total;
     const itemCount = cart.reduce((sum, item) => sum + item.cantidad, 0);
+
+    const fiadoCreditoDisponible = selectedFiadoCliente
+        ? (selectedFiadoCliente.limite_credito > 0
+            ? selectedFiadoCliente.credito_disponible
+            : Infinity)
+        : 0;
+    const fiadoExceedsCredit = metodoPago === 'fiado' && selectedFiadoCliente !== null && finalTotal > fiadoCreditoDisponible;
 
     const isRecibidoVacio = (metodoPago === 'efectivo' || metodoPago === 'mixto') && montoRecibido === '';
 
@@ -138,7 +178,12 @@ export function PaymentModal() {
         if (requiresFiscalBuyerData && (!isDocumentoValid || !isNombreValid || !isDomicilioValid)) {
             return false;
         }
-        
+
+        // Fiado: require client selected and credit not exceeded
+        if (metodoPago === 'fiado') {
+            return !!fiadoClienteId && !fiadoExceedsCredit;
+        }
+
         if (metodoPago === 'efectivo') return efectivoRecibido >= finalTotal;
         if (metodoPago !== 'mixto') return true;
 
@@ -158,6 +203,9 @@ export function PaymentModal() {
             setMixtoQr('');
             setNombreReceptor('');
             setMixtoTransferencia('');
+            setFiadoClienteId(null);
+            setFiadoSearch('');
+            setFiadoClientes([]);
             setClienteEmail('');
             setTipoComprobante('auto');
             setTipoDocumentoReceptor('dni');
@@ -173,7 +221,9 @@ export function PaymentModal() {
         let vueltoCalc: number | undefined;
         let efectivoRecibidoToSave: number | undefined;
 
-        if (metodoPago === 'efectivo') {
+        if (metodoPago === 'fiado') {
+            pagos = [{ metodo: 'fiado' as Exclude<MetodoPago, 'mixto'>, monto: finalTotal }];
+        } else if (metodoPago === 'efectivo') {
             efectivoRecibidoToSave = efectivoRecibido;
             vueltoCalc = efectivoRecibido - finalTotal;
         } else if (metodoPago === 'mixto') {
@@ -211,6 +261,8 @@ export function PaymentModal() {
                 : undefined,
             nroDocReceptor: requiresFiscalBuyerData ? normalizedDocumento : undefined,
             receptorDomicilio: requiresFiscalBuyerData ? domicilioReceptor.trim() : undefined,
+            clienteId: metodoPago === 'fiado' ? fiadoClienteId ?? undefined : undefined,
+            clienteNombre: metodoPago === 'fiado' ? selectedFiadoCliente?.nombre : undefined,
         });
         closePaymentModal();
 
@@ -248,6 +300,7 @@ export function PaymentModal() {
             }
             size="md"
             centered
+            fullScreen={isMobile ?? false}
         >
             <Stack gap="lg" className={styles.content}>
                 {/* Resumen */}
@@ -398,6 +451,7 @@ export function PaymentModal() {
                         { value: 'credito', label: '💳 Tarjeta de Crédito' },
                         { value: 'qr', label: '📱 QR' },
                         { value: 'transferencia', label: '🔁 Transferencia' },
+                        { value: 'fiado', label: '📒 Fiado (Cuenta Corriente)' },
                         { value: 'mixto', label: '🧾 Mixto' },
                     ]}
                     data-pos-focusable
@@ -446,6 +500,80 @@ export function PaymentModal() {
                             >
                                 El monto recibido es insuficiente. Faltan{' '}
                                 <strong>{formatCurrency(Math.abs(vuelto))}</strong>.
+                            </Alert>
+                        )}
+                    </Stack>
+                )}
+
+                {/* Fiado: client selection */}
+                {metodoPago === 'fiado' && (
+                    <Stack gap="sm">
+                        <Select
+                            label="Cliente"
+                            placeholder="Buscar cliente por nombre..."
+                            searchable
+                            nothingFoundMessage={fiadoLoading ? 'Buscando...' : 'Sin resultados'}
+                            data={fiadoClientes.map((c) => ({
+                                value: c.id,
+                                label: `${c.nombre}${c.saldo_deudor > 0 ? ` (Debe: $${c.saldo_deudor.toFixed(2)})` : ''}`,
+                            }))}
+                            value={fiadoClienteId}
+                            onChange={setFiadoClienteId}
+                            onSearchChange={setFiadoSearch}
+                            leftSection={<UserCheck size={16} />}
+                            rightSection={fiadoLoading ? <Loader size={16} /> : undefined}
+                            size="md"
+                            comboboxProps={{ position: 'bottom', middlewares: { flip: true, shift: true } }}
+                        />
+
+                        {selectedFiadoCliente && (
+                            <Box style={{
+                                padding: 'var(--mantine-spacing-sm)',
+                                borderRadius: 'var(--mantine-radius-md)',
+                                border: '1px solid var(--mantine-color-default-border)',
+                                background: 'var(--mantine-color-default-hover)',
+                            }}>
+                                <Group justify="space-between" mb={4}>
+                                    <Text size="sm" fw={600}>{selectedFiadoCliente.nombre}</Text>
+                                    {selectedFiadoCliente.saldo_deudor > 0 && (
+                                        <Badge color="red" variant="light" size="sm">
+                                            Debe: ${selectedFiadoCliente.saldo_deudor.toFixed(2)}
+                                        </Badge>
+                                    )}
+                                </Group>
+                                <Group gap="xl">
+                                    <div>
+                                        <Text size="xs" c="dimmed">Limite de credito</Text>
+                                        <Text size="sm" fw={500} ff="monospace">
+                                            {selectedFiadoCliente.limite_credito > 0
+                                                ? formatCurrency(selectedFiadoCliente.limite_credito)
+                                                : 'Sin limite'}
+                                        </Text>
+                                    </div>
+                                    <div>
+                                        <Text size="xs" c="dimmed">Disponible</Text>
+                                        <Text size="sm" fw={500} ff="monospace" c="blue">
+                                            {selectedFiadoCliente.limite_credito > 0
+                                                ? formatCurrency(selectedFiadoCliente.credito_disponible)
+                                                : 'Ilimitado'}
+                                        </Text>
+                                    </div>
+                                </Group>
+                            </Box>
+                        )}
+
+                        {fiadoExceedsCredit && (
+                            <Alert icon={<AlertCircle size={16} />} color="red" variant="light">
+                                El monto de la venta ({formatCurrency(finalTotal)}) excede el credito disponible
+                                ({selectedFiadoCliente!.limite_credito > 0
+                                    ? formatCurrency(selectedFiadoCliente!.credito_disponible)
+                                    : 'sin limite'}).
+                            </Alert>
+                        )}
+
+                        {!fiadoClienteId && (
+                            <Alert icon={<AlertCircle size={16} />} color="yellow" variant="light">
+                                Selecciona un cliente para registrar la venta como fiado.
                             </Alert>
                         )}
                     </Stack>

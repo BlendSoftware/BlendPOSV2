@@ -77,16 +77,26 @@ func (s *stubVentaServiceHTTP) AnularVenta(_ context.Context, id uuid.UUID, moti
 	return nil
 }
 
-func (s *stubVentaServiceHTTP) SyncBatch(_ context.Context, usuarioID uuid.UUID, req dto.SyncBatchRequest) ([]dto.VentaResponse, error) {
-	results := make([]dto.VentaResponse, 0, len(req.Ventas))
-	for _, v := range req.Ventas {
-		resp, err := s.RegistrarVenta(context.Background(), usuarioID, v)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, *resp)
+func (s *stubVentaServiceHTTP) SyncBatch(_ context.Context, usuarioID uuid.UUID, req dto.SyncBatchRequest) (*dto.SyncBatchResponse, error) {
+	resp := &dto.SyncBatchResponse{
+		SyncedIDs:     make([]string, 0),
+		DuplicatedIDs: make([]string, 0),
+		FailedIDs:     make([]string, 0),
 	}
-	return results, nil
+	for _, v := range req.Ventas {
+		_, err := s.RegistrarVenta(context.Background(), usuarioID, v)
+		if err != nil {
+			if v.OfflineID != nil {
+				resp.FailedIDs = append(resp.FailedIDs, *v.OfflineID)
+			}
+			continue
+		}
+		resp.TotalProcessed++
+		if v.OfflineID != nil {
+			resp.SyncedIDs = append(resp.SyncedIDs, *v.OfflineID)
+		}
+	}
+	return resp, nil
 }
 
 func (s *stubVentaServiceHTTP) ListVentas(_ context.Context, filter dto.VentaFilter) (*dto.VentaListResponse, error) {
@@ -271,12 +281,15 @@ func TestSyncBatch_200(t *testing.T) {
 	svc.requireCaja = false // batch sync may use various caja IDs
 	r := ventasRouter(svc, uuid.New().String(), "cajero")
 
+	offlineID := uuid.New().String()
 	body, _ := json.Marshal(dto.SyncBatchRequest{
+		DeviceID: uuid.New().String(),
 		Ventas: []dto.RegistrarVentaRequest{
 			{
 				SesionCajaID: uuid.New().String(),
 				Items:        []dto.ItemVentaRequest{{ProductoID: uuid.New().String(), Cantidad: 1, Descuento: decimal.Zero}},
 				Pagos:        []dto.PagoRequest{{Metodo: "efectivo", Monto: decimal.NewFromInt(500)}},
+				OfflineID:    &offlineID,
 			},
 		},
 	})
@@ -288,7 +301,35 @@ func TestSyncBatch_200(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp []dto.VentaResponse
+	var resp dto.SyncBatchResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Len(t, resp, 1)
+	assert.Equal(t, 1, resp.TotalProcessed)
+	assert.Len(t, resp.SyncedIDs, 1)
+	assert.Equal(t, offlineID, resp.SyncedIDs[0])
+	assert.Empty(t, resp.DuplicatedIDs)
+	assert.Empty(t, resp.FailedIDs)
+}
+
+func TestSyncBatch_200_EmptyBatch(t *testing.T) {
+	svc := newStubVentaSvcHTTP()
+	r := ventasRouter(svc, uuid.New().String(), "cajero")
+
+	body, _ := json.Marshal(dto.SyncBatchRequest{
+		Ventas: []dto.RegistrarVentaRequest{},
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/v1/ventas/sync-batch", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp dto.SyncBatchResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, 0, resp.TotalProcessed)
+	assert.Equal(t, 0, resp.TotalDuplicated)
+	assert.Empty(t, resp.SyncedIDs)
+	assert.Empty(t, resp.DuplicatedIDs)
+	assert.Empty(t, resp.FailedIDs)
 }

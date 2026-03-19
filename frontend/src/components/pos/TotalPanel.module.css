@@ -82,3 +82,45 @@
 .actionButton:active {
     transform: scale(0.98);
 }
+
+/* ── Tablet: TotalPanel becomes horizontal bottom strip ───────────── */
+@media (max-width: 1024px) {
+    .panel {
+        border-left: none;
+        border-top: 1px solid var(--mantine-color-dark-4);
+        height: auto;
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+
+    :global([data-mantine-color-scheme='light']) .panel {
+        border-left: none;
+        border-top-color: var(--mantine-color-gray-3);
+    }
+
+    .totalAmount {
+        font-size: clamp(32px, 6vw, 48px);
+    }
+
+    .actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: var(--mantine-spacing-sm);
+    }
+
+    .actions > * {
+        flex: 1;
+        min-width: 140px;
+    }
+
+    .actionButton {
+        height: 56px;
+    }
+}
+
+/* ── Touch: larger tap targets ────────────────────────────────────── */
+@media (pointer: coarse) {
+    .actionButton {
+        min-height: 48px;
+    }
+}

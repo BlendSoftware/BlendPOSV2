@@ -46,6 +46,10 @@ type Deps struct {
 	CompraSvc       service.CompraService
 	PromocionSvc    service.PromocionService
 	TenantSvc       service.TenantService
+	BillingSvc      service.BillingService
+	ReportesSvc     service.ReportesService
+	LoteSvc         service.LoteService
+	ClienteSvc      service.ClienteService
 
 	// Repos still needed by handlers that bypass the service layer
 	ProductoRepo        repository.ProductoRepository
@@ -102,18 +106,27 @@ func New(d Deps) *gin.Engine {
 	comprasH := handler.NewCompraHandler(d.CompraSvc)
 	promocionesH := handler.NewPromocionHandler(d.PromocionSvc)
 	ventaReporteH := handler.NewVentaReporteHandler(d.DBRead)
+	billingH := handler.NewBillingHandler(d.BillingSvc)
+	reportesH := handler.NewReportesHandler(d.ReportesSvc)
+	vencimientosH := handler.NewVencimientosHandler(d.LoteSvc)
+	clientesH := handler.NewClientesHandler(d.ClienteSvc)
 
 	// ── Routes ───────────────────────────────────────────────────────────────
 
 	// Public
 	r.GET("/health", handler.Health(d.DB, d.RDB, d.AfipCB, cfg))
 
-	// Public tenant registration + plan listing
+	// Public tenant registration + plan listing + presets
 	public := r.Group("/v1/public")
 	{
 		public.POST("/register", tenantsH.Register)
 		public.GET("/planes", tenantsH.ListarPlanes)
+		public.GET("/presets", tenantsH.ListarPresets)
+		public.GET("/presets/:tipo", tenantsH.ObtenerPreset)
 	}
+
+	// Billing webhook — public, no JWT (MercadoPago calls this)
+	r.POST("/v1/billing/webhook", billingH.Webhook)
 
 	// Auth (public)
 	auth := r.Group("/v1/auth")
@@ -133,27 +146,36 @@ func New(d Deps) *gin.Engine {
 	auth.POST("/logout", jwtMW, authH.Logout)
 	auth.POST("/change-password", jwtMW, authH.ChangePassword)
 
+	// IDOR guard helpers — validate resource ownership before reaching handler (F2-4).
+	// Not applied to: superadmin routes (cross-tenant), public routes, list endpoints.
+	idor := func(table, param string) gin.HandlerFunc {
+		return middleware.ValidateResourceOwnership(d.DB, table, param)
+	}
+
 	v1 := r.Group("/v1", jwtMW, middleware.TenantMiddleware(d.DB))
+	v1.Use(middleware.RateLimitPerTenant(d.TenantRepo, d.RDB))
+	v1.Use(middleware.TenantAuditMiddleware())
 	v1.Use(middleware.AuditMiddleware(d.AuditSvc))
 	{
 		// Roles: cajero, supervisor, administrador — declared per-endpoint
 		v1.POST("/ventas", middleware.RequireRole("cajero", "supervisor", "administrador"), ventasH.RegistrarVenta)
 		v1.GET("/ventas", middleware.RequireRole("cajero", "supervisor", "administrador"), ventasH.ListarVentas)
-		v1.DELETE("/ventas/:id", middleware.RequireRole("supervisor", "administrador"), ventasH.AnularVenta)
+		v1.DELETE("/ventas/:id", middleware.RequireRole("supervisor", "administrador"), idor("ventas", "id"), ventasH.AnularVenta)
 
 		// GET /v1/productos — cajero/supervisor/administrador can read (catalog sync)
 		v1.GET("/productos", middleware.RequireRole("cajero", "supervisor", "administrador"), productosH.Listar)
-		v1.GET("/productos/:id", middleware.RequireRole("cajero", "supervisor", "administrador"), productosH.ObtenerPorID)
-		v1.GET("/productos/:id/historial-precios", middleware.RequireRole("cajero", "supervisor", "administrador"), historialPreciosH.ListarPorProducto)
+		v1.GET("/productos/:id", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("productos", "id"), productosH.ObtenerPorID)
+		v1.GET("/productos/:id/historial-precios", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("productos", "id"), historialPreciosH.ListarPorProducto)
 		// PATCH stock — supervisor or administrador
-		v1.PATCH("/productos/:id/stock", middleware.RequireRole("supervisor", "administrador"), productosH.AjustarStock)
+		v1.PATCH("/productos/:id/stock", middleware.RequireRole("supervisor", "administrador"), idor("productos", "id"), productosH.AjustarStock)
 		// Write operations — administrador only (plan limit applied to POST)
 		prods := v1.Group("/productos", middleware.RequireRole("administrador"))
 		{
-			prods.POST("", middleware.EnforcePlanLimitProductos(d.TenantRepo), productosH.Crear)
-			prods.PUT("/:id", productosH.Actualizar)
-			prods.DELETE("/:id", productosH.Desactivar)
-			prods.PATCH("/:id/reactivar", productosH.Reactivar)
+			prods.POST("", middleware.EnforcePlanLimitProductos(d.TenantRepo, d.RDB), productosH.Crear)
+			prods.POST("/bulk", middleware.EnforcePlanLimitProductos(d.TenantRepo, d.RDB), productosH.CrearBulk)
+			prods.PUT("/:id", idor("productos", "id"), productosH.Actualizar)
+			prods.DELETE("/:id", idor("productos", "id"), productosH.Desactivar)
+			prods.PATCH("/:id/reactivar", idor("productos", "id"), productosH.Reactivar)
 		}
 
 		inv := v1.Group("/inventario", middleware.RequireRole("administrador", "supervisor"))
@@ -165,11 +187,20 @@ func New(d Deps) *gin.Engine {
 			inv.GET("/movimientos", inventarioH.ListarMovimientos)
 		}
 
+		// Lotes de producto y alertas de vencimiento
+		lotes := v1.Group("/lotes", middleware.RequireRole("administrador", "supervisor"))
+		{
+			lotes.POST("", vencimientosH.CrearLote)
+			lotes.GET("", vencimientosH.ListarLotes)
+			lotes.DELETE("/:id", idor("lotes_producto", "id"), vencimientosH.EliminarLote)
+		}
+		v1.GET("/vencimientos/alertas", middleware.RequireRole("administrador", "supervisor"), vencimientosH.ObtenerAlertasVencimiento)
+
 		caja := v1.Group("/caja")
 		{
-			caja.POST("/abrir", middleware.RequireRole("cajero", "supervisor", "administrador"), middleware.EnforcePlanLimitTerminales(d.TenantRepo), cajaH.Abrir)
+			caja.POST("/abrir", middleware.RequireRole("cajero", "supervisor", "administrador"), middleware.EnforcePlanLimitTerminales(d.TenantRepo, d.RDB), cajaH.Abrir)
 			caja.POST("/arqueo", middleware.RequireRole("cajero", "supervisor", "administrador"), cajaH.Arqueo)
-			caja.GET("/:id/reporte", middleware.RequireRole("cajero", "supervisor", "administrador"), cajaH.ObtenerReporte)
+			caja.GET("/:id/reporte", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("sesiones_caja", "id"), cajaH.ObtenerReporte)
 			caja.POST("/movimiento", middleware.RequireRole("cajero", "supervisor", "administrador"), cajaH.RegistrarMovimiento)
 			caja.GET("/activa", middleware.RequireRole("cajero", "supervisor", "administrador"), cajaH.GetActiva)
 			caja.GET("/historial", middleware.RequireRole("supervisor", "administrador"), cajaH.Historial)
@@ -178,17 +209,17 @@ func New(d Deps) *gin.Engine {
 		// Read-only: cajero can check their own comprobante status and download it
 		factR := v1.Group("/facturacion", middleware.RequireRole("cajero", "supervisor", "administrador"))
 		{
-			factR.GET("/:venta_id", facturacionH.ObtenerComprobante)
-			factR.GET("/pdf/:id", facturacionH.DescargarPDF)
-			factR.GET("/html/:id", facturacionH.ObtenerHTML)
-			factR.POST("/:id/enviar-email", facturacionH.EnviarEmailComprobante)
+			factR.GET("/:venta_id", idor("ventas", "venta_id"), facturacionH.ObtenerComprobante)
+			factR.GET("/pdf/:id", idor("comprobantes", "id"), facturacionH.DescargarPDF)
+			factR.GET("/html/:id", idor("comprobantes", "id"), facturacionH.ObtenerHTML)
+			factR.POST("/:id/enviar-email", idor("comprobantes", "id"), facturacionH.EnviarEmailComprobante)
 		}
 		// Write operations: admin/supervisor only
 		factW := v1.Group("/facturacion", middleware.RequireRole("administrador", "supervisor"))
 		{
-			factW.DELETE("/:id", facturacionH.AnularComprobante)
-			factW.POST("/:id/reintentar", facturacionH.ReintentarComprobante)
-			factW.POST("/:id/regen-pdf", facturacionH.RegenerarPDF)
+			factW.DELETE("/:id", idor("comprobantes", "id"), facturacionH.AnularComprobante)
+			factW.POST("/:id/reintentar", idor("comprobantes", "id"), facturacionH.ReintentarComprobante)
+			factW.POST("/:id/regen-pdf", idor("comprobantes", "id"), facturacionH.RegenerarPDF)
 			factW.POST("/cancelar-pendientes", middleware.RequireRole("administrador"), facturacionH.CancelarPendientes)
 		}
 
@@ -196,10 +227,10 @@ func New(d Deps) *gin.Engine {
 		{
 			prov.POST("", proveedoresH.Crear)
 			prov.GET("", proveedoresH.Listar)
-			prov.GET("/:id", proveedoresH.ObtenerPorID)
-			prov.PUT("/:id", proveedoresH.Actualizar)
-			prov.DELETE("/:id", proveedoresH.Eliminar)
-			prov.POST("/:id/precios/masivo", proveedoresH.ActualizarPreciosMasivo)
+			prov.GET("/:id", idor("proveedores", "id"), proveedoresH.ObtenerPorID)
+			prov.PUT("/:id", idor("proveedores", "id"), proveedoresH.Actualizar)
+			prov.DELETE("/:id", idor("proveedores", "id"), proveedoresH.Eliminar)
+			prov.POST("/:id/precios/masivo", idor("proveedores", "id"), proveedoresH.ActualizarPreciosMasivo)
 		}
 
 		v1.POST("/csv/import", middleware.RequireRole("administrador"), proveedoresH.ImportarCSV)
@@ -208,9 +239,22 @@ func New(d Deps) *gin.Engine {
 		{
 			usuarios.POST("", usuariosH.Crear)
 			usuarios.GET("", usuariosH.Listar)
-			usuarios.PUT("/:id", usuariosH.Actualizar)
-			usuarios.DELETE("/:id", usuariosH.Desactivar)
-			usuarios.PATCH("/:id/reactivar", usuariosH.Reactivar)
+			usuarios.PUT("/:id", idor("usuarios", "id"), usuariosH.Actualizar)
+			usuarios.DELETE("/:id", idor("usuarios", "id"), usuariosH.Desactivar)
+			usuarios.PATCH("/:id/reactivar", idor("usuarios", "id"), usuariosH.Reactivar)
+		}
+
+		// Clientes / Fiado (cuenta corriente)
+		// Deudores list must be registered BEFORE the /:id routes to avoid Gin treating "deudores" as an :id param.
+		v1.GET("/clientes/deudores", middleware.RequireRole("cajero", "supervisor", "administrador"), clientesH.ListarDeudores)
+		v1.GET("/clientes", middleware.RequireRole("cajero", "supervisor", "administrador"), clientesH.Listar)
+		v1.GET("/clientes/:id", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("clientes", "id"), clientesH.ObtenerPorID)
+		v1.GET("/clientes/:id/movimientos", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("clientes", "id"), clientesH.ListarMovimientos)
+		clientesW := v1.Group("/clientes", middleware.RequireRole("supervisor", "administrador"))
+		{
+			clientesW.POST("", clientesH.Crear)
+			clientesW.PUT("/:id", idor("clientes", "id"), clientesH.Actualizar)
+			clientesW.POST("/:id/pago", idor("clientes", "id"), clientesH.RegistrarPago)
 		}
 
 		// Offline sync endpoint (PWA SyncEngine)
@@ -219,13 +263,26 @@ func New(d Deps) *gin.Engine {
 		// Analytics reporte de ventas (read replica — F1-9)
 		v1.GET("/ventas/reporte", middleware.RequireRole("administrador", "supervisor"), ventaReporteH.GetReporte)
 
+		// Analytics — reportes agregados (T5.1+T5.2, read replica)
+		// resumen + medios-pago: available to all plans (basic dashboard)
+		// top-productos + ventas-periodo: require analytics_avanzados feature flag
+		reportes := v1.Group("/reportes", middleware.RequireRole("administrador", "supervisor"))
+		{
+			reportes.GET("/resumen", reportesH.GetResumen)
+			reportes.GET("/top-productos", middleware.RequireFeature("analytics_avanzados", d.TenantRepo, d.RDB), reportesH.GetTopProductos)
+			reportes.GET("/medios-pago", reportesH.GetMediosPago)
+			reportes.GET("/ventas-periodo", middleware.RequireFeature("analytics_avanzados", d.TenantRepo, d.RDB), reportesH.GetVentasPeriodo)
+			reportes.GET("/cajeros", middleware.RequireFeature("analytics_avanzados", d.TenantRepo, d.RDB), reportesH.GetCajeros)
+			reportes.GET("/turnos", middleware.RequireFeature("analytics_avanzados", d.TenantRepo, d.RDB), reportesH.GetTurnos)
+		}
+
 		// Categorías — administrador can write, all authenticated can read
 		v1.GET("/categorias", middleware.RequireRole("cajero", "supervisor", "administrador"), categoriasH.Listar)
 		categorias := v1.Group("/categorias", middleware.RequireRole("administrador"))
 		{
 			categorias.POST("", categoriasH.Crear)
-			categorias.PUT("/:id", categoriasH.Actualizar)
-			categorias.DELETE("/:id", categoriasH.Desactivar)
+			categorias.PUT("/:id", idor("categorias", "id"), categoriasH.Actualizar)
+			categorias.DELETE("/:id", idor("categorias", "id"), categoriasH.Desactivar)
 		}
 
 		// Audit log — read-only, admin only (Q-03)
@@ -240,22 +297,29 @@ func New(d Deps) *gin.Engine {
 
 		// Compras — administrador can write, supervisor can read
 		v1.GET("/compras", middleware.RequireRole("supervisor", "administrador"), comprasH.Listar)
-		v1.GET("/compras/:id", middleware.RequireRole("supervisor", "administrador"), comprasH.ObtenerPorID)
+		v1.GET("/compras/:id", middleware.RequireRole("supervisor", "administrador"), idor("compras", "id"), comprasH.ObtenerPorID)
 		compras := v1.Group("/compras", middleware.RequireRole("administrador"))
 		{
 			compras.POST("", comprasH.Crear)
-			compras.PATCH(":id/estado", comprasH.ActualizarEstado)
+			compras.PATCH(":id/estado", idor("compras", "id"), comprasH.ActualizarEstado)
 		}
 
 		// Promociones - lectura para todos los roles autenticados del POS;
 		// escritura solo para administrador.
 		v1.GET("/promociones", middleware.RequireRole("cajero", "supervisor", "administrador"), promocionesH.Listar)
-		v1.GET("/promociones/:id", middleware.RequireRole("cajero", "supervisor", "administrador"), promocionesH.ObtenerPorID)
+		v1.GET("/promociones/:id", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("promociones", "id"), promocionesH.ObtenerPorID)
 		promos := v1.Group("/promociones", middleware.RequireRole("administrador"))
 		{
 			promos.POST("", promocionesH.Crear)
-			promos.PUT(":id", promocionesH.Actualizar)
-			promos.DELETE(":id", promocionesH.Eliminar)
+			promos.PUT(":id", idor("promociones", "id"), promocionesH.Actualizar)
+			promos.DELETE(":id", idor("promociones", "id"), promocionesH.Eliminar)
+		}
+
+		// Billing — subscription management (F1-5)
+		billing := v1.Group("/billing", middleware.RequireRole("administrador"))
+		{
+			billing.POST("/subscribe", billingH.Subscribe)
+			billing.GET("/status", billingH.GetStatus)
 		}
 
 		// Tenant self-service (F1-1)
@@ -270,6 +334,7 @@ func New(d Deps) *gin.Engine {
 		superadmin := v1.Group("/superadmin", middleware.RequireSuperAdmin())
 		{
 			superadmin.GET("/tenants", tenantsH.ListarTodos)
+			superadmin.GET("/tenants/:id", tenantsH.ObtenerTenantDetalle)
 			superadmin.PUT("/tenants/:id", tenantsH.ToggleActivo)
 			superadmin.PUT("/tenants/:id/plan", tenantsH.CambiarPlan)
 			superadmin.GET("/metrics", tenantsH.ObtenerMetricas)

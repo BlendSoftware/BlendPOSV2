@@ -29,6 +29,8 @@ export interface LocalSale {
     receptorNombre?: string;
     /** Domicilio del comprador para comprobantes fiscales. */
     receptorDomicilio?: string;
+    /** Cliente ID for fiado (credit tab) sales. */
+    clienteId?: string;
     /** Descuento global aplicado al carrito (porcentaje 0-100). */
     descuentoGlobal?: number;
     synced: 0 | 1;
@@ -54,6 +56,8 @@ export interface LocalProduct {
     nombre: string;
     precio: number;
     stock: number;
+    /** Unit of measure: 'unidad' (default) | 'kg' | 'gramo' */
+    unidadMedida?: string;
 }
 
 export interface SyncMeta {

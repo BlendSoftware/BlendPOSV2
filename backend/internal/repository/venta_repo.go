@@ -17,6 +17,10 @@ type VentaRepository interface {
 	Create(ctx context.Context, tx *gorm.DB, v *model.Venta) error
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Venta, error)
 	FindByOfflineID(ctx context.Context, offlineID string) (*model.Venta, error)
+	// FindExistingOfflineIDs returns the subset of offlineIDs that already exist
+	// in the ventas table for the current tenant. Used by SyncBatch for batch
+	// deduplication (F1-8).
+	FindExistingOfflineIDs(ctx context.Context, offlineIDs []string) ([]string, error)
 	UpdateEstado(ctx context.Context, id uuid.UUID, estado string) error
 	UpdateEstadoTx(tx *gorm.DB, id uuid.UUID, estado string) error
 	NextTicketNumber(ctx context.Context, tx *gorm.DB) (int, error)
@@ -60,6 +64,24 @@ func (r *ventaRepo) FindByOfflineID(ctx context.Context, offlineID string) (*mod
 	var v model.Venta
 	err = db.Where("offline_id = ?", offlineID).First(&v).Error
 	return &v, err
+}
+
+// FindExistingOfflineIDs returns the subset of offlineIDs that already exist in
+// the ventas table for the current tenant. This enables O(1) batch deduplication
+// instead of N individual lookups. (F1-8)
+func (r *ventaRepo) FindExistingOfflineIDs(ctx context.Context, offlineIDs []string) ([]string, error) {
+	if len(offlineIDs) == 0 {
+		return nil, nil
+	}
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	var existing []string
+	err = db.Model(&model.Venta{}).
+		Where("offline_id IN ?", offlineIDs).
+		Pluck("offline_id", &existing).Error
+	return existing, err
 }
 
 func (r *ventaRepo) UpdateEstado(ctx context.Context, id uuid.UUID, estado string) error {

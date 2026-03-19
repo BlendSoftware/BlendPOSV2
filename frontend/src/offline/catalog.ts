@@ -30,6 +30,7 @@ export async function seedCatalogFromAPI(): Promise<boolean> {
                     nombre: p.nombre,
                     precio: typeof p.precio_venta === 'number' ? p.precio_venta : parseFloat(p.precio_venta as unknown as string),
                     stock: p.stock_actual ?? 0,
+                    unidadMedida: p.unidad_medida || 'unidad',
                 }));
             await db.products.clear();
             await db.products.bulkPut(seed);
@@ -81,6 +82,7 @@ export async function deltaSyncCatalog(): Promise<boolean> {
             precio: typeof p.precio_venta === 'number' ? p.precio_venta : parseFloat(p.precio_venta as unknown as string),
             // If product was deactivated, set stock=0 so the POS blocks sales
             stock: p.activo ? (p.stock_actual ?? 0) : 0,
+            unidadMedida: p.unidad_medida || 'unidad',
         }));
 
         await db.products.bulkPut(upserts);

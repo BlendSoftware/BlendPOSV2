@@ -1,0 +1,44 @@
+# Deploy to Hostinger VPS
+#
+# Triggered automatically when CI workflow completes successfully on main.
+#
+# Required GitHub Secrets:
+#   VPS_HOST    — Hostinger VPS IP address
+#   VPS_USER    — SSH user (e.g. root or deploy)
+#   VPS_SSH_KEY — Private SSH key for authentication
+#   VPS_PORT    — SSH port (default 22)
+
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -e
+            cd /opt/blendpos
+            git pull origin main
+            docker-compose down
+            docker-compose up -d --build
+            docker-compose exec -T backend migrate -path /migrations -database "$DATABASE_URL" up
+            echo "Deploy complete: $(date)"

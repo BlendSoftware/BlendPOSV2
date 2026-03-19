@@ -62,16 +62,29 @@ export const PrintableTicket = forwardRef<HTMLDivElement, PrintableTicketProps>(
                             </tr>
                         </thead>
                         <tbody>
-                            {record.items.map((item, idx) => (
-                                <tr key={idx}>
-                                    <td>{item.nombre}</td>
-                                    <td align="center">{item.cantidad}</td>
-                                    <td align="right">{formatARS(item.precio)}</td>
-                                    <td align="right">
-                                        {formatARS(item.cantidad * item.precio)}
-                                    </td>
-                                </tr>
-                            ))}
+                            {record.items.map((item, idx) => {
+                                const isWeight = item.peso != null && (item.unidadMedida === 'kg' || item.unidadMedida === 'gramo');
+                                const suffix = item.unidadMedida === 'kg' ? 'kg' : item.unidadMedida === 'gramo' ? 'g' : '';
+                                const lineTotal = isWeight && item.peso
+                                    ? item.precio * item.peso
+                                    : item.cantidad * item.precio;
+                                return (
+                                    <tr key={idx}>
+                                        <td>{item.nombre}</td>
+                                        <td align="center">
+                                            {isWeight
+                                                ? `${item.peso?.toFixed(item.unidadMedida === 'kg' ? 3 : 0)} ${suffix}`
+                                                : item.cantidad}
+                                        </td>
+                                        <td align="right">
+                                            {formatARS(item.precio)}{isWeight ? `/${suffix}` : ''}
+                                        </td>
+                                        <td align="right">
+                                            {formatARS(lineTotal)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

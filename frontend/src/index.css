@@ -59,3 +59,27 @@ body,
 .pos-no-select {
   user-select: none;
 }
+
+/* ═══════════════════════════════════════════════════
+   Responsive — Global Touch & Tablet Rules
+   ═══════════════════════════════════════════════════ */
+
+/* Prevent iOS auto-zoom on inputs with font-size < 16px */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  .mantine-NumberInput-input,
+  .mantine-TextInput-input,
+  .mantine-Select-input {
+    font-size: 16px !important;
+  }
+}
+
+/* Admin tables: horizontal scroll on small screens */
+@media (max-width: 48em) {
+  .mantine-Table-scrollContainer {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

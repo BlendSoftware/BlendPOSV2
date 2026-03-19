@@ -42,13 +42,16 @@ type VentaListResponse struct {
 // ─── Request DTOs ────────────────────────────────────────────────────────────
 
 type ItemVentaRequest struct {
-	ProductoID string          `json:"producto_id" validate:"required,uuid"`
-	Cantidad   int             `json:"cantidad"    validate:"required,min=1"`
-	Descuento  decimal.Decimal `json:"descuento"   validate:"min=0"`
+	ProductoID string           `json:"producto_id" validate:"required,uuid"`
+	Cantidad   int              `json:"cantidad"    validate:"required,min=1"`
+	Descuento  decimal.Decimal  `json:"descuento"   validate:"min=0"`
+	// Peso: required when the product's unidad_medida is "kg" or "gramo".
+	// Represents weight in the product's unit (kg or grams).
+	Peso       *decimal.Decimal `json:"peso,omitempty"`
 }
 
 type PagoRequest struct {
-	Metodo string          `json:"metodo" validate:"required,oneof=efectivo debito credito qr transferencia"`
+	Metodo string          `json:"metodo" validate:"required,oneof=efectivo debito credito qr transferencia fiado"`
 	Monto  decimal.Decimal `json:"monto"  validate:"required"`
 }
 
@@ -56,6 +59,8 @@ type RegistrarVentaRequest struct {
 	SesionCajaID string             `json:"sesion_caja_id" validate:"required,uuid"`
 	Items        []ItemVentaRequest `json:"items"          validate:"required,min=1,dive"`
 	Pagos        []PagoRequest      `json:"pagos"          validate:"required,min=1,dive"`
+	// ClienteID: optional — when a pago has metodo="fiado", this identifies the customer account to charge.
+	ClienteID *string `json:"cliente_id"    validate:"omitempty,uuid"`
 	// OfflineID is set by the PWA when registering a sale created offline
 	OfflineID *string `json:"offline_id"    validate:"omitempty,uuid"`
 	// ClienteEmail: optional — when present, the facturacion worker mails the PDF receipt.
@@ -77,18 +82,34 @@ type AnularVentaRequest struct {
 	Motivo string `json:"motivo" validate:"required,min=5"`
 }
 
-// SyncBatchRequest holds multiple offline sales to reconcile
+// SyncBatchRequest holds multiple offline sales to reconcile.
+// DeviceID and CatalogVersion are informational metadata from the PWA.
 type SyncBatchRequest struct {
-	Ventas []RegistrarVentaRequest `json:"ventas" validate:"required,min=1,dive"`
+	Ventas         []RegistrarVentaRequest `json:"ventas"          validate:"required,dive"`
+	DeviceID       string                  `json:"device_id"       validate:"omitempty,uuid"`
+	CatalogVersion int64                   `json:"catalog_version" validate:"omitempty"`
+}
+
+// SyncBatchResponse is the structured response for POST /v1/ventas/sync-batch.
+// It classifies each offline_id into synced, duplicated, or failed.
+type SyncBatchResponse struct {
+	SyncedIDs      []string `json:"synced_ids"`
+	DuplicatedIDs  []string `json:"duplicated_ids"`
+	FailedIDs      []string `json:"failed_ids"`
+	TotalProcessed int      `json:"total_processed"`
+	TotalDuplicated int     `json:"total_duplicated"`
 }
 
 // ─── Response DTOs ───────────────────────────────────────────────────────────
 
 type ItemVentaResponse struct {
-	Producto       string          `json:"producto"`
-	Cantidad       int             `json:"cantidad"`
-	PrecioUnitario decimal.Decimal `json:"precio_unitario"`
-	Subtotal       decimal.Decimal `json:"subtotal"`
+	Producto       string           `json:"producto"`
+	Cantidad       int              `json:"cantidad"`
+	PrecioUnitario decimal.Decimal  `json:"precio_unitario"`
+	Subtotal       decimal.Decimal  `json:"subtotal"`
+	// Peso is included in responses for weight-based items (kg/gramo).
+	Peso           *decimal.Decimal `json:"peso,omitempty"`
+	UnidadMedida   string           `json:"unidad_medida,omitempty"`
 }
 
 type VentaResponse struct {

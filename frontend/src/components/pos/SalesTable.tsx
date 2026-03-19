@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Table, Text, Flex, Box, ActionIcon, NumberInput, Tooltip, Badge, Stack } from '@mantine/core';
-import { ScanBarcode, Trash2, Plus, Minus, Tag } from 'lucide-react';
+import { ScanBarcode, Trash2, Plus, Minus, Tag, Scale } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import type { CartItem } from '../../store/useCartStore';
 import { usePromocionesStore } from '../../store/usePromocionesStore';
@@ -319,6 +319,8 @@ export function SalesTable() {
                         const effectivePct = isComboProduct
                             ? cartItem.descuento
                             : Math.max(cartItem.descuento, cartItem.promoDescuento ?? 0);
+                        const isWeightItem = cartItem.peso != null && (cartItem.unidadMedida === 'kg' || cartItem.unidadMedida === 'gramo');
+                        const weightSuffix = cartItem.unidadMedida === 'kg' ? 'kg' : cartItem.unidadMedida === 'gramo' ? 'g' : '';
 
                         return (
                             <Table.Tr
@@ -344,6 +346,11 @@ export function SalesTable() {
                                         <Text size="sm" fw={600} lineClamp={1}>
                                             {cartItem.nombre}
                                         </Text>
+                                        {isWeightItem && (
+                                            <Badge size="xs" color="blue" variant="light" mt={2} leftSection={<Scale size={9} />}>
+                                                {cartItem.peso?.toFixed(cartItem.unidadMedida === 'kg' ? 3 : 0)} {weightSuffix}
+                                            </Badge>
+                                        )}
                                         {/* Manual discount or single-product promo badge */}
                                         {effectivePct > 0 && !cartItem.promoNombre && (
                                             <Badge size="xs" color="orange" variant="light" mt={2}>
@@ -352,7 +359,7 @@ export function SalesTable() {
                                         )}
                                         {effectivePct > 0 && cartItem.promoNombre && !isComboProduct && (
                                             <Badge size="xs" color="orange" variant="light" mt={2}>
-                                                🏷 {cartItem.promoNombre}
+                                                {cartItem.promoNombre}
                                             </Badge>
                                         )}
                                     </Box>
@@ -360,12 +367,17 @@ export function SalesTable() {
 
                                 <Table.Td style={{ textAlign: 'right' }}>
                                     <Text size="sm" c="dimmed" ff="monospace">
-                                        {formatCurrency(cartItem.precio)}
+                                        {formatCurrency(cartItem.precio)}{isWeightItem ? `/${weightSuffix}` : ''}
                                     </Text>
                                 </Table.Td>
 
                                 <Table.Td style={{ textAlign: 'center' }}>
-                                    {isEditing ? (
+                                    {isWeightItem ? (
+                                        /* Weight items don't have +/- quantity controls — weight is fixed at entry */
+                                        <Text size="sm" fw={700} c="blue">
+                                            {cartItem.peso?.toFixed(cartItem.unidadMedida === 'kg' ? 3 : 0)} {weightSuffix}
+                                        </Text>
+                                    ) : isEditing ? (
                                         <NumberInput
                                             value={editingValue}
                                             onChange={setEditingValue}

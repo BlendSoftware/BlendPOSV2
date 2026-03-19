@@ -50,6 +50,8 @@ export default defineConfig({
       'workbox-precaching',
       'workbox-routing',
       'workbox-strategies',
+      'workbox-expiration',
+      'workbox-cacheable-response',
       'workbox-core',
       'react',
       'react-dom',
@@ -77,7 +79,8 @@ export default defineConfig({
         display: 'standalone',
         theme_color: '#228be6',
         background_color: '#ffffff',
-        description: 'Sistema de Punto de Venta',
+        description: 'Sistema de Punto de Venta offline-first para kioscos',
+        id: '/',
         icons: [
           {
             src: '/icons/icon-192x192.png',
@@ -89,6 +92,12 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
+          },
+          {
+            src: '/icons/apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'apple touch icon',
           },
         ],
       },

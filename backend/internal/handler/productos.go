@@ -107,6 +107,49 @@ func (h *ProductosHandler) Reactivar(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *ProductosHandler) CrearBulk(c *gin.Context) {
+	var req dto.BulkCrearProductosRequest
+	if !bindAndValidate(c, &req) {
+		return
+	}
+
+	results := make([]dto.BulkImportResult, 0, len(req.Productos))
+	created := 0
+	failed := 0
+
+	for i, p := range req.Productos {
+		resp, err := h.svc.Crear(c.Request.Context(), p)
+		if err != nil {
+			results = append(results, dto.BulkImportResult{
+				Index:   i,
+				Success: false,
+				Error:   err.Error(),
+			})
+			failed++
+		} else {
+			results = append(results, dto.BulkImportResult{
+				Index:   i,
+				Success: true,
+				ID:      resp.ID,
+			})
+			created++
+		}
+	}
+
+	middleware.AuditLog(c, "bulk_create", "producto", nil, map[string]interface{}{
+		"total":   len(req.Productos),
+		"created": created,
+		"failed":  failed,
+	})
+
+	c.JSON(http.StatusOK, dto.BulkImportResponse{
+		Total:   len(req.Productos),
+		Created: created,
+		Failed:  failed,
+		Results: results,
+	})
+}
+
 func (h *ProductosHandler) AjustarStock(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

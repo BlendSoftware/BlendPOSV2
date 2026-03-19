@@ -43,6 +43,10 @@ export interface SaleRecord {
     sesionCajaId?: string;
     /** Email del cliente para envío de comprobante digital. */
     clienteEmail?: string;
+    /** Cliente ID for fiado (credit tab) sales. */
+    clienteId?: string;
+    /** Cliente name for display in receipt. */
+    clienteNombre?: string;
     /** Tipo de comprobante fiscal solicitado. Defaults to 'ticket_interno'. */
     tipoComprobante: 'ticket_interno' | 'factura_a' | 'factura_b' | 'factura_c';
     /** CUIT del receptor (requerido para factura_a). */
@@ -85,6 +89,10 @@ interface SaleState {
         receptorNombre?: string;
         /** Domicilio del comprador para factura fiscal. */
         receptorDomicilio?: string;
+        /** Cliente ID for fiado (credit tab) sales. */
+        clienteId?: string;
+        /** Cliente name for display in receipt. */
+        clienteNombre?: string;
     }) => SaleRecord;
     setCajero: (nombre: string) => void;
     /** Sync ticket counter with backend's last ticket number */
@@ -146,6 +154,8 @@ export const useSaleStore = create<SaleState>()(
                     nroDocReceptor: pago.nroDocReceptor,
                     receptorNombre: pago.receptorNombre,
                     receptorDomicilio: pago.receptorDomicilio,
+                    clienteId: pago.clienteId,
+                    clienteNombre: pago.clienteNombre,
                     descuentoGlobal: descuentoGlobal > 0 ? descuentoGlobal : undefined,
                 };
 
@@ -158,7 +168,11 @@ export const useSaleStore = create<SaleState>()(
 
                 // 📦 Deduct local stock immediately (no full catalog refresh needed —
                 // periodic delta sync every 15min handles backend reconciliation)
-                deductLocalStock(cart.map((i) => ({ id: i.id, cantidad: i.cantidad })))
+                // Weight items use composite IDs — extract real product ID for stock deduction.
+                deductLocalStock(cart.map((i) => ({
+                    id: i.id.includes('__w_') ? i.id.split('__w_')[0] : i.id,
+                    cantidad: i.cantidad,
+                })))
                     .catch(console.warn);
 
                 const nextHistorial = [record, ...historial].slice(0, MAX_HISTORIAL);

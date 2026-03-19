@@ -31,6 +31,7 @@ export interface ProductoResponse {
     unidad_medida: string;
     es_padre: boolean;
     activo: boolean;
+    controla_vencimiento?: boolean;
     proveedor_id: string | null;
 }
 
@@ -70,6 +71,7 @@ export interface CrearProductoRequest {
     stock_minimo: number;
     unidad_medida?: string;
     proveedor_id?: string;
+    controla_vencimiento?: boolean;
 }
 
 export interface ActualizarProductoRequest {
@@ -81,6 +83,23 @@ export interface ActualizarProductoRequest {
     stock_minimo?: number;
     unidad_medida?: string;
     proveedor_id?: string;
+    controla_vencimiento?: boolean;
+}
+
+// ── Bulk Import Types ────────────────────────────────────────────────────────
+
+export interface BulkImportResult {
+    index: number;
+    success: boolean;
+    id?: string;
+    error?: string;
+}
+
+export interface BulkImportResponse {
+    total: number;
+    created: number;
+    failed: number;
+    results: BulkImportResult[];
 }
 
 // ── API Calls ─────────────────────────────────────────────────────────────────
@@ -155,4 +174,12 @@ export async function ajustarStock(
     motivo: string
 ): Promise<ProductoResponse> {
     return apiClient.patch<ProductoResponse>(`/v1/productos/${id}/stock`, { delta, motivo });
+}
+
+/**
+ * POST /v1/productos/bulk  (requiere rol: administrador)
+ * Importa multiples productos en una sola transaccion.
+ */
+export async function crearProductoBulk(products: CrearProductoRequest[]): Promise<BulkImportResponse> {
+    return apiClient.post<BulkImportResponse>('/v1/productos/bulk', { productos: products });
 }

@@ -29,8 +29,9 @@ type Tenant struct {
 	Slug      string    `gorm:"type:varchar(63);uniqueIndex;not null"`
 	Nombre    string    `gorm:"type:varchar(255);not null"`
 	PlanID    *uuid.UUID `gorm:"type:uuid"`
-	CUIT      *string   `gorm:"type:varchar(13)"`
-	Activo    bool      `gorm:"not null;default:true"`
+	CUIT        *string `gorm:"column:cuit;type:varchar(13)"`
+	TipoNegocio string  `gorm:"type:varchar(30);not null;default:'kiosco'"`
+	Activo      bool    `gorm:"not null;default:true"`
 	CreatedAt time.Time
 
 	Plan *Plan `gorm:"foreignKey:PlanID"`

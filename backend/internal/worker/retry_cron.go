@@ -105,11 +105,12 @@ func processRetries(ctx context.Context, cfg RetryCronConfig) {
 				if puntoDeVenta == 0 {
 					puntoDeVenta = fiscalCfg.PuntoDeVenta
 				}
+				// F1-4: Decode base64 -> PEM before sending to sidecar
 				if fiscalCfg.CertificadoCrt != nil {
-					certPEM = *fiscalCfg.CertificadoCrt
+					certPEM = decodeBase64OrPassthrough(*fiscalCfg.CertificadoCrt)
 				}
 				if fiscalCfg.CertificadoKey != nil {
-					keyPEM = *fiscalCfg.CertificadoKey
+					keyPEM = decodeBase64OrPassthrough(*fiscalCfg.CertificadoKey)
 				}
 				modo = fiscalCfg.Modo
 			}

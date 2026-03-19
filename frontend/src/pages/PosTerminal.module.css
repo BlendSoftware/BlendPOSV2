@@ -60,3 +60,68 @@
     overflow: hidden;
     min-height: 0;
 }
+
+/* ── Touch action bar (replaces HotkeysFooter on touch devices) ─── */
+.touchActionBar {
+    display: none;
+}
+
+/* ── Tablet responsive: stack layout below 1024px ─────────────────── */
+@media (max-width: 1024px) {
+    .posLayout {
+        grid-template-rows: 60px 1fr auto auto;
+    }
+
+    .mainContent {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
+        overflow: auto;
+    }
+
+    .salesSection {
+        min-height: 40vh;
+    }
+
+    .scannerInput {
+        /* Full width, already is, but ensure no margin squish */
+    }
+
+    .tableArea {
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+}
+
+/* ── Touch-specific: show action bar, hide hotkeys footer ─────────── */
+@media (pointer: coarse) {
+    .touchActionBar {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        justify-content: space-around;
+        align-items: center;
+        padding: 8px 16px;
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+        background: var(--mantine-color-dark-8);
+        border-top: 1px solid var(--mantine-color-dark-4);
+        gap: 8px;
+    }
+
+    :global([data-mantine-color-scheme='light']) .touchActionBar {
+        background: var(--mantine-color-white);
+        border-top-color: var(--mantine-color-gray-3);
+    }
+
+    .touchActionBtn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* Add bottom padding to layout so content isn't hidden behind the fixed bar */
+    .posLayout {
+        padding-bottom: 64px;
+    }
+}

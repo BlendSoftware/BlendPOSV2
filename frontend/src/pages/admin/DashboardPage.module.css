@@ -77,3 +77,21 @@
 :global([data-mantine-color-scheme='light']) .chartPanel {
     background: var(--mantine-color-white);
 }
+
+/* ── Tablet/small screen: horizontal scroll for tables ────────────── */
+@media (max-width: 48em) {
+    .card :global(.mantine-Table-scrollContainer),
+    .card :global(table) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ── Touch: prevent iOS zoom on number inputs ─────────────────────── */
+@media (pointer: coarse) {
+    .card :global(input[type="number"]),
+    .card :global(.mantine-NumberInput-input),
+    .card :global(.mantine-TextInput-input) {
+        font-size: 16px;
+    }
+}

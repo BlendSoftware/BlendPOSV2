@@ -8,11 +8,8 @@ import (
 	"blendpos/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
-
-var tenantValidate = validator.New()
 
 // TenantsHandler exposes tenant self-service and superadmin endpoints.
 type TenantsHandler struct {
@@ -33,12 +30,7 @@ func NewTenantsHandler(svc service.TenantService) *TenantsHandler {
 // @Router  /v1/public/register [post]
 func (h *TenantsHandler) Register(c *gin.Context) {
 	var req dto.RegisterTenantRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
-		return
-	}
-	if err := tenantValidate.Struct(req); err != nil {
-		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
+	if !bindAndValidate(c, &req) {
 		return
 	}
 	resp, err := h.svc.Registrar(c.Request.Context(), req)
@@ -119,18 +111,49 @@ func (h *TenantsHandler) ListarPlanes(c *gin.Context) {
 // ── Superadmin endpoints ──────────────────────────────────────────────────────
 
 // ListarTodos godoc
-// @Summary Listar todos los tenants (superadmin)
+// @Summary Listar todos los tenants con paginación (superadmin)
 // @Tags    superadmin
 // @Produce json
-// @Success 200 {array} dto.SuperadminTenantListItem
+// @Param   page      query int    false "Page number"     default(1)
+// @Param   page_size query int    false "Items per page"  default(20)
+// @Param   search    query string false "Search by name or slug"
+// @Param   status    query string false "Filter: active, inactive, all" default(all)
+// @Param   plan_id   query string false "Filter by plan UUID"
+// @Success 200 {object} dto.TenantListResponse
 // @Router  /v1/superadmin/tenants [get]
 func (h *TenantsHandler) ListarTodos(c *gin.Context) {
-	items, err := h.svc.ListarTodos(c.Request.Context())
+	var req dto.TenantListRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, apierror.New("parámetros de consulta inválidos"))
+		return
+	}
+	resp, err := h.svc.ListarTodos(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, apierror.New(err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, items)
+	c.JSON(http.StatusOK, resp)
+}
+
+// ObtenerTenantDetalle godoc
+// @Summary Detalle de un tenant con métricas (superadmin)
+// @Tags    superadmin
+// @Produce json
+// @Param   id path string true "Tenant ID"
+// @Success 200 {object} dto.SuperadminTenantListItem
+// @Router  /v1/superadmin/tenants/:id [get]
+func (h *TenantsHandler) ObtenerTenantDetalle(c *gin.Context) {
+	tenantID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, apierror.New("tenant ID inválido"))
+		return
+	}
+	resp, err := h.svc.ObtenerTenantDetalle(c.Request.Context(), tenantID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, apierror.New(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 // CambiarPlan godoc
@@ -189,6 +212,33 @@ func (h *TenantsHandler) ToggleActivo(c *gin.Context) {
 	resp, err := h.svc.ToggleActivo(c.Request.Context(), tenantID, req.Activo)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, apierror.New(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+// ListarPresets godoc
+// @Summary Listar resumen de presets de negocio (público)
+// @Tags    tenants
+// @Produce json
+// @Success 200 {array} dto.PresetResponse
+// @Router  /v1/public/presets [get]
+func (h *TenantsHandler) ListarPresets(c *gin.Context) {
+	c.JSON(http.StatusOK, service.GetAllPresetSummaries())
+}
+
+// ObtenerPreset godoc
+// @Summary Obtener preset por tipo de negocio (público)
+// @Tags    tenants
+// @Produce json
+// @Param   tipo path string true "Tipo de negocio"
+// @Success 200 {object} dto.PresetResponse
+// @Router  /v1/public/presets/:tipo [get]
+func (h *TenantsHandler) ObtenerPreset(c *gin.Context) {
+	tipo := c.Param("tipo")
+	resp, err := service.GetPresetInfo(tipo)
+	if err != nil {
+		c.JSON(http.StatusNotFound, apierror.New(err.Error()))
 		return
 	}
 	c.JSON(http.StatusOK, resp)

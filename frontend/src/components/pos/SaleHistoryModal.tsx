@@ -1,4 +1,5 @@
 import { Modal, Stack, Text, Group, Badge, Divider, ScrollArea, Box, ActionIcon } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { History, Clock, ShoppingBag, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { useSaleStore, type SaleRecord } from '../../store/useSaleStore';
@@ -140,6 +141,7 @@ function SaleRow({ sale }: { sale: SaleRecord }) {
 }
 
 export function SaleHistoryModal({ opened, onClose }: Props) {
+    const isMobile = useMediaQuery('(max-width: 48em)');
     const historial = useSaleStore((s) => s.historial);
 
     const totalVendido = historial.reduce((sum, s) => sum + s.totalConDescuento, 0);
@@ -157,6 +159,7 @@ export function SaleHistoryModal({ opened, onClose }: Props) {
             }
             size="lg"
             centered
+            fullScreen={isMobile ?? false}
         >
             <Stack gap="md">
                 {historial.length > 0 && (
