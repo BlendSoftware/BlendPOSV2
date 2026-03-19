@@ -7,7 +7,7 @@ import {
 import {
     Package, Boxes, Truck, FileText,
     Users, Calculator, LogOut, ChevronRight, Home,
-    BarChart2, Tag, ShoppingBag, Shield, PieChart, Clock, CreditCard,
+    BarChart2, Tag, ShoppingBag, Shield, PieChart, Clock, CreditCard, Building2,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -36,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Cierre de Caja', path: '/admin/cierre-caja', icon: <Calculator size={18} /> },
     { label: 'Config. Fiscal', path: '/admin/configuracion-fiscal', icon: <Boxes size={18} />, roles: ['admin'] },
     { label: 'Usuarios', path: '/admin/usuarios', icon: <Users size={18} />, roles: ['admin', 'supervisor'] },
+    { label: 'Sucursales', path: '/admin/sucursales', icon: <Building2 size={18} />, roles: ['admin'] },
     { label: 'Superadmin', path: '/admin/superadmin', icon: <Shield size={18} />, roles: ['superadmin'] },
 ];
 

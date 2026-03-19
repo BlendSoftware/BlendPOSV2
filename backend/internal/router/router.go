@@ -50,6 +50,7 @@ type Deps struct {
 	ReportesSvc     service.ReportesService
 	LoteSvc         service.LoteService
 	ClienteSvc      service.ClienteService
+	SucursalSvc     service.SucursalService
 
 	// Repos still needed by handlers that bypass the service layer
 	ProductoRepo        repository.ProductoRepository
@@ -110,6 +111,7 @@ func New(d Deps) *gin.Engine {
 	reportesH := handler.NewReportesHandler(d.ReportesSvc)
 	vencimientosH := handler.NewVencimientosHandler(d.LoteSvc)
 	clientesH := handler.NewClientesHandler(d.ClienteSvc)
+	sucursalesH := handler.NewSucursalesHandler(d.SucursalSvc)
 
 	// ── Routes ───────────────────────────────────────────────────────────────
 
@@ -313,6 +315,16 @@ func New(d Deps) *gin.Engine {
 			promos.POST("", promocionesH.Crear)
 			promos.PUT(":id", idor("promociones", "id"), promocionesH.Actualizar)
 			promos.DELETE(":id", idor("promociones", "id"), promocionesH.Eliminar)
+		}
+
+		// Sucursales — admin only, all roles can read
+		v1.GET("/sucursales", middleware.RequireRole("cajero", "supervisor", "administrador"), sucursalesH.Listar)
+		v1.GET("/sucursales/:id", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("sucursales", "id"), sucursalesH.ObtenerPorID)
+		sucursales := v1.Group("/sucursales", middleware.RequireRole("administrador"))
+		{
+			sucursales.POST("", sucursalesH.Crear)
+			sucursales.PUT("/:id", idor("sucursales", "id"), sucursalesH.Actualizar)
+			sucursales.DELETE("/:id", idor("sucursales", "id"), sucursalesH.Desactivar)
 		}
 
 		// Billing — subscription management (F1-5)

@@ -102,6 +102,12 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 		return nil, err
 	}
 
+	// 1b. Inherit sucursal_id from the caja session
+	var sucursalID *uuid.UUID
+	if sesionCaja, sesErr := s.cajaRepo.FindSesionByID(ctx, sesionID); sesErr == nil && sesionCaja != nil {
+		sucursalID = sesionCaja.SucursalID
+	}
+
 	// 2. Deduplicate offline sale
 	if req.OfflineID != nil {
 		if existing, err := s.repo.FindByOfflineID(ctx, *req.OfflineID); err == nil {
@@ -289,6 +295,7 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 			NumeroTicket:    ticketNum,
 			SesionCajaID:    sesionID,
 			UsuarioID:       usuarioID,
+			SucursalID:      sucursalID,
 			ClienteID:       clienteID,
 			Subtotal:        subtotal,
 			DescuentoTotal:  descuentoTotal,

@@ -11,6 +11,7 @@ import {
     Paper,
     Progress,
     SegmentedControl,
+    Select,
     SimpleGrid,
     Skeleton,
     Stack,
@@ -25,6 +26,7 @@ import {
 import { DatePickerInput, type DatesRangeValue } from '@mantine/dates';
 import {
     AlertTriangle,
+    Building2,
     Calendar,
     Clock,
     CreditCard,
@@ -51,6 +53,7 @@ import {
     type TurnoResponse,
     type Agrupacion,
 } from '../../services/api/reportes';
+import { listarSucursales, type SucursalResponse } from '../../services/api/sucursales';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -195,6 +198,10 @@ export function ReportesPage() {
     const [dateRange, setDateRange] = useState<DatesRangeValue>([defaultDesde, defaultHasta]);
     const [agrupacion, setAgrupacion] = useState<Agrupacion>('dia');
 
+    // Sucursal filter — null = "Todas" (consolidated)
+    const [sucursalId, setSucursalId] = useState<string | null>(null);
+    const [sucursales, setSucursales] = useState<SucursalResponse[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -208,6 +215,13 @@ export function ReportesPage() {
     const [cajeros, setCajeros] = useState<CajeroResponse[]>([]);
     const [turnos, setTurnos] = useState<TurnoResponse[]>([]);
 
+    // Fetch sucursales list once on mount
+    useEffect(() => {
+        listarSucursales()
+            .then((res) => setSucursales(res.data ?? []))
+            .catch(() => setSucursales([]));
+    }, []);
+
     const fetchData = useCallback(
         async (showRefresh = false) => {
             const desde = dateRange[0];
@@ -220,14 +234,15 @@ export function ReportesPage() {
             try {
                 const desdeStr = toDateStr(desde instanceof Date ? desde : new Date(desde));
                 const hastaStr = toDateStr(hasta instanceof Date ? hasta : new Date(hasta));
+                const sid = sucursalId ?? undefined;
 
                 const [resumenRes, topRes, mediosRes, periodoRes, cajerosRes, turnosRes] = await Promise.allSettled([
-                    getResumen(desdeStr, hastaStr),
-                    getTopProductos(desdeStr, hastaStr, 10),
-                    getMediosPago(desdeStr, hastaStr),
-                    getVentasPorPeriodo(desdeStr, hastaStr, agrupacion),
-                    getCajeros(desdeStr, hastaStr),
-                    getTurnos(desdeStr, hastaStr),
+                    getResumen(desdeStr, hastaStr, sid),
+                    getTopProductos(desdeStr, hastaStr, 10, sid),
+                    getMediosPago(desdeStr, hastaStr, sid),
+                    getVentasPorPeriodo(desdeStr, hastaStr, agrupacion, sid),
+                    getCajeros(desdeStr, hastaStr, sid),
+                    getTurnos(desdeStr, hastaStr, sid),
                 ]);
 
                 if (resumenRes.status === 'fulfilled') setResumen(resumenRes.value);
@@ -266,18 +281,18 @@ export function ReportesPage() {
                 setRefreshing(false);
             }
         },
-        [dateRange, agrupacion],
+        [dateRange, agrupacion, sucursalId],
     );
 
     const fetchRef = useRef(fetchData);
     fetchRef.current = fetchData;
 
-    // Fetch on mount and when dateRange/agrupacion changes
+    // Fetch on mount and when dateRange/agrupacion/sucursalId changes
     useEffect(() => {
         if (!dateRange[0] || !dateRange[1]) return;
         setLoading(true);
         fetchRef.current();
-    }, [dateRange, agrupacion]);
+    }, [dateRange, agrupacion, sucursalId]);
 
     // ── Derived values ───────────────────────────────────────────────────────
 
@@ -296,6 +311,22 @@ export function ReportesPage() {
                     </Text>
                 </div>
                 <Group gap="md" align="flex-end">
+                    {sucursales.length > 0 && (
+                        <Select
+                            label="Sucursal"
+                            placeholder="Todas"
+                            data={[
+                                { value: '', label: 'Todas las sucursales' },
+                                ...sucursales.map((s) => ({ value: s.id, label: s.nombre })),
+                            ]}
+                            value={sucursalId ?? ''}
+                            onChange={(val) => setSucursalId(val || null)}
+                            leftSection={<Building2 size={16} />}
+                            clearable={false}
+                            size="sm"
+                            w={200}
+                        />
+                    )}
                     <DatePickerInput
                         type="range"
                         label="Periodo"

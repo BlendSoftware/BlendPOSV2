@@ -148,7 +148,7 @@ var _ repository.CajaRepository = (*fullCajaRepo)(nil)
 
 func TestAbrirCaja(t *testing.T) {
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	resp, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 1,
@@ -163,7 +163,7 @@ func TestAbrirCaja(t *testing.T) {
 
 func TestAbrirCajaDuplicada(t *testing.T) {
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	resp1, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 1,
@@ -184,7 +184,7 @@ func TestMovimientoInmutable(t *testing.T) {
 	// Movements are created, never updated — verify CreateMovimiento is called
 	// and no UpdateMovimiento method exists on the interface (compile-time guarantee).
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	resp, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 2,
@@ -210,7 +210,7 @@ func TestMovimientoInmutable(t *testing.T) {
 
 func TestDesvioNormal(t *testing.T) {
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	resp, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 3,
@@ -239,7 +239,7 @@ func TestDesvioNormal(t *testing.T) {
 
 func TestDesvioAdvertencia(t *testing.T) {
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	resp, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 4,
@@ -260,7 +260,7 @@ func TestDesvioAdvertencia(t *testing.T) {
 
 func TestDesvioCritico(t *testing.T) {
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	resp, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 5,
@@ -293,7 +293,7 @@ func TestArqueoCiego(t *testing.T) {
 	// Blind arqueo: the service must NOT expose montoEsperado before receiving declaration.
 	// We verify the flow: Abrir → movimientos → Arqueo (without prior "sneak peek").
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	resp, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 6,
@@ -329,7 +329,7 @@ func TestArqueoCiego(t *testing.T) {
 
 func TestObtenerReporte(t *testing.T) {
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	openResp, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 7,
@@ -346,7 +346,7 @@ func TestObtenerReporte(t *testing.T) {
 
 func TestEgresoManual_MontoNegativo(t *testing.T) {
 	repo := newFullCajaRepo()
-	svc := service.NewCajaService(repo)
+	svc := service.NewCajaService(repo, nil)
 
 	resp, err := svc.Abrir(context.Background(), uuid.New(), dto.AbrirCajaRequest{
 		PuntoDeVenta: 8,

@@ -15,6 +15,8 @@ type Venta struct {
 	NumeroTicket   int             `gorm:"uniqueIndex;not null;autoIncrement"`
 	SesionCajaID   uuid.UUID       `gorm:"type:uuid;index;not null"`
 	UsuarioID      uuid.UUID       `gorm:"type:uuid;not null"`
+	// SucursalID tags this sale to a branch; inherited from the caja session (or user if no session)
+	SucursalID     *uuid.UUID      `gorm:"type:uuid;index"`
 	Subtotal       decimal.Decimal `gorm:"type:decimal(12,2);not null"`
 	DescuentoTotal decimal.Decimal `gorm:"type:decimal(12,2);not null;default:0"`
 	Total          decimal.Decimal `gorm:"type:decimal(12,2);not null"`

@@ -1,5 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Reportes API — GET /v1/reportes/resumen, top-productos, medios-pago, ventas-periodo
+// All endpoints accept an optional sucursal_id query param for branch filtering.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { apiClient } from '../../api/client';
@@ -55,14 +56,24 @@ export interface TurnoResponse {
     desvio_clasificacion: string;
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Build query params, omitting undefined/null values. */
+function buildParams(base: Record<string, unknown>, sucursalId?: string): Record<string, unknown> {
+    if (sucursalId) {
+        return { ...base, sucursal_id: sucursalId };
+    }
+    return base;
+}
+
 // ── API Calls ─────────────────────────────────────────────────────────────────
 
 /**
  * GET /v1/reportes/resumen
  * Resumen general: total vendido, cantidad de ventas, ticket promedio.
  */
-export async function getResumen(desde: string, hasta: string): Promise<ResumenResponse> {
-    return apiClient.get<ResumenResponse>('/v1/reportes/resumen', { desde, hasta });
+export async function getResumen(desde: string, hasta: string, sucursalId?: string): Promise<ResumenResponse> {
+    return apiClient.get<ResumenResponse>('/v1/reportes/resumen', buildParams({ desde, hasta }, sucursalId));
 }
 
 /**
@@ -73,20 +84,21 @@ export async function getTopProductos(
     desde: string,
     hasta: string,
     limit = 10,
+    sucursalId?: string,
 ): Promise<TopProductoResponse[]> {
-    return apiClient.get<TopProductoResponse[]>('/v1/reportes/top-productos', {
+    return apiClient.get<TopProductoResponse[]>('/v1/reportes/top-productos', buildParams({
         desde,
         hasta,
         limit,
-    });
+    }, sucursalId));
 }
 
 /**
  * GET /v1/reportes/medios-pago
  * Desglose de ventas por método de pago.
  */
-export async function getMediosPago(desde: string, hasta: string): Promise<MedioPagoResponse[]> {
-    return apiClient.get<MedioPagoResponse[]>('/v1/reportes/medios-pago', { desde, hasta });
+export async function getMediosPago(desde: string, hasta: string, sucursalId?: string): Promise<MedioPagoResponse[]> {
+    return apiClient.get<MedioPagoResponse[]>('/v1/reportes/medios-pago', buildParams({ desde, hasta }, sucursalId));
 }
 
 /**
@@ -97,26 +109,27 @@ export async function getVentasPorPeriodo(
     desde: string,
     hasta: string,
     agrupacion: Agrupacion = 'dia',
+    sucursalId?: string,
 ): Promise<VentaPeriodoResponse[]> {
-    return apiClient.get<VentaPeriodoResponse[]>('/v1/reportes/ventas-periodo', {
+    return apiClient.get<VentaPeriodoResponse[]>('/v1/reportes/ventas-periodo', buildParams({
         desde,
         hasta,
         agrupacion,
-    });
+    }, sucursalId));
 }
 
 /**
  * GET /v1/reportes/cajeros
  * Ventas agrupadas por cajero con métricas.
  */
-export async function getCajeros(desde: string, hasta: string): Promise<CajeroResponse[]> {
-    return apiClient.get<CajeroResponse[]>('/v1/reportes/cajeros', { desde, hasta });
+export async function getCajeros(desde: string, hasta: string, sucursalId?: string): Promise<CajeroResponse[]> {
+    return apiClient.get<CajeroResponse[]>('/v1/reportes/cajeros', buildParams({ desde, hasta }, sucursalId));
 }
 
 /**
  * GET /v1/reportes/turnos
  * Sesiones de caja con totales y desvío.
  */
-export async function getTurnos(desde: string, hasta: string): Promise<TurnoResponse[]> {
-    return apiClient.get<TurnoResponse[]>('/v1/reportes/turnos', { desde, hasta });
+export async function getTurnos(desde: string, hasta: string, sucursalId?: string): Promise<TurnoResponse[]> {
+    return apiClient.get<TurnoResponse[]>('/v1/reportes/turnos', buildParams({ desde, hasta }, sucursalId));
 }

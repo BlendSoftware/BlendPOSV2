@@ -13,6 +13,8 @@ export interface IUser {
     activo: boolean;
     creadoEn: string; // ISO date
     puntoDeVenta?: number; // C-01/C-02: assigned POS terminal
+    sucursalId?: string;
+    sucursalNombre?: string;
 }
 
 // ── Productos ────────────────────────────────────────────────────────────────

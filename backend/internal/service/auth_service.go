@@ -68,13 +68,7 @@ func (s *authService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 		TokenType:          "bearer",
 		ExpiresIn:          s.cfg.JWTExpirationHours * 3600,
 		MustChangePassword: user.MustChangePassword,
-		User: dto.UsuarioResponse{
-			ID:           user.ID.String(),
-			Username:     user.Username,
-			Nombre:       user.Nombre,
-			Rol:          user.Rol,
-			PuntoDeVenta: user.PuntoDeVenta,
-		},
+		User:               *usuarioToResponse(user),
 	}, nil
 }
 
@@ -150,10 +144,7 @@ func (s *authService) Refresh(ctx context.Context, refreshToken string) (*dto.Lo
 		RefreshToken: newRefresh,
 		TokenType:    "bearer",
 		ExpiresIn:    s.cfg.JWTExpirationHours * 3600,
-		User: dto.UsuarioResponse{
-			ID: user.ID.String(), Username: user.Username,
-			Nombre: user.Nombre, Rol: user.Rol, PuntoDeVenta: user.PuntoDeVenta,
-		},
+		User: *usuarioToResponse(user),
 	}, nil
 }
 
@@ -171,13 +162,17 @@ func (s *authService) CrearUsuario(ctx context.Context, req dto.CrearUsuarioRequ
 		PuntoDeVenta: req.PuntoDeVenta,
 		Activo:       true,
 	}
+	if req.SucursalID != nil {
+		sid, err := uuid.Parse(*req.SucursalID)
+		if err != nil {
+			return nil, errors.New("sucursal_id invalido")
+		}
+		user.SucursalID = &sid
+	}
 	if err := s.repo.Create(ctx, user); err != nil {
 		return nil, err
 	}
-	return &dto.UsuarioResponse{
-		ID: user.ID.String(), Username: user.Username, Nombre: user.Nombre,
-		Email: user.Email, Rol: user.Rol, PuntoDeVenta: user.PuntoDeVenta, Activo: user.Activo,
-	}, nil
+	return usuarioToResponse(user), nil
 }
 
 func (s *authService) ListarUsuarios(ctx context.Context, incluirInactivos bool) ([]dto.UsuarioResponse, error) {
@@ -193,10 +188,7 @@ func (s *authService) ListarUsuarios(ctx context.Context, incluirInactivos bool)
 	}
 	resp := make([]dto.UsuarioResponse, len(users))
 	for i, u := range users {
-		resp[i] = dto.UsuarioResponse{
-			ID: u.ID.String(), Username: u.Username, Nombre: u.Nombre,
-			Email: u.Email, Rol: u.Rol, PuntoDeVenta: u.PuntoDeVenta, Activo: u.Activo,
-		}
+		resp[i] = *usuarioToResponse(&u)
 	}
 	return resp, nil
 }
@@ -218,6 +210,17 @@ func (s *authService) ActualizarUsuario(ctx context.Context, id uuid.UUID, req d
 	if req.PuntoDeVenta != nil {
 		user.PuntoDeVenta = req.PuntoDeVenta
 	}
+	if req.SucursalID != nil {
+		if *req.SucursalID == "" {
+			user.SucursalID = nil
+		} else {
+			sid, err := uuid.Parse(*req.SucursalID)
+			if err != nil {
+				return nil, errors.New("sucursal_id invalido")
+			}
+			user.SucursalID = &sid
+		}
+	}
 	if req.Password != "" {
 		hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
 		if err != nil {
@@ -228,10 +231,7 @@ func (s *authService) ActualizarUsuario(ctx context.Context, id uuid.UUID, req d
 	if err := s.repo.Update(ctx, user); err != nil {
 		return nil, err
 	}
-	return &dto.UsuarioResponse{
-		ID: user.ID.String(), Username: user.Username, Nombre: user.Nombre,
-		Email: user.Email, Rol: user.Rol, PuntoDeVenta: user.PuntoDeVenta, Activo: user.Activo,
-	}, nil
+	return usuarioToResponse(user), nil
 }
 
 func (s *authService) DesactivarUsuario(ctx context.Context, id uuid.UUID) error {
@@ -271,6 +271,25 @@ func (s *authService) ChangePassword(ctx context.Context, userID uuid.UUID, req 
 	user.PasswordHash = string(hash)
 	user.MustChangePassword = false
 	return s.repo.UpdateUnscoped(ctx, user)
+}
+
+// usuarioToResponse maps a model.Usuario to dto.UsuarioResponse including SucursalID.
+func usuarioToResponse(u *model.Usuario) *dto.UsuarioResponse {
+	var sucID *string
+	if u.SucursalID != nil {
+		s := u.SucursalID.String()
+		sucID = &s
+	}
+	return &dto.UsuarioResponse{
+		ID:           u.ID.String(),
+		Username:     u.Username,
+		Nombre:       u.Nombre,
+		Email:        u.Email,
+		Rol:          u.Rol,
+		PuntoDeVenta: u.PuntoDeVenta,
+		SucursalID:   sucID,
+		Activo:       u.Activo,
+	}
 }
 
 func (s *authService) generateToken(user *model.Usuario, duration time.Duration, tokenType string) (string, error) {

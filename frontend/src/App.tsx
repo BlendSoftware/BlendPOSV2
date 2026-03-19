@@ -46,6 +46,7 @@ const ReportesPage = lazy(() => import('./pages/admin/ReportesPage').then(m => (
 const SuperadminPage = lazy(() => import('./pages/admin/SuperadminPage').then(m => ({ default: m.SuperadminPage })));
 const VencimientosPage = lazy(() => import('./pages/admin/VencimientosPage').then(m => ({ default: m.VencimientosPage })));
 const ClientesPage = lazy(() => import('./pages/admin/ClientesPage').then(m => ({ default: m.ClientesPage })));
+const SucursalesPage = lazy(() => import('./pages/admin/SucursalesPage').then(m => ({ default: m.SucursalesPage })));
 
 function LoadingSpinner() {
     return <Center h="100vh"><Loader size="xl" /></Center>;
@@ -212,6 +213,20 @@ function App() {
                                     <RouteErrorBoundary>
                                         <Suspense fallback={<LoadingSpinner />}>
                                             <UsuariosPage />
+                                        </Suspense>
+                                    </RouteErrorBoundary>
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Solo admin */}
+                        <Route
+                            path="sucursales"
+                            element={
+                                <ProtectedRoute roles={['admin']}>
+                                    <RouteErrorBoundary>
+                                        <Suspense fallback={<LoadingSpinner />}>
+                                            <SucursalesPage />
                                         </Suspense>
                                     </RouteErrorBoundary>
                                 </ProtectedRoute>

@@ -18,6 +18,8 @@ export interface UsuarioResponse {
     email?: string;
     rol: 'cajero' | 'supervisor' | 'administrador';
     punto_de_venta: number | null;
+    sucursal_id?: string;
+    sucursal_nombre?: string;
     activo: boolean;
 }
 
@@ -30,6 +32,7 @@ export interface CrearUsuarioRequest {
     password: string;
     rol: 'cajero' | 'supervisor' | 'administrador';
     punto_de_venta?: number;
+    sucursal_id?: string;
 }
 
 export interface ActualizarUsuarioRequest {
@@ -37,6 +40,7 @@ export interface ActualizarUsuarioRequest {
     email?: string;
     rol?: 'cajero' | 'supervisor' | 'administrador';
     punto_de_venta?: number;
+    sucursal_id?: string;
     password?: string;
 }
 

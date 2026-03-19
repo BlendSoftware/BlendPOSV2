@@ -10,6 +10,10 @@ import {
     listarUsuarios, crearUsuario, actualizarUsuario, desactivarUsuario, reactivarUsuario,
     type UsuarioResponse,
 } from '../../services/api/usuarios';
+import {
+    listarSucursales,
+    type SucursalResponse,
+} from '../../services/api/sucursales';
 import type { IUser, Rol } from '../../types';
 
 const ROL_COLOR: Record<Rol, string> = {
@@ -27,7 +31,7 @@ function mapRolBE(frontendRol: Rol): 'cajero' | 'supervisor' | 'administrador' {
     return 'cajero';
 }
 function mapUsuario(u: UsuarioResponse): IUser {
-    return { id: u.id, nombre: u.nombre, email: u.email ?? '', rol: mapRolFE(u.rol), activo: u.activo, creadoEn: '', puntoDeVenta: u.punto_de_venta ?? undefined };
+    return { id: u.id, nombre: u.nombre, email: u.email ?? '', rol: mapRolFE(u.rol), activo: u.activo, creadoEn: '', puntoDeVenta: u.punto_de_venta ?? undefined, sucursalId: u.sucursal_id, sucursalNombre: u.sucursal_nombre };
 }
 
 export function UsuariosPage() {
@@ -38,6 +42,7 @@ export function UsuariosPage() {
     const [editTarget, setEditTarget] = useState<IUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [apiError, setApiError] = useState<string | null>(null);
+    const [sucursales, setSucursales] = useState<SucursalResponse[]>([]);
 
     const fetchUsuarios = useCallback(async (inclInactivos = false) => {
         setLoading(true);
@@ -54,6 +59,15 @@ export function UsuariosPage() {
 
     useEffect(() => { fetchUsuarios(mostrarInactivos); }, [fetchUsuarios, mostrarInactivos]);
 
+    const fetchSucursales = useCallback(async () => {
+        try {
+            const resp = await listarSucursales();
+            setSucursales(resp.data.filter((s) => s.activa));
+        } catch {
+            // silent — sucursales dropdown will be empty
+        }
+    }, []);
+
     const filtered = useMemo(() => {
         if (!busqueda.trim()) return usuarios;
         const q = busqueda.toLowerCase();
@@ -63,7 +77,7 @@ export function UsuariosPage() {
     }, [usuarios, busqueda]);
 
     const form = useForm({
-        initialValues: { nombre: '', username: '', email: '', password: '', confirmPassword: '', rol: 'cajero' as Rol, activo: true, puntoDeVenta: '' as string },
+        initialValues: { nombre: '', username: '', email: '', password: '', confirmPassword: '', rol: 'cajero' as Rol, activo: true, puntoDeVenta: '' as string, sucursalId: '' as string },
         validate: {
             nombre: (v) => (v.trim().length >= 3 ? null : 'Mínimo 3 caracteres'),
             username: (v) => (!editTarget && !v.trim() ? 'Requerido' : null),
@@ -94,23 +108,27 @@ export function UsuariosPage() {
     const openCreate = () => {
         setEditTarget(null);
         form.reset();
+        fetchSucursales();
         setModalOpen(true);
     };
 
     const openEdit = (u: IUser) => {
         setEditTarget(u);
-        form.setValues({ nombre: u.nombre, username: '', email: u.email, password: '', confirmPassword: '', rol: u.rol, activo: u.activo, puntoDeVenta: u.puntoDeVenta != null ? String(u.puntoDeVenta) : '' });
+        form.setValues({ nombre: u.nombre, username: '', email: u.email, password: '', confirmPassword: '', rol: u.rol, activo: u.activo, puntoDeVenta: u.puntoDeVenta != null ? String(u.puntoDeVenta) : '', sucursalId: u.sucursalId ?? '' });
+        fetchSucursales();
         setModalOpen(true);
     };
 
     const handleSubmit = form.onSubmit(async (values) => {
         try {
             const pdv = values.puntoDeVenta ? parseInt(values.puntoDeVenta) : undefined;
+            const sucId = values.sucursalId || undefined;
             if (editTarget) {
                 const payload: Record<string, unknown> = {
                     nombre: values.nombre,
                     rol: mapRolBE(values.rol),
                     punto_de_venta: pdv,
+                    sucursal_id: sucId,
                 };
                 // Solo enviar email y password si fueron modificados
                 if (values.email && values.email !== editTarget.email) payload.email = values.email;
@@ -125,6 +143,7 @@ export function UsuariosPage() {
                     password: values.password,
                     rol: mapRolBE(values.rol),
                     punto_de_venta: pdv,
+                    sucursal_id: sucId,
                 });
                 notifications.show({ title: 'Usuario creado', message: values.nombre, color: 'teal' });
             }
@@ -187,6 +206,7 @@ export function UsuariosPage() {
                         <Table.Tr>
                             <Table.Th>Nombre</Table.Th>
                             <Table.Th>Email</Table.Th>
+                            <Table.Th>Sucursal</Table.Th>
                             <Table.Th>Rol</Table.Th>
                             <Table.Th>Estado</Table.Th>
                             <Table.Th>Acciones</Table.Th>
@@ -196,7 +216,7 @@ export function UsuariosPage() {
                         {loading
                             ? Array.from({ length: 4 }).map((_, i) => (
                                 <Table.Tr key={i}>
-                                    {[1, 2, 3, 4, 5].map((j) => (
+                                    {[1, 2, 3, 4, 5, 6].map((j) => (
                                         <Table.Td key={j}><Skeleton h={20} radius="sm" /></Table.Td>
                                     ))}
                                 </Table.Tr>
@@ -205,6 +225,7 @@ export function UsuariosPage() {
                                 <Table.Tr key={u.id} style={{ opacity: u.activo ? 1 : 0.5 }}>
                                     <Table.Td><Text size="sm" fw={500}>{u.nombre}</Text></Table.Td>
                                     <Table.Td><Text size="sm" c="dimmed">{u.email || '—'}</Text></Table.Td>
+                                    <Table.Td><Text size="sm" c="dimmed">{u.sucursalNombre || '—'}</Text></Table.Td>
                                     <Table.Td>
                                         <Badge color={ROL_COLOR[u.rol]} size="sm" variant="light">{u.rol}</Badge>
                                     </Table.Td>
@@ -269,6 +290,13 @@ export function UsuariosPage() {
                                 { value: 'cajero', label: 'Cajero' },
                             ]}
                             {...form.getInputProps('rol')}
+                        />
+                        <Select
+                            label="Sucursal"
+                            placeholder="Sin sucursal asignada"
+                            clearable
+                            data={sucursales.map((s) => ({ value: s.id, label: s.nombre }))}
+                            {...form.getInputProps('sucursalId')}
                         />
                         <NumberInput
                             label="Punto de Venta (opcional)"

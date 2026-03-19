@@ -29,11 +29,12 @@ type CajaService interface {
 }
 
 type cajaService struct {
-	repo repository.CajaRepository
+	repo    repository.CajaRepository
+	usuRepo repository.UsuarioRepository
 }
 
-func NewCajaService(repo repository.CajaRepository) CajaService {
-	return &cajaService{repo: repo}
+func NewCajaService(repo repository.CajaRepository, usuRepo repository.UsuarioRepository) CajaService {
+	return &cajaService{repo: repo, usuRepo: usuRepo}
 }
 
 // ── Abrir ─────────────────────────────────────────────────────────────────────
@@ -45,9 +46,18 @@ func (s *cajaService) Abrir(ctx context.Context, usuarioID uuid.UUID, req dto.Ab
 		return s.buildReporte(ctx, existing)
 	}
 
+	// Look up user to inherit their SucursalID (nil = all branches)
+	var sucursalID *uuid.UUID
+	if s.usuRepo != nil {
+		if usuario, lookupErr := s.usuRepo.FindByID(ctx, usuarioID); lookupErr == nil && usuario != nil {
+			sucursalID = usuario.SucursalID
+		}
+	}
+
 	sesion := &model.SesionCaja{
 		PuntoDeVenta: req.PuntoDeVenta,
 		UsuarioID:    usuarioID,
+		SucursalID:   sucursalID,
 		MontoInicial: req.MontoInicial,
 		Estado:       "abierta",
 		OpenedAt:     time.Now(),

@@ -18,6 +18,8 @@ type Usuario struct {
 	Rol          string `gorm:"type:varchar(20);not null"`
 	// PuntoDeVenta restricts a cashier to a specific register; nil = all registers
 	PuntoDeVenta *int
+	// SucursalID restricts a user to a specific branch; nil = all branches (consolidated)
+	SucursalID *uuid.UUID `gorm:"type:uuid;index"`
 	// DeviceID identifies the physical POS terminal this user is registered on.
 	// Generated once by the PWA and persisted in localStorage.
 	DeviceID           *string `gorm:"type:varchar(36)"`

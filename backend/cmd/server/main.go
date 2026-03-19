@@ -117,13 +117,14 @@ func main() {
 	subscriptionRepo := repository.NewSubscriptionRepository(db)
 	loteRepo := repository.NewLoteRepository(db)
 	clienteRepo := repository.NewClienteRepository(db)
+	sucursalRepo := repository.NewSucursalRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := service.NewAuthService(usuarioRepo, cfg, rdb)
 	tenantSvc := service.NewTenantService(tenantRepo, usuarioRepo, cfg, rdb)
 	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb)
 	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo)
-	cajaSvc := service.NewCajaService(cajaRepo)
+	cajaSvc := service.NewCajaService(cajaRepo, usuarioRepo)
 	ventaSvc := service.NewVentaService(ventaRepo, inventarioSvc, cajaSvc, cajaRepo, productoRepo, dispatcher, comprobanteRepo, configFiscalRepo)
 	facturacionSvc := service.NewFacturacionService(comprobanteRepo, dispatcher)
 	proveedorSvc := service.NewProveedorService(proveedorRepo, productoRepo, categoriaRepo)
@@ -138,6 +139,7 @@ func main() {
 	reportesSvc := service.NewReportesService(reportesRepo)
 	loteSvc := service.NewLoteService(loteRepo, productoRepo)
 	clienteSvc := service.NewClienteService(clienteRepo)
+	sucursalSvc := service.NewSucursalService(sucursalRepo)
 	// Inject clienteSvc into ventaSvc after both are created (avoids circular init)
 	ventaSvc.SetClienteService(clienteSvc)
 
@@ -199,6 +201,7 @@ func main() {
 		ReportesSvc:         reportesSvc,
 		LoteSvc:             loteSvc,
 		ClienteSvc:          clienteSvc,
+		SucursalSvc:         sucursalSvc,
 	})
 
 	srv := &http.Server{

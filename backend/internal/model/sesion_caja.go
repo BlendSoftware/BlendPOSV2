@@ -14,6 +14,8 @@ type SesionCaja struct {
 	TenantID     uuid.UUID       `gorm:"type:uuid;not null;index"`
 	PuntoDeVenta int             `gorm:"not null;index"`
 	UsuarioID    uuid.UUID       `gorm:"type:uuid;not null"`
+	// SucursalID tags this session to a branch; nil = no branch assignment (single-location tenant)
+	SucursalID   *uuid.UUID      `gorm:"type:uuid;index"`
 	MontoInicial decimal.Decimal `gorm:"type:decimal(15,2);not null"`
 	// MontoEsperado is computed on close: SUM(movimientos) + MontoInicial
 	MontoEsperado  *decimal.Decimal `gorm:"type:decimal(15,2)"`

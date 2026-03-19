@@ -94,6 +94,7 @@ export const useAuthStore = create<AuthState>()(
                             activo: true,
                             creadoEn: new Date().toISOString(),
                             puntoDeVenta: u.punto_de_venta ?? undefined,
+                            sucursalId: u.sucursal_id ?? undefined,
                         };
                         // Store tokens in memory only — never in localStorage
                         tokenStore.setTokens(resp.access_token, resp.refresh_token);
@@ -147,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
                     const user: IUser = {
                         id: u.id, nombre: u.nombre, email: '',
                         rol: mapRol(u.rol), activo: true, creadoEn: new Date().toISOString(),
+                        sucursalId: u.sucursal_id ?? undefined,
                     };
                     tokenStore.setTokens(resp.access_token, resp.refresh_token);
                     scheduleProactiveRefresh(resp.access_token);

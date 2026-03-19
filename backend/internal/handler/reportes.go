@@ -15,7 +15,22 @@ import (
 	"blendpos/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
+
+// parseSucursalID reads the optional "sucursal_id" query param.
+// Returns nil when absent or empty (consolidated view).
+func parseSucursalID(c *gin.Context) *uuid.UUID {
+	raw := c.Query("sucursal_id")
+	if raw == "" {
+		return nil
+	}
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return nil
+	}
+	return &id
+}
 
 // ReportesHandler exposes analytics endpoints.
 type ReportesHandler struct {
@@ -57,7 +72,8 @@ func (h *ReportesHandler) GetResumen(c *gin.Context) {
 	desde := c.DefaultQuery("desde", desdeDefault)
 	hasta := c.DefaultQuery("hasta", hastaDefault)
 
-	resp, err := h.svc.GetVentasResumen(c.Request.Context(), tenantID, desde, hasta)
+	sucursalID := parseSucursalID(c)
+	resp, err := h.svc.GetVentasResumen(c.Request.Context(), tenantID, desde, hasta, sucursalID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
 		return
@@ -95,7 +111,8 @@ func (h *ReportesHandler) GetTopProductos(c *gin.Context) {
 		}
 	}
 
-	resp, err := h.svc.GetTopProductos(c.Request.Context(), tenantID, desde, hasta, limit)
+	sucursalID := parseSucursalID(c)
+	resp, err := h.svc.GetTopProductos(c.Request.Context(), tenantID, desde, hasta, limit, sucursalID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
 		return
@@ -125,7 +142,8 @@ func (h *ReportesHandler) GetMediosPago(c *gin.Context) {
 	desde := c.DefaultQuery("desde", desdeDefault)
 	hasta := c.DefaultQuery("hasta", hastaDefault)
 
-	resp, err := h.svc.GetVentasPorMedioPago(c.Request.Context(), tenantID, desde, hasta)
+	sucursalID := parseSucursalID(c)
+	resp, err := h.svc.GetVentasPorMedioPago(c.Request.Context(), tenantID, desde, hasta, sucursalID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
 		return
@@ -157,7 +175,8 @@ func (h *ReportesHandler) GetVentasPeriodo(c *gin.Context) {
 	hasta := c.DefaultQuery("hasta", hastaDefault)
 	agrupacion := c.DefaultQuery("agrupacion", "dia")
 
-	resp, err := h.svc.GetVentasPorPeriodo(c.Request.Context(), tenantID, desde, hasta, agrupacion)
+	sucursalID := parseSucursalID(c)
+	resp, err := h.svc.GetVentasPorPeriodo(c.Request.Context(), tenantID, desde, hasta, agrupacion, sucursalID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
 		return
@@ -187,7 +206,8 @@ func (h *ReportesHandler) GetCajeros(c *gin.Context) {
 	desde := c.DefaultQuery("desde", desdeDefault)
 	hasta := c.DefaultQuery("hasta", hastaDefault)
 
-	resp, err := h.svc.GetVentasPorCajero(c.Request.Context(), tenantID, desde, hasta)
+	sucursalID := parseSucursalID(c)
+	resp, err := h.svc.GetVentasPorCajero(c.Request.Context(), tenantID, desde, hasta, sucursalID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
 		return
@@ -217,7 +237,8 @@ func (h *ReportesHandler) GetTurnos(c *gin.Context) {
 	desde := c.DefaultQuery("desde", desdeDefault)
 	hasta := c.DefaultQuery("hasta", hastaDefault)
 
-	resp, err := h.svc.GetReporteTurnos(c.Request.Context(), tenantID, desde, hasta)
+	sucursalID := parseSucursalID(c)
+	resp, err := h.svc.GetReporteTurnos(c.Request.Context(), tenantID, desde, hasta, sucursalID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
 		return

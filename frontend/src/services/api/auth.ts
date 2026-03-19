@@ -13,6 +13,7 @@ export interface UsuarioResponse {
     nombre: string;
     rol: 'cajero' | 'supervisor' | 'administrador';
     punto_de_venta: number | null;
+    sucursal_id: string | null;
 }
 
 export interface LoginResponse {
