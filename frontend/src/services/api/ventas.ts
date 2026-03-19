@@ -69,6 +69,8 @@ export interface VentaFilter {
     orden?: string;
     page?: number;
     limit?: number;
+    /** Filtrar por sucursal. undefined = todas */
+    sucursal_id?: string;
 }
 
 // ── Request Types ─────────────────────────────────────────────────────────────
@@ -162,6 +164,7 @@ export async function listarVentas(filter: VentaFilter = {}): Promise<VentaListR
         orden: filter.orden,
         page: filter.page ?? 1,
         limit: filter.limit ?? 50,
+        sucursal_id: filter.sucursal_id,
     });
 }
 

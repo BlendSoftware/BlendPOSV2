@@ -15,9 +15,10 @@ type Sucursal struct {
 	Nombre    string    `gorm:"type:varchar(200);not null"`
 	Direccion *string   `gorm:"type:text"`
 	Telefono  *string   `gorm:"type:varchar(50)"`
-	Activa    bool      `gorm:"not null;default:true"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Activa     bool      `gorm:"not null;default:true"`
+	EsDeposito bool      `gorm:"not null;default:false"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 func (Sucursal) TableName() string { return "sucursales" }

@@ -118,6 +118,8 @@ func main() {
 	loteRepo := repository.NewLoteRepository(db)
 	clienteRepo := repository.NewClienteRepository(db)
 	sucursalRepo := repository.NewSucursalRepository(db)
+	stockSucursalRepo := repository.NewStockSucursalRepository(db)
+	transferenciaRepo := repository.NewTransferenciaRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := service.NewAuthService(usuarioRepo, cfg, rdb)
@@ -140,6 +142,7 @@ func main() {
 	loteSvc := service.NewLoteService(loteRepo, productoRepo)
 	clienteSvc := service.NewClienteService(clienteRepo)
 	sucursalSvc := service.NewSucursalService(sucursalRepo)
+	transferenciaSvc := service.NewTransferenciaService(transferenciaRepo, stockSucursalRepo, sucursalRepo)
 	// Inject clienteSvc into ventaSvc after both are created (avoids circular init)
 	ventaSvc.SetClienteService(clienteSvc)
 
@@ -202,6 +205,7 @@ func main() {
 		LoteSvc:             loteSvc,
 		ClienteSvc:          clienteSvc,
 		SucursalSvc:         sucursalSvc,
+		TransferenciaSvc:    transferenciaSvc,
 	})
 
 	srv := &http.Server{

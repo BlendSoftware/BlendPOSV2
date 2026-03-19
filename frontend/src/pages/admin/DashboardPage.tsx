@@ -5,7 +5,7 @@ import {
 import { AreaChart, BarChart, DonutChart } from '@mantine/charts';
 import {
     TrendingUp, ShoppingCart, Package, AlertTriangle,
-    CheckCircle, CreditCard, Banknote, QrCode, Landmark, RefreshCw, Receipt,
+    CheckCircle, CreditCard, Banknote, QrCode, Landmark, RefreshCw, Receipt, Building2,
 } from 'lucide-react';
 import { formatARS } from '../../utils/format';
 import styles from './DashboardPage.module.css';
@@ -15,6 +15,7 @@ import type { AlertaStockResponse } from '../../services/api/inventario';
 import { listarVentas, type VentaListItem } from '../../services/api/ventas';
 import { listarCompras } from '../../services/api/compras';
 import { trySyncQueue, recoverLostSales } from '../../offline/sync';
+import { useSucursalStore } from '../../store/useSucursalStore';
 
 type Periodo = 'dia' | 'semana' | 'mes';
 
@@ -82,14 +83,17 @@ export function DashboardPage() {
     const [comprasPendientes, setComprasPendientes] = useState<{ count: number; total: number }>({ count: 0, total: 0 });
     const [periodo, setPeriodo]         = useState<Periodo>('mes');
 
+    const { sucursalId, sucursalNombre } = useSucursalStore();
+
     const fetchDashboardData = useCallback(async (showSpinner = false, p: Periodo = periodo) => {
         if (showSpinner) setRefreshing(true);
         const range = getDateRange(p);
+        const sid = sucursalId ?? undefined;
         try {
             await recoverLostSales().then(() => trySyncQueue()).catch(() => { });
             const [alertasRes, ventasRes, comprasRes] = await Promise.allSettled([
-                getAlertasStock(),
-                listarVentas({ ...range, estado: 'completada' }),
+                getAlertasStock(sid),
+                listarVentas({ ...range, estado: 'completada', sucursal_id: sid }),
                 listarCompras({ estado: 'pendiente', limit: 200 }),
             ]);
             if (alertasRes.status === 'fulfilled') setAlertas(alertasRes.value);
@@ -103,7 +107,7 @@ export function DashboardPage() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [periodo]);
+    }, [periodo, sucursalId]);
 
     const fetchRef = useRef(fetchDashboardData);
     fetchRef.current = fetchDashboardData;
@@ -112,7 +116,7 @@ export function DashboardPage() {
         fetchRef.current(false, periodo);
         const interval = setInterval(() => fetchRef.current(false, periodo), 60_000);
         return () => clearInterval(interval);
-    }, [periodo]);
+    }, [periodo, sucursalId]);
 
     const parseNum = (v: unknown): number => typeof v === 'number' ? v : parseFloat(String(v)) || 0;
 
@@ -213,7 +217,14 @@ export function DashboardPage() {
         <Stack gap="xl">
             <Group justify="space-between" align="flex-end">
                 <div>
-                    <Title order={2} fw={800} c="blue.4">BlendPOS</Title>
+                    <Group gap="sm" align="center">
+                        <Title order={2} fw={800} c="blue.4">BlendPOS</Title>
+                        {sucursalNombre && (
+                            <Badge variant="light" color="indigo" size="lg" leftSection={<Building2 size={14} />}>
+                                {sucursalNombre}
+                            </Badge>
+                        )}
+                    </Group>
                     <Text c="dimmed" size="sm" style={{ textTransform: 'capitalize' }}>
                         {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </Text>

@@ -46,6 +46,8 @@ var allowedTables = map[string]bool{
 	"clientes":                true,
 	"movimientos_cuenta":      true,
 	"sucursales":              true,
+	"transferencias_stock":    true,
+	"stock_sucursal":          true,
 }
 
 // RegisterAllowedTable adds a table name to the whitelist at init time.

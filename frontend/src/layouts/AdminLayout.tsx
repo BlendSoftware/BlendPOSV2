@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
     Group, Text, Badge, Avatar, Menu, Burger,
-    Tooltip, Divider,
+    Tooltip, Divider, Select,
 } from '@mantine/core';
 import {
     Package, Boxes, Truck, FileText,
     Users, Calculator, LogOut, ChevronRight, Home,
     BarChart2, Tag, ShoppingBag, Shield, PieChart, Clock, CreditCard, Building2,
+    ArrowLeftRight, Warehouse,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useSucursalStore } from '../store/useSucursalStore';
 import { ThemeToggle } from '../components/ThemeToggle';
 import styles from './AdminLayout.module.css';
 
@@ -27,6 +29,8 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Productos', path: '/admin/productos', icon: <Package size={18} />, roles: ['admin', 'supervisor'] },
     { label: 'Categorías', path: '/admin/categorias', icon: <Tag size={18} />, roles: ['admin', 'supervisor'] },
     { label: 'Inventario', path: '/admin/inventario', icon: <Boxes size={18} />, roles: ['admin', 'supervisor'] },
+    { label: 'Transferencias', path: '/admin/transferencias', icon: <ArrowLeftRight size={18} />, roles: ['admin', 'supervisor'] },
+    { label: 'Stock Sucursal', path: '/admin/stock-sucursal', icon: <Warehouse size={18} />, roles: ['admin', 'supervisor'] },
     { label: 'Vencimientos', path: '/admin/vencimientos', icon: <Clock size={18} />, roles: ['admin', 'supervisor'] },
     { label: 'Proveedores', path: '/admin/proveedores', icon: <Truck size={18} />, roles: ['admin', 'supervisor'] },
     { label: 'Compras', path: '/admin/compras', icon: <ShoppingBag size={18} />, roles: ['admin', 'supervisor'] },
@@ -51,8 +55,13 @@ const ROL_COLOR: Record<string, string> = {
 export function AdminLayout() {
     const [opened, setOpened] = useState(false);
     const { user, logout } = useAuthStore();
+    const { sucursalId, sucursales, setSucursal, fetchSucursales } = useSucursalStore();
     const navigate = useNavigate();
     const location = useLocation();
+
+    useEffect(() => {
+        fetchSucursales();
+    }, [fetchSucursales]);
 
     const handleLogout = async () => {
         await logout();
@@ -128,6 +137,25 @@ export function AdminLayout() {
                     </Group>
 
                     <div className={styles.userMenu}>
+                        {sucursales.length > 0 && (
+                            <Select
+                                placeholder="Todas las sucursales"
+                                data={[
+                                    { value: '', label: 'Todas las sucursales' },
+                                    ...sucursales.map((s) => ({ value: s.id, label: s.nombre })),
+                                ]}
+                                value={sucursalId ?? ''}
+                                onChange={(val) => {
+                                    const selected = sucursales.find((s) => s.id === val);
+                                    setSucursal(val || null, selected?.nombre ?? null);
+                                }}
+                                leftSection={<Building2 size={16} />}
+                                clearable={false}
+                                size="xs"
+                                w={200}
+                                styles={{ input: { fontWeight: 500 } }}
+                            />
+                        )}
                         <ThemeToggle size="sm" />
 
                         <Badge

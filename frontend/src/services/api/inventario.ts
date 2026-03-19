@@ -100,8 +100,10 @@ export async function ejecutarDesarme(data: DesarmeManualRequest): Promise<Desar
  * GET /v1/inventario/alertas  (administrador, supervisor)
  * Retorna productos cuyo stock_actual <= stock_minimo.
  */
-export async function getAlertasStock(): Promise<AlertaStockResponse[]> {
-    return apiClient.get<AlertaStockResponse[]>('/v1/inventario/alertas');
+export async function getAlertasStock(sucursalId?: string): Promise<AlertaStockResponse[]> {
+    return apiClient.get<AlertaStockResponse[]>('/v1/inventario/alertas', {
+        sucursal_id: sucursalId,
+    });
 }
 
 // ── Movimientos de stock ──────────────────────────────────────────────────────

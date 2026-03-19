@@ -50,7 +50,8 @@ type Deps struct {
 	ReportesSvc     service.ReportesService
 	LoteSvc         service.LoteService
 	ClienteSvc      service.ClienteService
-	SucursalSvc     service.SucursalService
+	SucursalSvc        service.SucursalService
+	TransferenciaSvc   service.TransferenciaService
 
 	// Repos still needed by handlers that bypass the service layer
 	ProductoRepo        repository.ProductoRepository
@@ -112,6 +113,7 @@ func New(d Deps) *gin.Engine {
 	vencimientosH := handler.NewVencimientosHandler(d.LoteSvc)
 	clientesH := handler.NewClientesHandler(d.ClienteSvc)
 	sucursalesH := handler.NewSucursalesHandler(d.SucursalSvc)
+	transferenciasH := handler.NewTransferenciasHandler(d.TransferenciaSvc)
 
 	// ── Routes ───────────────────────────────────────────────────────────────
 
@@ -324,6 +326,25 @@ func New(d Deps) *gin.Engine {
 			sucursales.POST("", sucursalesH.Crear)
 			sucursales.PUT("/:id", idor("sucursales", "id"), sucursalesH.Actualizar)
 			sucursales.DELETE("/:id", idor("sucursales", "id"), sucursalesH.Desactivar)
+		}
+
+		// Transferencias de stock entre sucursales — admin/supervisor
+		transferencias := v1.Group("/transferencias", middleware.RequireRole("administrador", "supervisor"))
+		{
+			transferencias.POST("", transferenciasH.Crear)
+			transferencias.GET("", transferenciasH.Listar)
+			transferencias.GET("/:id", idor("transferencias_stock", "id"), transferenciasH.ObtenerPorID)
+			transferencias.POST("/:id/completar", idor("transferencias_stock", "id"), transferenciasH.Completar)
+			transferencias.POST("/:id/rechazar", idor("transferencias_stock", "id"), transferenciasH.Rechazar)
+			transferencias.POST("/:id/cancelar", idor("transferencias_stock", "id"), transferenciasH.Cancelar)
+		}
+
+		// Stock por sucursal — admin/supervisor
+		stockSuc := v1.Group("/stock-sucursal", middleware.RequireRole("administrador", "supervisor"))
+		{
+			stockSuc.GET("", transferenciasH.ListarStockSucursal)
+			stockSuc.GET("/alertas", transferenciasH.GetAlertasBySucursal)
+			stockSuc.POST("/ajustar", transferenciasH.AjustarStockSucursal)
 		}
 
 		// Billing — subscription management (F1-5)

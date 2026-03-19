@@ -64,6 +64,9 @@ func (s *sucursalService) Actualizar(ctx context.Context, id uuid.UUID, req dto.
 	if req.Activa != nil {
 		suc.Activa = *req.Activa
 	}
+	if req.EsDeposito != nil {
+		suc.EsDeposito = *req.EsDeposito
+	}
 	if err := s.repo.Update(ctx, suc); err != nil {
 		return nil, err
 	}
@@ -86,12 +89,13 @@ func (s *sucursalService) Listar(ctx context.Context, incluirInactivas bool) (*d
 
 func sucursalToResponse(s *model.Sucursal) *dto.SucursalResponse {
 	return &dto.SucursalResponse{
-		ID:        s.ID.String(),
-		Nombre:    s.Nombre,
-		Direccion: s.Direccion,
-		Telefono:  s.Telefono,
-		Activa:    s.Activa,
-		CreatedAt: s.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt: s.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		ID:         s.ID.String(),
+		Nombre:     s.Nombre,
+		Direccion:  s.Direccion,
+		Telefono:   s.Telefono,
+		Activa:     s.Activa,
+		EsDeposito: s.EsDeposito,
+		CreatedAt:  s.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:  s.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 }

@@ -11,7 +11,6 @@ import {
     Paper,
     Progress,
     SegmentedControl,
-    Select,
     SimpleGrid,
     Skeleton,
     Stack,
@@ -26,7 +25,6 @@ import {
 import { DatePickerInput, type DatesRangeValue } from '@mantine/dates';
 import {
     AlertTriangle,
-    Building2,
     Calendar,
     Clock,
     CreditCard,
@@ -53,7 +51,7 @@ import {
     type TurnoResponse,
     type Agrupacion,
 } from '../../services/api/reportes';
-import { listarSucursales, type SucursalResponse } from '../../services/api/sucursales';
+import { useSucursalStore } from '../../store/useSucursalStore';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -198,9 +196,8 @@ export function ReportesPage() {
     const [dateRange, setDateRange] = useState<DatesRangeValue>([defaultDesde, defaultHasta]);
     const [agrupacion, setAgrupacion] = useState<Agrupacion>('dia');
 
-    // Sucursal filter — null = "Todas" (consolidated)
-    const [sucursalId, setSucursalId] = useState<string | null>(null);
-    const [sucursales, setSucursales] = useState<SucursalResponse[]>([]);
+    // Sucursal filter — from global store (header selector)
+    const { sucursalId } = useSucursalStore();
 
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -214,13 +211,6 @@ export function ReportesPage() {
     const [ventasPeriodo, setVentasPeriodo] = useState<VentaPeriodoResponse[]>([]);
     const [cajeros, setCajeros] = useState<CajeroResponse[]>([]);
     const [turnos, setTurnos] = useState<TurnoResponse[]>([]);
-
-    // Fetch sucursales list once on mount
-    useEffect(() => {
-        listarSucursales()
-            .then((res) => setSucursales(res.data ?? []))
-            .catch(() => setSucursales([]));
-    }, []);
 
     const fetchData = useCallback(
         async (showRefresh = false) => {
@@ -311,22 +301,6 @@ export function ReportesPage() {
                     </Text>
                 </div>
                 <Group gap="md" align="flex-end">
-                    {sucursales.length > 0 && (
-                        <Select
-                            label="Sucursal"
-                            placeholder="Todas"
-                            data={[
-                                { value: '', label: 'Todas las sucursales' },
-                                ...sucursales.map((s) => ({ value: s.id, label: s.nombre })),
-                            ]}
-                            value={sucursalId ?? ''}
-                            onChange={(val) => setSucursalId(val || null)}
-                            leftSection={<Building2 size={16} />}
-                            clearable={false}
-                            size="sm"
-                            w={200}
-                        />
-                    )}
                     <DatePickerInput
                         type="range"
                         label="Periodo"

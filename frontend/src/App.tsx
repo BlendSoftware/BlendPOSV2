@@ -47,6 +47,8 @@ const SuperadminPage = lazy(() => import('./pages/admin/SuperadminPage').then(m 
 const VencimientosPage = lazy(() => import('./pages/admin/VencimientosPage').then(m => ({ default: m.VencimientosPage })));
 const ClientesPage = lazy(() => import('./pages/admin/ClientesPage').then(m => ({ default: m.ClientesPage })));
 const SucursalesPage = lazy(() => import('./pages/admin/SucursalesPage').then(m => ({ default: m.SucursalesPage })));
+const TransferenciasPage = lazy(() => import('./pages/admin/TransferenciasPage').then(m => ({ default: m.TransferenciasPage })));
+const StockSucursalPage = lazy(() => import('./pages/admin/StockSucursalPage').then(m => ({ default: m.StockSucursalPage })));
 
 function LoadingSpinner() {
     return <Center h="100vh"><Loader size="xl" /></Center>;
@@ -227,6 +229,32 @@ function App() {
                                     <RouteErrorBoundary>
                                         <Suspense fallback={<LoadingSpinner />}>
                                             <SucursalesPage />
+                                        </Suspense>
+                                    </RouteErrorBoundary>
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Admin y supervisor */}
+                        <Route
+                            path="transferencias"
+                            element={
+                                <ProtectedRoute roles={['admin', 'supervisor']}>
+                                    <RouteErrorBoundary>
+                                        <Suspense fallback={<LoadingSpinner />}>
+                                            <TransferenciasPage />
+                                        </Suspense>
+                                    </RouteErrorBoundary>
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="stock-sucursal"
+                            element={
+                                <ProtectedRoute roles={['admin', 'supervisor']}>
+                                    <RouteErrorBoundary>
+                                        <Suspense fallback={<LoadingSpinner />}>
+                                            <StockSucursalPage />
                                         </Suspense>
                                     </RouteErrorBoundary>
                                 </ProtectedRoute>
