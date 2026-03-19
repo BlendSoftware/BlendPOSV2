@@ -1,6 +1,6 @@
 import { useEffect, useState, memo } from 'react';
 import { Group, Text, Badge, Flex, Tooltip, ActionIcon, Modal, Button, useMantineColorScheme } from '@mantine/core';
-import { Wifi, WifiOff, User, Printer, PanelLeftOpen, Settings, LogOut } from 'lucide-react';
+import { Wifi, WifiOff, User, Printer, PanelLeftOpen, Settings, LogOut, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -219,6 +219,17 @@ export function PosHeader() {
                             onClick={() => setSettingsOpen(true)}
                         >
                             <Settings size={16} />
+                        </ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip label="Cerrar Caja" withArrow>
+                        <ActionIcon
+                            variant="subtle"
+                            color="orange"
+                            size="md"
+                            onClick={() => navigate('/admin/cierre-caja')}
+                        >
+                            <Calculator size={16} />
                         </ActionIcon>
                     </Tooltip>
 
