@@ -6,6 +6,7 @@ import (
 
 	"blendpos/internal/apierror"
 	"blendpos/internal/dto"
+	"github.com/rs/zerolog/log"
 	"blendpos/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -76,7 +77,8 @@ func (h *VencimientosHandler) ObtenerAlertasVencimiento(c *gin.Context) {
 	}
 	resp, err := h.svc.ObtenerAlertasVencimiento(c.Request.Context(), dias)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, apierror.New("Error al obtener alertas de vencimiento"))
+		log.Error().Err(err).Int("dias", dias).Msg("vencimientos: error al obtener alertas")
+		c.JSON(http.StatusInternalServerError, apierror.New(err.Error()))
 		return
 	}
 	c.JSON(http.StatusOK, resp)

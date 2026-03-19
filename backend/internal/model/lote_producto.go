@@ -9,6 +9,8 @@ import (
 // LoteProducto represents a batch/lot of a product with an expiry date.
 // A single product can have multiple lots with different expiry dates
 // (e.g., milk received on different dates).
+func (LoteProducto) TableName() string { return "lotes_producto" }
+
 type LoteProducto struct {
 	ID                uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	TenantID          uuid.UUID `gorm:"type:uuid;not null;index"`
