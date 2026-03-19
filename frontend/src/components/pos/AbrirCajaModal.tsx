@@ -3,7 +3,7 @@
 // Mostrado automáticamente si no hay sesión activa en useCajaStore.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Modal, Stack, NumberInput, Button, Text, Alert, Group } from '@mantine/core';
 import { TriangleAlert, Store } from 'lucide-react';
 import { useCajaStore } from '../../store/useCajaStore';
@@ -19,37 +19,26 @@ export function AbrirCajaModal({ opened, onSuccess }: Props) {
     const { abrir, restaurar, loading, error } = useCajaStore();
     const { user } = useAuthStore();
 
-    const [puntoDeVenta, setPuntoDeVenta] = useState<number | string>(user?.puntoDeVenta ?? 1);
+    // Punto de venta assigned to this user (set in admin panel when creating the user).
+    // Falls back to 1 if not assigned.
+    const puntoDeVenta = user?.puntoDeVenta ?? 1;
     const [montoInicial, setMontoInicial] = useState<number | string>(0);
 
-    // Sync punto de venta when modal opens with user's assigned value.
-    useEffect(() => {
-        if (opened && user?.puntoDeVenta != null) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: syncing prop→state on open
-            setPuntoDeVenta(user.puntoDeVenta);
-        }
-    }, [opened, user?.puntoDeVenta]);
-
     const handleSubmit = async () => {
-        const pdv = typeof puntoDeVenta === 'number' ? puntoDeVenta : parseInt(puntoDeVenta, 10);
-        const monto = typeof montoInicial === 'number' ? montoInicial : parseFloat(montoInicial);
-
-        if (!pdv || pdv < 1) return;
+        const monto = typeof montoInicial === 'number' ? montoInicial : parseFloat(String(montoInicial));
         if (isNaN(monto) || monto < 0) return;
 
         try {
-            await abrir({ punto_de_venta: pdv, monto_inicial: monto });
+            await abrir({ punto_de_venta: puntoDeVenta, monto_inicial: monto });
             onSuccess();
         } catch (err) {
             const msg = err instanceof Error ? err.message : '';
             // Si ya existe una caja abierta en ese PDV, recuperar la sesión activa
             if (msg.toLowerCase().includes('ya existe una caja abierta')) {
                 await restaurar().catch(() => { });
-                // Only close modal if restaurar() actually recovered a session
                 const { sesionId } = useCajaStore.getState();
                 if (sesionId) onSuccess();
             }
-            // El store ya setea `error` en su catch para otros casos
         }
     };
 
@@ -71,7 +60,7 @@ export function AbrirCajaModal({ opened, onSuccess }: Props) {
         >
             <Stack gap="md">
                 <Text size="sm" c="dimmed">
-                    Antes de operar, debe abrir una sesión de caja con el monto inicial en efectivo.
+                    Vas a abrir la caja <Text span fw={700}>#{puntoDeVenta}</Text>. Ingresá el monto en efectivo con el que iniciás.
                 </Text>
 
                 {error && (
@@ -82,8 +71,8 @@ export function AbrirCajaModal({ opened, onSuccess }: Props) {
 
                 <NumberInput
                     label="Monto Inicial en Efectivo ($)"
-                    description="Dinero con el que inicia la caja"
-                    placeholder="0.00"
+                    description="Contá los billetes y monedas en la caja"
+                    placeholder="0"
                     min={0}
                     decimalScale={2}
                     fixedDecimalScale
@@ -92,15 +81,17 @@ export function AbrirCajaModal({ opened, onSuccess }: Props) {
                     value={montoInicial}
                     onChange={setMontoInicial}
                     allowNegative={false}
+                    size="lg"
+                    autoFocus
                 />
 
                 <Button
                     fullWidth
-                    size="md"
+                    size="lg"
                     onClick={handleSubmit}
                     loading={loading}
                 >
-                    Abrir Caja
+                    Abrir Caja #{puntoDeVenta}
                 </Button>
             </Stack>
         </Modal>

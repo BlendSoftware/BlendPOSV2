@@ -273,6 +273,26 @@ Todo lo que falta para que un kiosquero pueda registrarse, pagar, y operar en pr
 
 ---
 
+#### T10: Sucursales (Multi-Branch)
+**Prioridad:** MEDIA — necesario cuando un tenant tiene más de un local.
+
+- [ ] **T10.1** Migración: tabla `sucursales` (id, tenant_id, nombre, direccion, telefono, activa, rango_pdv_desde, rango_pdv_hasta)
+- [ ] **T10.2** Asignar usuarios a sucursal: campo `sucursal_id` en `usuarios`
+- [ ] **T10.3** Asignar sesiones de caja a sucursal: campo `sucursal_id` en `sesion_cajas`
+- [ ] **T10.4** Stock por sucursal: campo `sucursal_id` en `productos` o tabla `stock_sucursal` (producto_id, sucursal_id, stock_actual, stock_minimo)
+- [ ] **T10.5** Ventas por sucursal: campo `sucursal_id` en `ventas` (derivado del cajero/caja)
+- [ ] **T10.6** Backend: CRUD de sucursales, filtros en reportes
+- [ ] **T10.7** Frontend: selector de sucursal en admin, filtro en reportes
+- [ ] **T10.8** Reportes consolidados vs por sucursal
+
+**Modelo de datos:**
+- Catálogo (productos, categorías, proveedores) = compartido por tenant
+- Stock = POR SUCURSAL (cada local tiene su inventario)
+- Ventas/Caja = POR SUCURSAL (cada punto de venta pertenece a un local)
+- Usuarios = asignados a 1 sucursal (o "todas" para admin/supervisor)
+
+---
+
 ## 4. Orden de Ejecución Recomendado
 
 ```
