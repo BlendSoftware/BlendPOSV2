@@ -120,7 +120,8 @@ func (s *authService) Refresh(ctx context.Context, refreshToken string) (*dto.Lo
 		return nil, errors.New("token mal formado")
 	}
 
-	user, err := s.repo.FindByID(ctx, uid)
+	// Unscoped: refresh endpoint runs without tenant middleware (auth-only route).
+	user, err := s.repo.FindByIDUnscoped(ctx, uid)
 	if err != nil || !user.Activo {
 		return nil, errors.New("usuario no encontrado o inactivo")
 	}
