@@ -35,8 +35,8 @@ CREATE INDEX idx_mov_cuenta_cliente ON movimientos_cuenta(tenant_id, cliente_id)
 -- RLS
 ALTER TABLE clientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movimientos_cuenta ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation_clientes ON clientes USING (tenant_id = current_setting('app.tenant_id')::uuid);
-CREATE POLICY tenant_isolation_mov_cuenta ON movimientos_cuenta USING (tenant_id = current_setting('app.tenant_id')::uuid);
+CREATE POLICY tenant_isolation_clientes ON clientes USING (tenant_id = current_tenant_id() OR current_tenant_id() IS NULL);
+CREATE POLICY tenant_isolation_mov_cuenta ON movimientos_cuenta USING (tenant_id = current_tenant_id() OR current_tenant_id() IS NULL);
 
 -- Add cliente_id to ventas for linking sales to customers
 ALTER TABLE ventas ADD COLUMN cliente_id UUID REFERENCES clientes(id);

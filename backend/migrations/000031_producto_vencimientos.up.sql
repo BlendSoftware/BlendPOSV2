@@ -13,7 +13,7 @@ CREATE INDEX idx_lotes_producto ON lotes_producto(tenant_id, producto_id);
 CREATE INDEX idx_lotes_vencimiento ON lotes_producto(tenant_id, fecha_vencimiento);
 
 ALTER TABLE lotes_producto ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation_lotes ON lotes_producto USING (tenant_id = current_setting('app.tenant_id')::uuid);
+CREATE POLICY tenant_isolation_lotes ON lotes_producto USING (tenant_id = current_tenant_id() OR current_tenant_id() IS NULL);
 
 -- Flag on producto for "this product tracks expiry"
 ALTER TABLE productos ADD COLUMN IF NOT EXISTS controla_vencimiento BOOLEAN NOT NULL DEFAULT false;

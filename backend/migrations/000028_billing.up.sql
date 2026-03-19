@@ -22,4 +22,4 @@ CREATE INDEX idx_subscriptions_mp_id  ON subscriptions(mp_subscription_id);
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY subscriptions_tenant_isolation ON subscriptions
-    USING (tenant_id = current_setting('app.tenant_id')::uuid);
+    USING (tenant_id = current_tenant_id() OR current_tenant_id() IS NULL);
