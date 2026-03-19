@@ -143,6 +143,7 @@ func (h *CajaHandler) GetActiva(c *gin.Context) {
 }
 
 // Historial returns a paginated list of closed cash sessions.
+// Optional query param: sucursal_id (UUID) — when present, filters by branch.
 func (h *CajaHandler) Historial(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -152,7 +153,15 @@ func (h *CajaHandler) Historial(c *gin.Context) {
 	if limit < 1 || limit > 100 {
 		limit = 20
 	}
-	resp, err := h.svc.Historial(c.Request.Context(), page, limit)
+
+	var sucursalID *uuid.UUID
+	if raw := c.Query("sucursal_id"); raw != "" {
+		if sid, err := uuid.Parse(raw); err == nil {
+			sucursalID = &sid
+		}
+	}
+
+	resp, err := h.svc.Historial(c.Request.Context(), page, limit, sucursalID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, apierror.New(err.Error()))
 		return

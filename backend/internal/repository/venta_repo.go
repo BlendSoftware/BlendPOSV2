@@ -119,6 +119,13 @@ func (r *ventaRepo) List(ctx context.Context, filter dto.VentaFilter) ([]model.V
 		q = q.Where("estado = ?", filter.Estado)
 	}
 
+	// Optional sucursal filter — empty means consolidated (all branches).
+	if filter.SucursalID != "" {
+		if sid, err := uuid.Parse(filter.SucursalID); err == nil {
+			q = q.Where("sucursal_id = ?", sid)
+		}
+	}
+
 	// Date range: Desde/Hasta overrides Fecha.
 	// All comparisons use timestamptz range bounds (e.g. created_at >= X AND created_at < Y)
 	// instead of DATE(created_at) so the existing index on created_at can be used (P2-006).

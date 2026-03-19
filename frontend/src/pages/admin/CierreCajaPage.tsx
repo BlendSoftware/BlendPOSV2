@@ -8,6 +8,7 @@ import { notifications } from '@mantine/notifications';
 import { Lock, CheckCircle, AlertTriangle, History, ClipboardList, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCajaStore } from '../../store/useCajaStore';
+import { useSucursalStore } from '../../store/useSucursalStore';
 import { formatARS } from '../../utils/format';
 import type { IArqueoItem } from '../../types';
 import type { ReporteCajaResponse, ArqueoResponse as ApiArqueoResponse } from '../../services/api/caja';
@@ -24,6 +25,7 @@ interface FormValues {
 export function CierreCajaPage() {
     const { user, hasRole } = useAuthStore();
     const { sesionId, cerrar, recargarReporte } = useCajaStore();
+    const { sucursalId } = useSucursalStore();
     const [submitted, setSubmitted] = useState(false);
     const [apiResult, setApiResult] = useState<ApiArqueoResponse | null>(null);
     const [reporte, setReporte] = useState<ReporteCajaResponse | null>(null);
@@ -45,15 +47,15 @@ export function CierreCajaPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sesionId]);
 
-    // Cargar historial cuando el tab se activa
+    // Cargar historial cuando el tab se activa o cambia la sucursal seleccionada
     useEffect(() => {
         if (activeTab !== 'historial') return;
         setLoadingHistorial(true);
-        getHistorialCajas(1, 20)
+        getHistorialCajas(1, 20, sucursalId ?? undefined)
             .then((resp) => setHistorial(resp.data))
             .catch(() => { })
             .finally(() => setLoadingHistorial(false));
-    }, [activeTab]);
+    }, [activeTab, sucursalId]);
 
     const statsDia = {
         totalEfectivoEsperado: Number(reporte?.monto_esperado?.efectivo ?? 0),

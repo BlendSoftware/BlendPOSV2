@@ -40,12 +40,19 @@ export interface IProducto {
     /** Unit of measure: 'unidad' (default), 'kg', or 'gramo'. */
     unidadMedida?: 'unidad' | 'kg' | 'gramo';
     activo: boolean;
+    esPadre?: boolean;
     controlaVencimiento?: boolean;
     imagenUrl?: string;
     /** Si este producto es la variante "unitaria" de un padre tipo caja */
     padreId?: string;
     /** Cuántas unidades hijas contiene este producto (solo si es padre) */
     cantidadHija?: number;
+    /** Variant-specific attributes (e.g., {"talle": "M", "color": "Azul"}) */
+    varianteAtributos?: Record<string, string>;
+    /** Auto-generated display name for variants (e.g., "Remera - M / Azul") */
+    varianteNombre?: string;
+    /** Number of active variants (only for parent products) */
+    cantidadVariantes?: number;
     creadoEn: string;
     actualizadoEn: string;
 }

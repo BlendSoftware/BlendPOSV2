@@ -9,6 +9,7 @@ import { notifications } from '@mantine/notifications';
 import { Scissors, AlertTriangle, ArrowUp, PackagePlus, Plus, Link2, Pencil, Trash2 } from 'lucide-react';
 import { listarProductos, ajustarStock } from '../../services/api/products';
 import { getAlertasStock, ejecutarDesarme as apiEjecutarDesarme, listarVinculos, crearVinculo, actualizarVinculo, eliminarVinculo, listarMovimientos, type AlertaStockResponse, type VinculoResponse } from '../../services/api/inventario';
+import { useSucursalStore } from '../../store/useSucursalStore';
 import type { IProducto, IMovimientoStock } from '../../types';
 
 // -- Types --
@@ -38,13 +39,15 @@ export function InventarioPage() {
     const [alertas, setAlertas] = useState<AlertaStockResponse[]>([]);
     const [vinculos, setVinculos] = useState<VinculoResponse[]>([]);
     const [loading, setLoading] = useState(true);
+    const { sucursalId } = useSucursalStore();
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
+            const sid = sucursalId ?? undefined;
             const [productosResp, alertasResp, vinculosResp, movimientosResp] = await Promise.allSettled([
                 listarProductos({ limit: 500 }),
-                getAlertasStock(),
+                getAlertasStock(sid),
                 listarVinculos(),
                 listarMovimientos({ limit: 200 }),
             ]);
@@ -79,7 +82,7 @@ export function InventarioPage() {
         } catch { /* handled via allSettled */ } finally {
             setLoading(false);
         }
-    }, []);
+    }, [sucursalId]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -270,7 +273,7 @@ export function InventarioPage() {
             });
             ajusteForm.reset();
             // Refresh alerts in background
-            getAlertasStock().then(setAlertas).catch(() => {});
+            getAlertasStock(sucursalId ?? undefined).then(setAlertas).catch(() => {});
         } catch (err) {
             // Fallback: optimistic update for offline/demo mode
             const fallbackStock = Math.max(0, stockNuevo);

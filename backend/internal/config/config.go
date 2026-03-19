@@ -45,6 +45,9 @@ type Config struct {
 	SMTPUser     string `mapstructure:"SMTP_USER"`
 	SMTPPassword string `mapstructure:"SMTP_PASSWORD"`
 
+	// AI (Mistral)
+	MistralAPIKey string `mapstructure:"MISTRAL_API_KEY"`
+
 	// Business
 	PDFStoragePath string `mapstructure:"PDF_STORAGE_PATH"`
 	Domain         string `mapstructure:"DOMAIN"`
@@ -86,6 +89,7 @@ func Load() (*Config, error) {
 	_ = viper.BindEnv("SMTP_HOST")
 	_ = viper.BindEnv("SMTP_USER")
 	_ = viper.BindEnv("SMTP_PASSWORD")
+	_ = viper.BindEnv("MISTRAL_API_KEY")
 
 	// Optional .env file for local development — does not fail if missing
 	_ = viper.ReadInConfig()

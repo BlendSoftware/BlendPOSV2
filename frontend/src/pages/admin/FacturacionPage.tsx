@@ -8,6 +8,7 @@ import { Printer, Download, FileText, ChevronDown, ChevronUp, Search, Ban, Alert
 import { notifications } from '@mantine/notifications';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePrinterStore } from '../../store/usePrinterStore';
+import { useSucursalStore } from '../../store/useSucursalStore';
 import { type MetodoPago } from '../../store/useSaleStore';
 import { anularVenta, listarVentas, type VentaListItem } from '../../services/api/ventas';
 import { getComprobante, abrirFacturaHTML, descargarPDF } from '../../services/api/facturacion';
@@ -63,6 +64,8 @@ export function FacturacionPage() {
         return `${y}-${m}-${day}`;
     };
 
+    const { sucursalId } = useSucursalStore();
+
     const cargarVentas = useCallback(async () => {
         setLoadingVentas(true);
         try {
@@ -97,12 +100,13 @@ export function FacturacionPage() {
                 hasta: efectivoHasta,
                 ordenar_por: ordenarPor,
                 orden: orden,
+                sucursal_id: sucursalId ?? undefined,
             });
             setApiVentas(resp.data);
         } catch { /* silent */ } finally {
             setLoadingVentas(false);
         }
-    }, [desde, hasta, periodo, ordenarPor, orden]);
+    }, [desde, hasta, periodo, ordenarPor, orden, sucursalId]);
 
     useEffect(() => { cargarVentas(); }, [cargarVentas]);
 

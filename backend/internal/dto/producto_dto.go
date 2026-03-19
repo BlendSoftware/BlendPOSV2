@@ -15,6 +15,7 @@ type CrearProductoRequest struct {
 	StockMinimo  int             `json:"stock_minimo"  validate:"min=0"`
 	UnidadMedida string          `json:"unidad_medida"`
 	ProveedorID  *string         `json:"proveedor_id"  validate:"omitempty,uuid"`
+	EsPadre      bool            `json:"es_padre"`
 }
 
 type ActualizarProductoRequest struct {
@@ -27,6 +28,7 @@ type ActualizarProductoRequest struct {
 	UnidadMedida        *string          `json:"unidad_medida"`
 	ProveedorID         *string          `json:"proveedor_id"          validate:"omitempty,uuid"`
 	ControlaVencimiento *bool            `json:"controla_vencimiento"`
+	EsPadre             *bool            `json:"es_padre"`
 }
 
 // ─── Filter / Pagination ─────────────────────────────────────────────────────
@@ -38,6 +40,8 @@ type ProductoFilter struct {
 	ProveedorID string `form:"proveedor_id"`
 	// Activo: "true" = solo activos (default), "false" = solo inactivos, "all" = todos
 	Activo       string `form:"activo,default=true"`
+	// IncluirVariantes: "true" = include child variants in list, default is "false" (only root/parent products)
+	IncluirVariantes string `form:"incluir_variantes,default=false"`
 	// UpdatedAfter: ISO-8601 timestamp — return only products updated after this time.
 	// Used by the frontend delta-sync to avoid downloading the full catalog on every POS mount.
 	UpdatedAfter string `form:"updated_after"`
@@ -59,10 +63,14 @@ type ProductoResponse struct {
 	StockActual  int             `json:"stock_actual"`
 	StockMinimo  int             `json:"stock_minimo"`
 	UnidadMedida string          `json:"unidad_medida"`
-	EsPadre             bool            `json:"es_padre"`
-	Activo              bool            `json:"activo"`
-	ControlaVencimiento bool            `json:"controla_vencimiento"`
-	ProveedorID         *string         `json:"proveedor_id"`
+	EsPadre             bool              `json:"es_padre"`
+	PadreID             *string           `json:"padre_id,omitempty"`
+	VarianteAtributos   map[string]string `json:"variante_atributos,omitempty"`
+	VarianteNombre      *string           `json:"variante_nombre,omitempty"`
+	Activo              bool              `json:"activo"`
+	ControlaVencimiento bool              `json:"controla_vencimiento"`
+	ProveedorID         *string           `json:"proveedor_id"`
+	CantidadVariantes   int               `json:"cantidad_variantes,omitempty"`
 }
 
 type ProductoListResponse struct {
@@ -86,6 +94,17 @@ type ConsultaPreciosResponse struct {
 type AjustarStockRequest struct {
 	Delta  int    `json:"delta"  validate:"required,ne=0"`
 	Motivo string `json:"motivo" validate:"required,min=3"`
+}
+
+// ─── Variant DTOs ───────────────────────────────────────────────────────────
+
+// CrearVarianteRequest creates a variant (child) product from a parent product.
+type CrearVarianteRequest struct {
+	Atributos    map[string]string `json:"atributos"     validate:"required,min=1"`
+	CodigoBarras string            `json:"codigo_barras"  validate:"required,min=8,max=18"`
+	PrecioVenta  *decimal.Decimal  `json:"precio_venta"`
+	PrecioCosto  *decimal.Decimal  `json:"precio_costo"`
+	StockActual  int               `json:"stock_actual"   validate:"min=0"`
 }
 
 // ─── Bulk Import DTOs ───────────────────────────────────────────────────────

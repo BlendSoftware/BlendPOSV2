@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,7 +31,14 @@ type Producto struct {
 	StockMinimo  int             `gorm:"not null;default:5"`
 	UnidadMedida string          `gorm:"not null;default:'unidad'"`
 	EsPadre      bool            `gorm:"not null;default:false"`
-	ProveedorID  *uuid.UUID      `gorm:"type:uuid;index"`
+	PadreID      *uuid.UUID      `gorm:"type:uuid;index"`
+	// VarianteAtributos stores variant-specific attribute key-value pairs as JSONB.
+	// Example: {"talle": "M", "color": "Azul"}
+	VarianteAtributos json.RawMessage `gorm:"type:jsonb;default:'{}'"`
+	// VarianteNombre is the auto-generated display name for variants.
+	// Example: "Remera Básica - M / Azul"
+	VarianteNombre *string         `gorm:"type:varchar(200)"`
+	ProveedorID    *uuid.UUID      `gorm:"type:uuid;index"`
 	Activo              bool            `gorm:"not null;default:true"`
 	ControlaVencimiento bool            `gorm:"not null;default:false"`
 	CreatedAt           time.Time
@@ -38,4 +46,5 @@ type Producto struct {
 
 	CategoriaFK *Categoria `gorm:"foreignKey:CategoriaID"`
 	Proveedor   *Proveedor `gorm:"foreignKey:ProveedorID"`
+	Padre       *Producto  `gorm:"foreignKey:PadreID"`
 }

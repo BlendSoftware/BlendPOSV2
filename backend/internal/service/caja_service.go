@@ -25,7 +25,8 @@ type CajaService interface {
 	// GetActiva returns the active session for a given user, or nil if none.
 	GetActiva(ctx context.Context, usuarioID uuid.UUID) (*dto.ReporteCajaResponse, error)
 	// Historial returns a paginated list of past sessions (any state).
-	Historial(ctx context.Context, page, limit int) ([]dto.ReporteCajaResponse, error)
+	// sucursalID is optional — nil means all branches (consolidated view).
+	Historial(ctx context.Context, page, limit int, sucursalID *uuid.UUID) ([]dto.ReporteCajaResponse, error)
 }
 
 type cajaService struct {
@@ -252,14 +253,14 @@ func (s *cajaService) GetActiva(ctx context.Context, usuarioID uuid.UUID) (*dto.
 // ── Historial ─────────────────────────────────────────────────────────────────
 // Returns a paginated list of past sessions (any state), newest first.
 
-func (s *cajaService) Historial(ctx context.Context, page, limit int) ([]dto.ReporteCajaResponse, error) {
+func (s *cajaService) Historial(ctx context.Context, page, limit int, sucursalID *uuid.UUID) ([]dto.ReporteCajaResponse, error) {
 	if page < 1 {
 		page = 1
 	}
 	if limit < 1 || limit > 100 {
 		limit = 20
 	}
-	sesiones, _, err := s.repo.ListSesiones(ctx, page, limit)
+	sesiones, _, err := s.repo.ListSesiones(ctx, page, limit, sucursalID)
 	if err != nil {
 		return nil, err
 	}

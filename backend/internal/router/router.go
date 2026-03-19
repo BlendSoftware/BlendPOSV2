@@ -52,6 +52,7 @@ type Deps struct {
 	ClienteSvc      service.ClienteService
 	SucursalSvc        service.SucursalService
 	TransferenciaSvc   service.TransferenciaService
+	AISvc           service.AIService // optional — nil when MISTRAL_API_KEY is empty
 
 	// Repos still needed by handlers that bypass the service layer
 	ProductoRepo        repository.ProductoRepository
@@ -114,6 +115,12 @@ func New(d Deps) *gin.Engine {
 	clientesH := handler.NewClientesHandler(d.ClienteSvc)
 	sucursalesH := handler.NewSucursalesHandler(d.SucursalSvc)
 	transferenciasH := handler.NewTransferenciasHandler(d.TransferenciaSvc)
+
+	// AI handler — only created when service is available
+	var aiH *handler.AIHandler
+	if d.AISvc != nil {
+		aiH = handler.NewAIHandler(d.AISvc)
+	}
 
 	// ── Routes ───────────────────────────────────────────────────────────────
 
@@ -180,7 +187,11 @@ func New(d Deps) *gin.Engine {
 			prods.PUT("/:id", idor("productos", "id"), productosH.Actualizar)
 			prods.DELETE("/:id", idor("productos", "id"), productosH.Desactivar)
 			prods.PATCH("/:id/reactivar", idor("productos", "id"), productosH.Reactivar)
+			// Variants (child products)
+			prods.POST("/:id/variantes", idor("productos", "id"), middleware.EnforcePlanLimitProductos(d.TenantRepo, d.RDB), productosH.CrearVariante)
 		}
+		// Variant listing — all authenticated roles can read
+		v1.GET("/productos/:id/variantes", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("productos", "id"), productosH.ListarVariantes)
 
 		inv := v1.Group("/inventario", middleware.RequireRole("administrador", "supervisor"))
 		{
@@ -352,6 +363,16 @@ func New(d Deps) *gin.Engine {
 		{
 			billing.POST("/subscribe", billingH.Subscribe)
 			billing.GET("/status", billingH.GetStatus)
+		}
+
+		// AI Analytics — only registered when MISTRAL_API_KEY is configured
+		if aiH != nil {
+			ai := v1.Group("/ai", middleware.RequireRole("administrador"))
+			{
+				ai.POST("/chat", aiH.Chat)
+				ai.GET("/metricas", aiH.GetMetricas)
+				ai.GET("/status", aiH.GetStatus)
+			}
 		}
 
 		// Tenant self-service (F1-1)

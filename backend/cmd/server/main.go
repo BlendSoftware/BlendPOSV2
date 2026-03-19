@@ -146,6 +146,15 @@ func main() {
 	// Inject clienteSvc into ventaSvc after both are created (avoids circular init)
 	ventaSvc.SetClienteService(clienteSvc)
 
+	// AI service — only active when MISTRAL_API_KEY is set
+	var aiSvc service.AIService
+	if cfg.MistralAPIKey != "" {
+		aiSvc = service.NewAIService(db, cfg.MistralAPIKey)
+		log.Info().Msg("AI service enabled (Mistral API)")
+	} else {
+		log.Info().Msg("AI service disabled (MISTRAL_API_KEY not set)")
+	}
+
 	workerHandlers := &worker.WorkerHandlers{
 		Facturacion: worker.NewFacturacionWorker(afipClient, afipCB, comprobanteRepo, ventaRepo, dispatcher, cfg.PDFStoragePath, configFiscalSvc),
 		Email:       worker.NewEmailWorker(mailer),
@@ -206,6 +215,7 @@ func main() {
 		ClienteSvc:          clienteSvc,
 		SucursalSvc:         sucursalSvc,
 		TransferenciaSvc:    transferenciaSvc,
+		AISvc:               aiSvc,
 	})
 
 	srv := &http.Server{

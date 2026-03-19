@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
 
 	"blendpos/internal/dto"
 	"blendpos/internal/model"
@@ -23,6 +26,8 @@ type ProductoService interface {
 	Desactivar(ctx context.Context, id uuid.UUID) error
 	Reactivar(ctx context.Context, id uuid.UUID) error
 	AjustarStock(ctx context.Context, id uuid.UUID, req dto.AjustarStockRequest) (*dto.ProductoResponse, error)
+	CrearVariante(ctx context.Context, padreID uuid.UUID, req dto.CrearVarianteRequest) (*dto.ProductoResponse, error)
+	ListarVariantes(ctx context.Context, padreID uuid.UUID) ([]dto.ProductoResponse, error)
 }
 
 type productoService struct {
@@ -94,6 +99,18 @@ func toProductoResponse(p *model.Producto) *dto.ProductoResponse {
 		s := p.ProveedorID.String()
 		provStr = &s
 	}
+	var padreStr *string
+	if p.PadreID != nil {
+		s := p.PadreID.String()
+		padreStr = &s
+	}
+
+	// Parse variant attributes from JSON
+	var attrs map[string]string
+	if len(p.VarianteAtributos) > 0 && string(p.VarianteAtributos) != "{}" {
+		_ = json.Unmarshal(p.VarianteAtributos, &attrs)
+	}
+
 	return &dto.ProductoResponse{
 		ID:           p.ID.String(),
 		CodigoBarras: p.CodigoBarras,
@@ -107,10 +124,29 @@ func toProductoResponse(p *model.Producto) *dto.ProductoResponse {
 		StockMinimo:  p.StockMinimo,
 		UnidadMedida: p.UnidadMedida,
 		EsPadre:             p.EsPadre,
+		PadreID:             padreStr,
+		VarianteAtributos:   attrs,
+		VarianteNombre:      p.VarianteNombre,
 		Activo:              p.Activo,
 		ControlaVencimiento: p.ControlaVencimiento,
 		ProveedorID:         provStr,
 	}
+}
+
+// buildVarianteNombre generates the display name for a variant.
+// Format: "{ParentName} - {val1} / {val2}" with keys sorted alphabetically.
+func buildVarianteNombre(parentName string, attrs map[string]string) string {
+	keys := make([]string, 0, len(attrs))
+	for k := range attrs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	vals := make([]string, 0, len(keys))
+	for _, k := range keys {
+		vals = append(vals, attrs[k])
+	}
+	return parentName + " - " + strings.Join(vals, " / ")
 }
 
 // ── Service methods ──────────────────────────────────────────────────────────
@@ -141,7 +177,7 @@ func (s *productoService) Crear(ctx context.Context, req dto.CrearProductoReques
 		StockActual:  req.StockActual,
 		StockMinimo:  req.StockMinimo,
 		UnidadMedida: req.UnidadMedida,
-		EsPadre:      false,
+		EsPadre:      req.EsPadre,
 		Activo:       true,
 		ProveedorID:  provID,
 	}
@@ -183,7 +219,14 @@ func (s *productoService) Listar(ctx context.Context, filter dto.ProductoFilter)
 
 	items := make([]dto.ProductoResponse, 0, len(productos))
 	for i := range productos {
-		items = append(items, *toProductoResponse(&productos[i]))
+		resp := toProductoResponse(&productos[i])
+		// Enrich parent products with the count of active variants
+		if productos[i].EsPadre {
+			if cnt, err := s.repo.CountByPadreID(ctx, productos[i].ID); err == nil {
+				resp.CantidadVariantes = int(cnt)
+			}
+		}
+		items = append(items, *resp)
 	}
 
 	totalPages := int(total) / filter.Limit
@@ -241,6 +284,9 @@ func (s *productoService) Actualizar(ctx context.Context, id uuid.UUID, req dto.
 	}
 	if req.ControlaVencimiento != nil {
 		p.ControlaVencimiento = *req.ControlaVencimiento
+	}
+	if req.EsPadre != nil {
+		p.EsPadre = *req.EsPadre
 	}
 
 	if err := s.repo.Update(ctx, p); err != nil {
@@ -312,4 +358,82 @@ func (s *productoService) AjustarStock(ctx context.Context, id uuid.UUID, req dt
 		return nil, err
 	}
 	return toProductoResponse(p), nil
+}
+
+// CrearVariante creates a variant (child) product from a parent product.
+// The parent must exist and have es_padre=true.
+// Variant inherits most fields from parent unless explicitly overridden.
+func (s *productoService) CrearVariante(ctx context.Context, padreID uuid.UUID, req dto.CrearVarianteRequest) (*dto.ProductoResponse, error) {
+	padre, err := s.repo.FindByID(ctx, padreID)
+	if err != nil {
+		return nil, fmt.Errorf("producto padre no encontrado")
+	}
+	if !padre.EsPadre {
+		return nil, fmt.Errorf("el producto no está marcado como padre (es_padre=false)")
+	}
+
+	// Serialize attributes to JSON
+	attrJSON, err := json.Marshal(req.Atributos)
+	if err != nil {
+		return nil, fmt.Errorf("atributos inválidos: %w", err)
+	}
+
+	// Use parent prices unless overridden
+	precioVenta := padre.PrecioVenta
+	if req.PrecioVenta != nil {
+		precioVenta = *req.PrecioVenta
+	}
+	precioCosto := padre.PrecioCosto
+	if req.PrecioCosto != nil {
+		precioCosto = *req.PrecioCosto
+	}
+
+	varNombre := buildVarianteNombre(padre.Nombre, req.Atributos)
+
+	variante := &model.Producto{
+		CodigoBarras:        req.CodigoBarras,
+		Nombre:              padre.Nombre,
+		Descripcion:         padre.Descripcion,
+		Categoria:           padre.Categoria,
+		CategoriaID:         padre.CategoriaID,
+		PrecioCosto:         precioCosto,
+		PrecioVenta:         precioVenta,
+		StockActual:         req.StockActual,
+		StockMinimo:         padre.StockMinimo,
+		UnidadMedida:        padre.UnidadMedida,
+		EsPadre:             false,
+		PadreID:             &padreID,
+		VarianteAtributos:   attrJSON,
+		VarianteNombre:      &varNombre,
+		ProveedorID:         padre.ProveedorID,
+		Activo:              true,
+		ControlaVencimiento: padre.ControlaVencimiento,
+	}
+
+	if err := s.repo.Create(ctx, variante); err != nil {
+		return nil, err
+	}
+	return toProductoResponse(variante), nil
+}
+
+// ListarVariantes returns all active variants (children) for a given parent product.
+func (s *productoService) ListarVariantes(ctx context.Context, padreID uuid.UUID) ([]dto.ProductoResponse, error) {
+	padre, err := s.repo.FindByID(ctx, padreID)
+	if err != nil {
+		return nil, fmt.Errorf("producto padre no encontrado")
+	}
+	if !padre.EsPadre {
+		return nil, fmt.Errorf("el producto no está marcado como padre (es_padre=false)")
+	}
+
+	variantes, err := s.repo.FindByPadreID(ctx, padreID)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]dto.ProductoResponse, 0, len(variantes))
+	for i := range variantes {
+		items = append(items, *toProductoResponse(&variantes[i]))
+	}
+	return items, nil
 }

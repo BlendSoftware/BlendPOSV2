@@ -1,0 +1,212 @@
+/* ── Register Page — Premium onboarding ──────────────────────────────────── */
+
+.wrapper {
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(34, 139, 230, 0.08) 0%, transparent 50%),
+        var(--mantine-color-dark-8);
+    padding: 2rem 1rem;
+}
+
+:global([data-mantine-color-scheme='light']) .wrapper {
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(34, 139, 230, 0.06) 0%, transparent 50%),
+        var(--mantine-color-gray-0);
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ── Branding header ────────────────────────────────────────────────────── */
+
+.branding {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.logo {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: var(--mantine-color-blue-4);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+:global([data-mantine-color-scheme='light']) .logo {
+    color: var(--mantine-color-blue-6);
+}
+
+/* ── Step indicator ─────────────────────────────────────────────────────── */
+
+.stepIndicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.stepDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mantine-color-dark-4);
+    transition: all 0.3s ease;
+}
+
+:global([data-mantine-color-scheme='light']) .stepDot {
+    background: var(--mantine-color-gray-4);
+}
+
+.stepDotActive {
+    width: 28px;
+    border-radius: 4px;
+    background: var(--mantine-color-blue-5);
+}
+
+.stepLabel {
+    font-size: 0.75rem;
+    color: var(--mantine-color-dimmed);
+    margin-left: 0.5rem;
+}
+
+/* ── Main card ──────────────────────────────────────────────────────────── */
+
+.mainCard {
+    background: var(--mantine-color-dark-7);
+    border-color: var(--mantine-color-dark-5);
+}
+
+:global([data-mantine-color-scheme='light']) .mainCard {
+    background: var(--mantine-color-white);
+    border-color: var(--mantine-color-gray-3);
+}
+
+/* ── Section divider ────────────────────────────────────────────────────── */
+
+.sectionTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.sectionNumber {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--mantine-color-blue-5);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sectionLabel {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--mantine-color-gray-0);
+}
+
+:global([data-mantine-color-scheme='light']) .sectionLabel {
+    color: var(--mantine-color-dark-7);
+}
+
+/* ── Business type cards ────────────────────────────────────────────────── */
+
+.typeCard {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--mantine-color-dark-6);
+    border-color: var(--mantine-color-dark-4);
+    padding: 1rem;
+}
+
+:global([data-mantine-color-scheme='light']) .typeCard {
+    background: var(--mantine-color-gray-0);
+    border-color: var(--mantine-color-gray-3);
+}
+
+.typeCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-mantine-color-scheme='light']) .typeCard:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.typeCardSelected {
+    border-width: 2px;
+    transform: translateY(-2px);
+}
+
+/* ── Category badges area ───────────────────────────────────────────────── */
+
+.categoriesPreview {
+    background: var(--mantine-color-dark-6);
+    border-radius: var(--mantine-radius-md);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
+:global([data-mantine-color-scheme='light']) .categoriesPreview {
+    background: var(--mantine-color-gray-0);
+}
+
+/* ── Divider line ───────────────────────────────────────────────────────── */
+
+.divider {
+    height: 1px;
+    background: var(--mantine-color-dark-5);
+    margin: 1.25rem 0;
+}
+
+:global([data-mantine-color-scheme='light']) .divider {
+    background: var(--mantine-color-gray-3);
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fadeIn {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.fadeInDelay {
+    animation: fadeInUp 0.4s ease-out 0.15s both;
+}
+
+.fadeInDelay2 {
+    animation: fadeInUp 0.4s ease-out 0.3s both;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+    .wrapper {
+        padding: 1rem 0.75rem;
+    }
+
+    .logo {
+        font-size: 2rem;
+    }
+}

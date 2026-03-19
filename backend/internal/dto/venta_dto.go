@@ -14,6 +14,7 @@ type VentaFilter struct {
 	Orden      string `form:"orden"`                     // "asc" | "desc" (default desc)
 	Page       int    `form:"page,default=1"   validate:"min=1"`
 	Limit      int    `form:"limit,default=50" validate:"min=1,max=1000"`
+	SucursalID string `form:"sucursal_id"`               // UUID; empty = all sucursales (consolidated)
 }
 
 // VentaListItem is returned inside VentaListResponse for GET /v1/ventas.

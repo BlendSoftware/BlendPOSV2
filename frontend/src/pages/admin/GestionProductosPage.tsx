@@ -8,13 +8,14 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { Plus, Search, Edit, PowerOff, Power, X, AlertCircle, PackagePlus, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Tag, Package, Upload, CalendarClock } from 'lucide-react';
+import { Plus, Search, Edit, PowerOff, Power, X, AlertCircle, PackagePlus, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Tag, Package, Upload, CalendarClock, Layers } from 'lucide-react';
 import { ImportProductosModal } from '../../components/ImportProductosModal';
 import { PromocionesTab } from './PromocionesTab';
 import { formatARS } from '../../utils/format';
 import {
     listarProductos, crearProducto, actualizarProducto, desactivarProducto, reactivarProducto, ajustarStock,
-    type ProductoResponse,
+    crearVariante, listarVariantes,
+    type ProductoResponse, type CrearVarianteRequest,
 } from '../../services/api/products';
 import { listarCategorias, type CategoriaResponse } from '../../services/api/categorias';
 import { listarLotes, crearLote, eliminarLote, type LoteResponse, type CrearLoteRequest } from '../../services/api/lotes';
@@ -35,7 +36,12 @@ function mapProducto(p: ProductoResponse): IProducto {
         stockMinimo: p.stock_minimo,
         unidadMedida: (p.unidad_medida as 'unidad' | 'kg' | 'gramo') || 'unidad',
         activo: p.activo,
+        esPadre: p.es_padre,
         controlaVencimiento: p.controla_vencimiento ?? false,
+        padreId: p.padre_id,
+        varianteAtributos: p.variante_atributos,
+        varianteNombre: p.variante_nombre,
+        cantidadVariantes: p.cantidad_variantes,
         creadoEn: new Date().toISOString(),
         actualizadoEn: new Date().toISOString(),
     };
@@ -64,12 +70,13 @@ interface FormValues {
     unidadMedida: UnidadMedida;
     activo: boolean;
     controlaVencimiento: boolean;
+    esPadre: boolean;
 }
 
 const EMPTY_FORM: FormValues = {
     codigoBarras: '', nombre: '', descripcion: '',
     categoria: 'otros', precioCosto: 0, precioVenta: 0,
-    stock: 0, stockMinimo: 5, unidadMedida: 'unidad', activo: true, controlaVencimiento: false,
+    stock: 0, stockMinimo: 5, unidadMedida: 'unidad', activo: true, controlaVencimiento: false, esPadre: false,
 };
 
 const UNIDAD_MEDIDA_OPTIONS = [
@@ -115,6 +122,26 @@ export function GestionProductosPage() {
             cantidad: (v) => (v >= 1 ? null : 'Mínimo 1'),
         },
     });
+
+    // ── Variantes modal state ─────────────────────────────────────────────
+    const [variantesModalOpen, setVariantesModalOpen] = useState(false);
+    const [variantesTarget, setVariantesTarget] = useState<IProducto | null>(null);
+    const [variantes, setVariantes] = useState<ProductoResponse[]>([]);
+    const [variantesLoading, setVariantesLoading] = useState(false);
+    const [creandoVariante, setCreandoVariante] = useState(false);
+    const [attrKeys, setAttrKeys] = useState<string[]>(['Talle', 'Color']);
+    const [newAttrKey, setNewAttrKey] = useState('');
+    const varianteForm = useForm<{ atributos: Record<string, string>; codigo_barras: string; precio_venta: string; stock_actual: number }>({
+        initialValues: { atributos: {}, codigo_barras: '', precio_venta: '', stock_actual: 0 },
+        validate: {
+            codigo_barras: (v) => (v.trim() ? null : 'Requerido'),
+            stock_actual: (v) => (v >= 0 ? null : 'Debe ser >= 0'),
+        },
+    });
+
+    // ── Expanded parent rows state ────────────────────────────────────────
+    const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
+    const [expandedVariants, setExpandedVariants] = useState<Record<string, ProductoResponse[]>>({});
 
     // ── Delete state ──────────────────────────────────────────────────────
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -284,6 +311,7 @@ export function GestionProductosPage() {
             unidadMedida: (p.unidadMedida as UnidadMedida) || 'unidad',
             activo: p.activo,
             controlaVencimiento: p.controlaVencimiento ?? false,
+            esPadre: p.esPadre ?? false,
         });
         setModalOpen(true);
     };
@@ -414,6 +442,79 @@ export function GestionProductosPage() {
         }
     };
 
+    const openVariantesModal = async (p: IProducto) => {
+        setVariantesTarget(p);
+        setVariantesModalOpen(true);
+        setVariantesLoading(true);
+        varianteForm.reset();
+        try {
+            const data = await listarVariantes(p.id);
+            setVariantes(data ?? []);
+            // Infer attribute keys from existing variants
+            if (data && data.length > 0) {
+                const keys = Object.keys(data[0].variante_atributos ?? {});
+                if (keys.length > 0) setAttrKeys(keys);
+            }
+        } catch {
+            notifications.show({ title: 'Error', message: 'No se pudieron cargar las variantes', color: 'red' });
+        } finally {
+            setVariantesLoading(false);
+        }
+    };
+
+    const handleCrearVariante = varianteForm.onSubmit(async (values) => {
+        if (!variantesTarget) return;
+        // Validate that at least one attribute has a value
+        const filledAttrs: Record<string, string> = {};
+        for (const k of attrKeys) {
+            const val = values.atributos[k]?.trim();
+            if (val) filledAttrs[k] = val;
+        }
+        if (Object.keys(filledAttrs).length === 0) {
+            notifications.show({ title: 'Error', message: 'Completá al menos un atributo de variante', color: 'red' });
+            return;
+        }
+        setCreandoVariante(true);
+        try {
+            const req: CrearVarianteRequest = {
+                atributos: filledAttrs,
+                codigo_barras: values.codigo_barras,
+                stock_actual: values.stock_actual,
+            };
+            if (values.precio_venta && Number(values.precio_venta) > 0) {
+                req.precio_venta = Number(values.precio_venta);
+            }
+            await crearVariante(variantesTarget.id, req);
+            notifications.show({ title: 'Variante creada', message: `${variantesTarget.nombre}`, color: 'teal' });
+            varianteForm.reset();
+            const data = await listarVariantes(variantesTarget.id);
+            setVariantes(data ?? []);
+            await fetchProductos();
+        } catch (err) {
+            notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'No se pudo crear la variante', color: 'red' });
+        } finally {
+            setCreandoVariante(false);
+        }
+    });
+
+    const toggleExpandParent = async (parentId: string) => {
+        setExpandedParents((prev) => {
+            const next = new Set(prev);
+            if (next.has(parentId)) {
+                next.delete(parentId);
+            } else {
+                next.add(parentId);
+                // Load variants if not already loaded
+                if (!expandedVariants[parentId]) {
+                    listarVariantes(parentId).then((data) => {
+                        setExpandedVariants((prev) => ({ ...prev, [parentId]: data ?? [] }));
+                    });
+                }
+            }
+            return next;
+        });
+    };
+
     const handleSubmit = form.onSubmit(async (values) => {
         try {
             if (editTarget) {
@@ -426,6 +527,7 @@ export function GestionProductosPage() {
                     stock_minimo: values.stockMinimo,
                     unidad_medida: values.unidadMedida,
                     controla_vencimiento: values.controlaVencimiento,
+                    es_padre: values.esPadre,
                 });
                 notifications.show({ title: 'Producto actualizado', message: values.nombre, color: 'blue' });
             } else {
@@ -440,6 +542,7 @@ export function GestionProductosPage() {
                     stock_minimo: values.stockMinimo,
                     unidad_medida: values.unidadMedida,
                     controla_vencimiento: values.controlaVencimiento,
+                    es_padre: values.esPadre,
                 });
                 notifications.show({ title: 'Producto creado', message: values.nombre, color: 'teal' });
             }
@@ -592,7 +695,7 @@ export function GestionProductosPage() {
                                     </Table.Td>
                                 </Table.Tr>
                             ) : (
-                                paginatedRows.map((p) => (
+                                paginatedRows.flatMap((p) => [
                                     <Table.Tr key={p.id} style={{ opacity: p.activo ? 1 : 0.5 }}>
                                         <Table.Td onClick={(e) => e.stopPropagation()}>
                                             <Checkbox
@@ -605,9 +708,26 @@ export function GestionProductosPage() {
                                             <Text size="xs" ff="monospace">{p.codigoBarras}</Text>
                                         </Table.Td>
                                         <Table.Td>
-                                            <Text size="sm" fw={500}>{p.nombre}</Text>
+                                            <Group gap={4}>
+                                                <Text size="sm" fw={500}>{p.nombre}</Text>
+                                                {p.esPadre && (p.cantidadVariantes ?? 0) > 0 && (
+                                                    <Badge
+                                                        size="xs"
+                                                        variant="light"
+                                                        color="violet"
+                                                        style={{ cursor: 'pointer' }}
+                                                        leftSection={<Layers size={10} />}
+                                                        onClick={(e) => { e.stopPropagation(); toggleExpandParent(p.id); }}
+                                                    >
+                                                        {p.cantidadVariantes} variante{p.cantidadVariantes !== 1 ? 's' : ''}
+                                                    </Badge>
+                                                )}
+                                                {p.esPadre && (p.cantidadVariantes ?? 0) === 0 && (
+                                                    <Badge size="xs" variant="outline" color="gray">Padre</Badge>
+                                                )}
+                                            </Group>
                                             {p.cantidadHija && (
-                                                <Text size="xs" c="blue.4">Caja × {p.cantidadHija} unidades</Text>
+                                                <Text size="xs" c="blue.4">Caja x {p.cantidadHija} unidades</Text>
                                             )}
                                         </Table.Td>
                                         <Table.Td>
@@ -665,6 +785,13 @@ export function GestionProductosPage() {
                                                         </ActionIcon>
                                                     </Tooltip>
                                                 )}
+                                                {p.esPadre && (
+                                                    <Tooltip label="Gestionar variantes" withArrow>
+                                                        <ActionIcon variant="subtle" color="violet" onClick={() => openVariantesModal(p)}>
+                                                            <Layers size={15} />
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                )}
                                                 <Tooltip label={p.activo ? 'Desactivar' : 'Activar'} withArrow>
                                                     <ActionIcon
                                                         variant="subtle"
@@ -677,8 +804,38 @@ export function GestionProductosPage() {
 
                                             </Group>
                                         </Table.Td>
-                                    </Table.Tr>
-                                ))
+                                    </Table.Tr>,
+                                    // Expanded variant rows for parent products
+                                    ...(p.esPadre && expandedParents.has(p.id) ? (expandedVariants[p.id] ?? []).map((v) => (
+                                        <Table.Tr key={`var-${v.id}`} style={{ backgroundColor: 'var(--mantine-color-violet-light)' }}>
+                                            <Table.Td />
+                                            <Table.Td>
+                                                <Text size="xs" ff="monospace">{v.codigo_barras}</Text>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Group gap={4}>
+                                                    <Text size="sm" c="dimmed" ml="md">{v.variante_nombre ?? v.nombre}</Text>
+                                                    {v.variante_atributos && Object.entries(v.variante_atributos).map(([k, val]) => (
+                                                        <Badge key={k} size="xs" variant="outline" color="violet">{k}: {val}</Badge>
+                                                    ))}
+                                                </Group>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Badge size="xs" variant="outline">{v.categoria}</Badge>
+                                            </Table.Td>
+                                            <Table.Td><Text size="sm">{formatARS(typeof v.precio_costo === 'number' ? v.precio_costo : Number(v.precio_costo))}</Text></Table.Td>
+                                            <Table.Td><Text size="sm" fw={600} c="teal.4">{formatARS(typeof v.precio_venta === 'number' ? v.precio_venta : Number(v.precio_venta))}</Text></Table.Td>
+                                            <Table.Td><Text size="xs" c="dimmed">--</Text></Table.Td>
+                                            <Table.Td>
+                                                <Badge size="sm" color={v.stock_actual === 0 ? 'red' : v.stock_actual <= v.stock_minimo ? 'yellow' : 'gray'} variant="light">
+                                                    {v.stock_actual} ud
+                                                </Badge>
+                                            </Table.Td>
+                                            <Table.Td>{v.activo ? <Badge color="teal" size="sm" variant="light">Activo</Badge> : <Badge color="gray" size="sm" variant="light">Inactivo</Badge>}</Table.Td>
+                                            <Table.Td />
+                                        </Table.Tr>
+                                    )) : []),
+                                ]))
                             )}
                         </Table.Tbody>
                     </Table>
@@ -793,6 +950,26 @@ export function GestionProductosPage() {
                                 onClick={() => { setModalOpen(false); openLotesModal(editTarget); }}
                             >
                                 Gestionar lotes
+                            </Button>
+                        )}
+
+                        <Divider label="Variantes" labelPosition="left" />
+
+                        <Switch
+                            label="Este producto tiene variantes (talles, colores, etc.)"
+                            description="Marcalo como padre para poder crear variantes con atributos diferenciados"
+                            checked={form.values.esPadre}
+                            onChange={(e) => form.setFieldValue('esPadre', e.currentTarget.checked)}
+                        />
+
+                        {editTarget && form.values.esPadre && (
+                            <Button
+                                variant="light"
+                                color="violet"
+                                leftSection={<Layers size={14} />}
+                                onClick={() => { setModalOpen(false); openVariantesModal(editTarget); }}
+                            >
+                                Gestionar variantes
                             </Button>
                         )}
 
@@ -978,6 +1155,189 @@ export function GestionProductosPage() {
                                             </Table.Tr>
                                         );
                                     })}
+                                </Table.Tbody>
+                            </Table>
+                        </Paper>
+                    )}
+                </Stack>
+            </Modal>
+
+            {/* ── Modal Gestionar Variantes ───────────────────────────── */}
+            <Modal
+                opened={variantesModalOpen}
+                onClose={() => setVariantesModalOpen(false)}
+                title={
+                    <Group gap="xs">
+                        <Layers size={16} />
+                        <Text fw={700}>Variantes — {variantesTarget?.nombre}</Text>
+                    </Group>
+                }
+                size="xl"
+                centered
+            >
+                <Stack gap="md">
+                    {/* Attribute type management */}
+                    <Paper p="sm" radius="md" withBorder>
+                        <Text size="sm" fw={600} mb="xs">Tipos de atributo</Text>
+                        <Group gap="xs" wrap="wrap">
+                            {attrKeys.map((k) => (
+                                <Badge
+                                    key={k}
+                                    size="lg"
+                                    variant="light"
+                                    color="violet"
+                                    rightSection={
+                                        <ActionIcon size="xs" variant="subtle" color="red" onClick={() => setAttrKeys((prev) => prev.filter((pk) => pk !== k))}>
+                                            <X size={10} />
+                                        </ActionIcon>
+                                    }
+                                >
+                                    {k}
+                                </Badge>
+                            ))}
+                            <Group gap={4}>
+                                <TextInput
+                                    size="xs"
+                                    placeholder="Nuevo atributo..."
+                                    value={newAttrKey}
+                                    onChange={(e) => setNewAttrKey(e.currentTarget.value)}
+                                    style={{ width: 120 }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && newAttrKey.trim()) {
+                                            e.preventDefault();
+                                            if (!attrKeys.includes(newAttrKey.trim())) {
+                                                setAttrKeys((prev) => [...prev, newAttrKey.trim()]);
+                                            }
+                                            setNewAttrKey('');
+                                        }
+                                    }}
+                                />
+                                <Button
+                                    size="xs"
+                                    variant="light"
+                                    disabled={!newAttrKey.trim()}
+                                    onClick={() => {
+                                        if (newAttrKey.trim() && !attrKeys.includes(newAttrKey.trim())) {
+                                            setAttrKeys((prev) => [...prev, newAttrKey.trim()]);
+                                        }
+                                        setNewAttrKey('');
+                                    }}
+                                >
+                                    +
+                                </Button>
+                            </Group>
+                        </Group>
+                    </Paper>
+
+                    {/* Form to add variant */}
+                    <Paper p="md" radius="md" withBorder>
+                        <Text size="sm" fw={600} mb="sm">Agregar variante</Text>
+                        <form onSubmit={handleCrearVariante}>
+                            <Stack gap="sm">
+                                <Group grow>
+                                    {attrKeys.map((k) => (
+                                        <TextInput
+                                            key={k}
+                                            label={k}
+                                            placeholder={`Ej: ${k === 'Talle' ? 'M' : k === 'Color' ? 'Azul' : '...'}`}
+                                            value={varianteForm.values.atributos[k] ?? ''}
+                                            onChange={(e) =>
+                                                varianteForm.setFieldValue('atributos', {
+                                                    ...varianteForm.values.atributos,
+                                                    [k]: e.currentTarget.value,
+                                                })
+                                            }
+                                        />
+                                    ))}
+                                </Group>
+                                <Group grow>
+                                    <TextInput
+                                        label="Código de barras"
+                                        placeholder="7790000000001"
+                                        {...varianteForm.getInputProps('codigo_barras')}
+                                    />
+                                    <TextInput
+                                        label="Precio venta (opcional, hereda del padre)"
+                                        placeholder={variantesTarget ? `${variantesTarget.precioVenta}` : ''}
+                                        {...varianteForm.getInputProps('precio_venta')}
+                                    />
+                                    <NumberInput
+                                        label="Stock"
+                                        min={0}
+                                        {...varianteForm.getInputProps('stock_actual')}
+                                    />
+                                </Group>
+                                <Group justify="flex-end">
+                                    <Button type="submit" loading={creandoVariante} leftSection={<Plus size={14} />}>
+                                        Agregar variante
+                                    </Button>
+                                </Group>
+                            </Stack>
+                        </form>
+                    </Paper>
+
+                    {/* List of existing variants */}
+                    {variantesLoading ? (
+                        <Stack gap="sm">
+                            {[1, 2, 3].map((i) => <Skeleton key={i} h={40} radius="sm" />)}
+                        </Stack>
+                    ) : variantes.length === 0 ? (
+                        <Alert color="blue" variant="light" title="Sin variantes">
+                            Este producto no tiene variantes. Agregá una arriba definiendo los atributos.
+                        </Alert>
+                    ) : (
+                        <Paper radius="md" withBorder style={{ overflow: 'hidden' }}>
+                            <Table highlightOnHover verticalSpacing="sm">
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th>Variante</Table.Th>
+                                        {attrKeys.map((k) => (
+                                            <Table.Th key={k}>{k}</Table.Th>
+                                        ))}
+                                        <Table.Th>Código</Table.Th>
+                                        <Table.Th>Precio</Table.Th>
+                                        <Table.Th>Stock</Table.Th>
+                                        <Table.Th>Estado</Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {variantes.map((v) => (
+                                        <Table.Tr key={v.id}>
+                                            <Table.Td>
+                                                <Text size="sm" fw={500}>{v.variante_nombre ?? v.nombre}</Text>
+                                            </Table.Td>
+                                            {attrKeys.map((k) => (
+                                                <Table.Td key={k}>
+                                                    <Badge size="sm" variant="light" color="violet">
+                                                        {v.variante_atributos?.[k] ?? '-'}
+                                                    </Badge>
+                                                </Table.Td>
+                                            ))}
+                                            <Table.Td>
+                                                <Text size="xs" ff="monospace">{v.codigo_barras}</Text>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Text size="sm" fw={600} c="teal.4">
+                                                    {formatARS(typeof v.precio_venta === 'number' ? v.precio_venta : Number(v.precio_venta))}
+                                                </Text>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Badge
+                                                    size="sm"
+                                                    color={v.stock_actual === 0 ? 'red' : v.stock_actual <= v.stock_minimo ? 'yellow' : 'gray'}
+                                                    variant="light"
+                                                >
+                                                    {v.stock_actual} ud
+                                                </Badge>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                {v.activo
+                                                    ? <Badge color="teal" size="sm" variant="light">Activo</Badge>
+                                                    : <Badge color="gray" size="sm" variant="light">Inactivo</Badge>
+                                                }
+                                            </Table.Td>
+                                        </Table.Tr>
+                                    ))}
                                 </Table.Tbody>
                             </Table>
                         </Paper>

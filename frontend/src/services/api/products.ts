@@ -30,9 +30,13 @@ export interface ProductoResponse {
     stock_minimo: number;
     unidad_medida: string;
     es_padre: boolean;
+    padre_id?: string;
+    variante_atributos?: Record<string, string>;
+    variante_nombre?: string;
     activo: boolean;
     controla_vencimiento?: boolean;
     proveedor_id: string | null;
+    cantidad_variantes?: number;
 }
 
 export interface ProductoListResponse {
@@ -50,6 +54,8 @@ export interface ProductoFilter {
     proveedor_id?: string;
     /** "true" = activos (default), "false" = inactivos, "all" = todos */
     activo?: 'true' | 'false' | 'all';
+    /** "true" = include child variants in list, default is "false" (only root/parent products) */
+    incluir_variantes?: 'true' | 'false';
     /**
      * ISO-8601 timestamp. When provided, only products updated after this
      * time are returned. Used by the frontend delta-sync to avoid downloading
@@ -72,6 +78,7 @@ export interface CrearProductoRequest {
     unidad_medida?: string;
     proveedor_id?: string;
     controla_vencimiento?: boolean;
+    es_padre?: boolean;
 }
 
 export interface ActualizarProductoRequest {
@@ -84,6 +91,7 @@ export interface ActualizarProductoRequest {
     unidad_medida?: string;
     proveedor_id?: string;
     controla_vencimiento?: boolean;
+    es_padre?: boolean;
 }
 
 // ── Bulk Import Types ────────────────────────────────────────────────────────
@@ -123,6 +131,7 @@ export async function listarProductos(filter: ProductoFilter = {}): Promise<Prod
         categoria: filter.categoria,
         proveedor_id: filter.proveedor_id,
         activo: filter.activo,
+        incluir_variantes: filter.incluir_variantes,
         updated_after: filter.updated_after,
         page: filter.page ?? 1,
         limit: filter.limit ?? 50,
@@ -182,4 +191,32 @@ export async function ajustarStock(
  */
 export async function crearProductoBulk(products: CrearProductoRequest[]): Promise<BulkImportResponse> {
     return apiClient.post<BulkImportResponse>('/v1/productos/bulk', { productos: products });
+}
+
+// ── Variant Types ────────────────────────────────────────────────────────────
+
+export interface CrearVarianteRequest {
+    atributos: Record<string, string>;
+    codigo_barras: string;
+    precio_venta?: number;
+    precio_costo?: number;
+    stock_actual: number;
+}
+
+// ── Variant API Calls ────────────────────────────────────────────────────────
+
+/**
+ * POST /v1/productos/:id/variantes  (requiere rol: administrador)
+ * Crea una variante (hijo) a partir de un producto padre.
+ */
+export async function crearVariante(parentId: string, data: CrearVarianteRequest): Promise<ProductoResponse> {
+    return apiClient.post<ProductoResponse>(`/v1/productos/${parentId}/variantes`, data);
+}
+
+/**
+ * GET /v1/productos/:id/variantes  (requiere rol: cajero/supervisor/administrador)
+ * Lista las variantes de un producto padre.
+ */
+export async function listarVariantes(parentId: string): Promise<ProductoResponse[]> {
+    return apiClient.get<ProductoResponse[]>(`/v1/productos/${parentId}/variantes`);
 }

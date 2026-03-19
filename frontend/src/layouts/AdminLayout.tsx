@@ -8,7 +8,7 @@ import {
     Package, Boxes, Truck, FileText,
     Users, Calculator, LogOut, ChevronRight, Home,
     BarChart2, Tag, ShoppingBag, Shield, PieChart, Clock, CreditCard, Building2,
-    ArrowLeftRight, Warehouse,
+    ArrowLeftRight, Warehouse, BrainCircuit,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSucursalStore } from '../store/useSucursalStore';
@@ -36,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Compras', path: '/admin/compras', icon: <ShoppingBag size={18} />, roles: ['admin', 'supervisor'] },
     { label: 'Facturación', path: '/admin/facturacion', icon: <FileText size={18} />, roles: ['admin', 'supervisor'] },
     { label: 'Reportes', path: '/admin/reportes', icon: <PieChart size={18} />, roles: ['admin', 'supervisor'] },
+    { label: 'Asistente IA', path: '/admin/ai', icon: <BrainCircuit size={18} />, roles: ['admin'] },
     { label: 'Clientes / Fiado', path: '/admin/clientes', icon: <CreditCard size={18} />, roles: ['admin', 'supervisor'] },
     { label: 'Cierre de Caja', path: '/admin/cierre-caja', icon: <Calculator size={18} /> },
     { label: 'Config. Fiscal', path: '/admin/configuracion-fiscal', icon: <Boxes size={18} />, roles: ['admin'] },

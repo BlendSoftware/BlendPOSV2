@@ -24,7 +24,7 @@ type CajaRepository interface {
 	ListMovimientos(ctx context.Context, sesionCajaID uuid.UUID) ([]model.MovimientoCaja, error)
 	SumMovimientosByMetodo(ctx context.Context, sesionCajaID uuid.UUID) (map[string]decimal.Decimal, error)
 	CountVentasBySesion(ctx context.Context, sesionCajaID uuid.UUID) (int64, error)
-	ListSesiones(ctx context.Context, page, limit int) ([]model.SesionCaja, int64, error)
+	ListSesiones(ctx context.Context, page, limit int, sucursalID *uuid.UUID) ([]model.SesionCaja, int64, error)
 }
 
 type cajaRepo struct{ db *gorm.DB }
@@ -141,7 +141,7 @@ func (r *cajaRepo) FindSesionAbiertaPorUsuario(ctx context.Context, usuarioID uu
 	return &s, err
 }
 
-func (r *cajaRepo) ListSesiones(ctx context.Context, page, limit int) ([]model.SesionCaja, int64, error) {
+func (r *cajaRepo) ListSesiones(ctx context.Context, page, limit int, sucursalID *uuid.UUID) ([]model.SesionCaja, int64, error) {
 	db, err := scopedDB(r.db, ctx)
 	if err != nil {
 		return nil, 0, err
@@ -149,14 +149,21 @@ func (r *cajaRepo) ListSesiones(ctx context.Context, page, limit int) ([]model.S
 	var sesiones []model.SesionCaja
 	var total int64
 	offset := (page - 1) * limit
-	if err := db.Model(&model.SesionCaja{}).Count(&total).Error; err != nil {
+
+	q := db.Model(&model.SesionCaja{})
+	if sucursalID != nil {
+		q = q.Where("sucursal_id = ?", *sucursalID)
+	}
+
+	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	err = db.
-		Preload("Usuario").
-		Order("opened_at DESC").
-		Offset(offset).Limit(limit).
-		Find(&sesiones).Error
+
+	findQ := db.Preload("Usuario").Order("opened_at DESC").Offset(offset).Limit(limit)
+	if sucursalID != nil {
+		findQ = findQ.Where("sucursal_id = ?", *sucursalID)
+	}
+	err = findQ.Find(&sesiones).Error
 	return sesiones, total, err
 }
 

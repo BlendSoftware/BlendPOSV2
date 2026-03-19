@@ -167,3 +167,44 @@ func (h *ProductosHandler) AjustarStock(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, resp)
 }
+
+// CrearVariante creates a variant (child) product from a parent product.
+// POST /v1/productos/:id/variantes
+func (h *ProductosHandler) CrearVariante(c *gin.Context) {
+	padreID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, apierror.New("ID invalido"))
+		return
+	}
+	var req dto.CrearVarianteRequest
+	if !bindAndValidate(c, &req) {
+		return
+	}
+	resp, err := h.svc.CrearVariante(c.Request.Context(), padreID, req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
+		return
+	}
+	id, _ := uuid.Parse(resp.ID)
+	middleware.AuditLog(c, "create_variant", "producto", &id, map[string]interface{}{
+		"padre_id":  padreID.String(),
+		"atributos": req.Atributos,
+	})
+	c.JSON(http.StatusCreated, resp)
+}
+
+// ListarVariantes returns all variants of a parent product.
+// GET /v1/productos/:id/variantes
+func (h *ProductosHandler) ListarVariantes(c *gin.Context) {
+	padreID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, apierror.New("ID invalido"))
+		return
+	}
+	variantes, err := h.svc.ListarVariantes(c.Request.Context(), padreID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, variantes)
+}

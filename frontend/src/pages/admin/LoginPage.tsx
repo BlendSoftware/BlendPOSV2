@@ -1,13 +1,32 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
-    Center, Paper, Title, Text, TextInput, PasswordInput,
-    Button, Stack, Alert, Box,
+    Paper, Title, Text, TextInput, PasswordInput,
+    Button, Stack, Alert, Box, Anchor,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { AlertCircle, ShieldAlert } from 'lucide-react';
+import { AlertCircle, ShieldAlert, WifiOff, Building2, FileCheck } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { changePasswordApi } from '../../services/api/auth';
+import classes from './LoginPage.module.css';
+
+const FEATURES = [
+    {
+        icon: <WifiOff size={20} />,
+        label: 'Funciona offline',
+        description: '48hs de autonomía sin internet',
+    },
+    {
+        icon: <Building2 size={20} />,
+        label: 'Multi-sucursal',
+        description: 'Gestioná todos tus locales desde un lugar',
+    },
+    {
+        icon: <FileCheck size={20} />,
+        label: 'AFIP integrado',
+        description: 'Facturación electrónica automática',
+    },
+];
 
 export function LoginPage() {
     const navigate = useNavigate();
@@ -87,19 +106,103 @@ export function LoginPage() {
     // ── SEC-03: Forced password change form ──────────────────────────────────
     if (isAuthenticated && mustChangePassword) {
         return (
-            <Center style={{ minHeight: '100vh', background: 'var(--mantine-color-body)' }}>
-                <Box w={380}>
-                    <Stack gap="xs" mb="xl" align="center">
-                        <Title order={1} c="blue.4" fw={800} style={{ letterSpacing: '-1px' }}>
-                            BlendPOS
-                        </Title>
-                        <Text c="dimmed" size="sm">Cambio de contraseña obligatorio</Text>
-                    </Stack>
+            <div className={classes.wrapper}>
+                <div className={classes.hero}>
+                    <div className={classes.heroContent}>
+                        <div className={classes.logo}>BlendPOS</div>
+                        <p className={classes.tagline}>
+                            Tu POS inteligente para el comercio argentino
+                        </p>
+                    </div>
+                </div>
 
-                    <Paper p="xl" radius="md" withBorder>
-                        <Alert icon={<ShieldAlert size={16} />} color="orange" mb="md" variant="light">
-                            Por seguridad, debe cambiar su contraseña antes de continuar.
-                        </Alert>
+                <div className={classes.formSide}>
+                    <div className={`${classes.formContainer} ${classes.fadeIn}`}>
+                        {/* Mobile branding */}
+                        <div className={classes.mobileBranding}>
+                            <div className={classes.mobileLogo}>BlendPOS</div>
+                            <span className={classes.mobileTagline}>Cambio de contraseña obligatorio</span>
+                        </div>
+
+                        <Paper p="xl" radius="md" withBorder className={classes.formCard}>
+                            <Title order={3} mb="lg">Cambiar contraseña</Title>
+
+                            <Alert icon={<ShieldAlert size={16} />} color="orange" mb="md" variant="light">
+                                Por seguridad, debe cambiar su contraseña antes de continuar.
+                            </Alert>
+
+                            {error && (
+                                <Alert icon={<AlertCircle size={16} />} color="red" mb="md" variant="light">
+                                    {error}
+                                </Alert>
+                            )}
+
+                            <form onSubmit={handleChangePassword}>
+                                <Stack gap="md">
+                                    <PasswordInput
+                                        label="Nueva contraseña"
+                                        placeholder="Mínimo 8 caracteres"
+                                        {...pwForm.getInputProps('newPassword')}
+                                        data-autofocus
+                                    />
+                                    <PasswordInput
+                                        label="Confirmar contraseña"
+                                        placeholder="Repetir contraseña"
+                                        {...pwForm.getInputProps('confirmPassword')}
+                                    />
+                                    <Button type="submit" fullWidth loading={loading} mt="sm" color="orange">
+                                        Cambiar contraseña
+                                    </Button>
+                                </Stack>
+                            </form>
+                        </Paper>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Normal login form ────────────────────────────────────────────────────
+    return (
+        <div className={classes.wrapper}>
+            {/* Left column: Hero / Branding */}
+            <div className={classes.hero}>
+                <div className={`${classes.heroContent} ${classes.fadeIn}`}>
+                    <div className={classes.logo}>BlendPOS</div>
+                    <p className={classes.tagline}>
+                        Tu POS inteligente para el comercio argentino
+                    </p>
+
+                    <div className={classes.featureList}>
+                        {FEATURES.map((f) => (
+                            <div key={f.label} className={classes.featureItem}>
+                                <div className={classes.featureIcon}>
+                                    {f.icon}
+                                </div>
+                                <div>
+                                    <div className={classes.featureLabel}>{f.label}</div>
+                                    <div className={classes.featureText}>{f.description}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Right column: Form */}
+            <div className={classes.formSide}>
+                <div className={`${classes.formContainer} ${classes.fadeInDelay}`}>
+                    {/* Mobile branding */}
+                    <div className={classes.mobileBranding}>
+                        <div className={classes.mobileLogo}>BlendPOS</div>
+                        <span className={classes.mobileTagline}>Panel de Administración</span>
+                    </div>
+
+                    <Paper p="xl" radius="md" withBorder className={classes.formCard}>
+                        <Title order={3} mb="xs">Iniciar sesión</Title>
+                        <Text size="sm" c="dimmed" mb="lg">
+                            Ingresá tus credenciales para acceder
+                        </Text>
 
                         {error && (
                             <Alert icon={<AlertCircle size={16} />} color="red" mb="md" variant="light">
@@ -107,72 +210,34 @@ export function LoginPage() {
                             </Alert>
                         )}
 
-                        <form onSubmit={handleChangePassword}>
+                        <form onSubmit={handleSubmit}>
                             <Stack gap="md">
-                                <PasswordInput
-                                    label="Nueva contraseña"
-                                    placeholder="Mínimo 8 caracteres"
-                                    {...pwForm.getInputProps('newPassword')}
+                                <TextInput
+                                    label="Usuario o Email"
+                                    placeholder="admin"
+                                    {...form.getInputProps('email')}
                                     data-autofocus
                                 />
                                 <PasswordInput
-                                    label="Confirmar contraseña"
-                                    placeholder="Repetir contraseña"
-                                    {...pwForm.getInputProps('confirmPassword')}
+                                    label="Contraseña"
+                                    placeholder="Tu contraseña"
+                                    {...form.getInputProps('password')}
                                 />
-                                <Button type="submit" fullWidth loading={loading} mt="sm" color="orange">
-                                    Cambiar contraseña
+                                <Button type="submit" fullWidth loading={loading} mt="sm" size="md">
+                                    Ingresar
                                 </Button>
                             </Stack>
                         </form>
+
+                        <Text size="sm" c="dimmed" ta="center" mt="lg">
+                            ¿No tenés cuenta?{' '}
+                            <Anchor component={Link} to="/register" size="sm" fw={600}>
+                                Creá tu negocio gratis
+                            </Anchor>
+                        </Text>
                     </Paper>
-                </Box>
-            </Center>
-        );
-    }
-
-    // ── Normal login form ────────────────────────────────────────────────────
-    return (
-        <Center style={{ minHeight: '100vh', background: 'var(--mantine-color-body)' }}>
-            <Box w={380}>
-                <Stack gap="xs" mb="xl" align="center">
-                    <Title order={1} c="blue.4" fw={800} style={{ letterSpacing: '-1px' }}>
-                        BlendPOS
-                    </Title>
-                    <Text c="dimmed" size="sm">Panel de Administración</Text>
-                </Stack>
-
-                <Paper p="xl" radius="md" withBorder>
-                    <Title order={3} mb="lg">Iniciar sesión</Title>
-
-                    {error && (
-                        <Alert icon={<AlertCircle size={16} />} color="red" mb="md" variant="light">
-                            {error}
-                        </Alert>
-                    )}
-
-                    <form onSubmit={handleSubmit}>
-                        <Stack gap="md">
-                            <TextInput
-                                label="Usuario o Email"
-                                placeholder="admin"
-                                {...form.getInputProps('email')}
-                                data-autofocus
-                            />
-                            <PasswordInput
-                                label="Contraseña"
-                                placeholder="••••••••"
-                                {...form.getInputProps('password')}
-                            />
-                            <Button type="submit" fullWidth loading={loading} mt="sm">
-                                Ingresar
-                            </Button>
-                        </Stack>
-                    </form>
-
-
-                </Paper>
-            </Box>
-        </Center>
+                </div>
+            </div>
+        </div>
     );
 }

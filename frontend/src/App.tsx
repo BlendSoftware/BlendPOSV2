@@ -49,6 +49,7 @@ const ClientesPage = lazy(() => import('./pages/admin/ClientesPage').then(m => (
 const SucursalesPage = lazy(() => import('./pages/admin/SucursalesPage').then(m => ({ default: m.SucursalesPage })));
 const TransferenciasPage = lazy(() => import('./pages/admin/TransferenciasPage').then(m => ({ default: m.TransferenciasPage })));
 const StockSucursalPage = lazy(() => import('./pages/admin/StockSucursalPage').then(m => ({ default: m.StockSucursalPage })));
+const AIPage = lazy(() => import('./pages/admin/AIPage').then(m => ({ default: m.AIPage })));
 
 function LoadingSpinner() {
     return <Center h="100vh"><Loader size="xl" /></Center>;
@@ -255,6 +256,20 @@ function App() {
                                     <RouteErrorBoundary>
                                         <Suspense fallback={<LoadingSpinner />}>
                                             <StockSucursalPage />
+                                        </Suspense>
+                                    </RouteErrorBoundary>
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Solo admin — Asistente IA */}
+                        <Route
+                            path="ai"
+                            element={
+                                <ProtectedRoute roles={['admin']}>
+                                    <RouteErrorBoundary>
+                                        <Suspense fallback={<LoadingSpinner />}>
+                                            <AIPage />
                                         </Suspense>
                                     </RouteErrorBoundary>
                                 </ProtectedRoute>

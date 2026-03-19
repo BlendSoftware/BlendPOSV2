@@ -130,7 +130,8 @@ export async function getCajaActiva(): Promise<ReporteCajaResponse | null> {
  */
 export async function getHistorialCajas(
     page = 1,
-    limit = 20
+    limit = 20,
+    sucursalId?: string,
 ): Promise<{ data: ReporteCajaResponse[]; page: number; limit: number }> {
-    return apiClient.get('/v1/caja/historial', { page, limit });
+    return apiClient.get('/v1/caja/historial', { page, limit, sucursal_id: sucursalId });
 }

@@ -47,6 +47,12 @@ type ProductoRepository interface {
 	// AjustarStock incrementa o decrementa stock_actual sin transaccion externa.
 	AjustarStock(ctx context.Context, id uuid.UUID, delta int) error
 
+	// FindByPadreID returns all child variants for a given parent product.
+	FindByPadreID(ctx context.Context, padreID uuid.UUID) ([]model.Producto, error)
+
+	// CountByPadreID returns the number of active variants for a given parent product.
+	CountByPadreID(ctx context.Context, padreID uuid.UUID) (int64, error)
+
 	// DB exposes the underlying *gorm.DB so services can open transactions.
 	DB() *gorm.DB
 }
@@ -129,6 +135,11 @@ func (r *productoRepo) List(ctx context.Context, filter dto.ProductoFilter) ([]m
 	}
 	if filter.ProveedorID != "" {
 		q = q.Where("proveedor_id = ?", filter.ProveedorID)
+	}
+	// By default, exclude child variants from the main list (they belong under their parent).
+	// Pass incluir_variantes=true to include them (e.g., for delta-sync to POS).
+	if filter.IncluirVariantes != "true" {
+		q = q.Where("padre_id IS NULL")
 	}
 	// Delta sync: only return products updated after the given timestamp.
 	// The frontend stores the last sync time in IndexedDB and passes it as
@@ -277,4 +288,24 @@ func (r *productoRepo) AjustarStock(ctx context.Context, id uuid.UUID, delta int
 		return errors.New("producto no encontrado o inactivo durante ajuste de stock")
 	}
 	return nil
+}
+
+func (r *productoRepo) FindByPadreID(ctx context.Context, padreID uuid.UUID) ([]model.Producto, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	var productos []model.Producto
+	err = db.Where("padre_id = ?", padreID).Order("variante_nombre ASC").Find(&productos).Error
+	return productos, err
+}
+
+func (r *productoRepo) CountByPadreID(ctx context.Context, padreID uuid.UUID) (int64, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = db.Model(&model.Producto{}).Where("padre_id = ? AND activo = true", padreID).Count(&count).Error
+	return count, err
 }
