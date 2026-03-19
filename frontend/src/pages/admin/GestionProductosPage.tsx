@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Fragment, useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Stack, Title, Text, Group, Button, TextInput, Select, Badge,
@@ -695,8 +695,9 @@ export function GestionProductosPage() {
                                     </Table.Td>
                                 </Table.Tr>
                             ) : (
-                                paginatedRows.flatMap((p) => [
-                                    <Table.Tr key={p.id} style={{ opacity: p.activo ? 1 : 0.5 }}>
+                                paginatedRows.map((p) => (
+                                    <Fragment key={p.id}>
+                                    <Table.Tr style={{ opacity: p.activo ? 1 : 0.5 }}>
                                         <Table.Td onClick={(e) => e.stopPropagation()}>
                                             <Checkbox
                                                 size="sm"
@@ -804,9 +805,9 @@ export function GestionProductosPage() {
 
                                             </Group>
                                         </Table.Td>
-                                    </Table.Tr>,
-                                    // Expanded variant rows for parent products
-                                    ...(p.esPadre && expandedParents.has(p.id) ? (expandedVariants[p.id] ?? []).map((v) => (
+                                    </Table.Tr>
+                                    {/* Expanded variant rows for parent products */}
+                                    {p.esPadre && expandedParents.has(p.id) && (expandedVariants[p.id] ?? []).map((v) => (
                                         <Table.Tr key={`var-${v.id}`} style={{ backgroundColor: 'var(--mantine-color-violet-light)' }}>
                                             <Table.Td />
                                             <Table.Td>
@@ -834,8 +835,9 @@ export function GestionProductosPage() {
                                             <Table.Td>{v.activo ? <Badge color="teal" size="sm" variant="light">Activo</Badge> : <Badge color="gray" size="sm" variant="light">Inactivo</Badge>}</Table.Td>
                                             <Table.Td />
                                         </Table.Tr>
-                                    )) : []),
-                                ]))
+                                    ))}
+                                    </Fragment>
+                                ))
                             )}
                         </Table.Tbody>
                     </Table>
