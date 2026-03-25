@@ -27,6 +27,8 @@ export interface LoginResponse {
 
 // ── API Calls ─────────────────────────────────────────────────────────────────
 
+const BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
+
 /**
  * POST /v1/auth/login
  * Autentica al usuario y retorna tokens JWT.
@@ -38,9 +40,23 @@ export async function loginApi(username: string, password: string): Promise<Logi
 /**
  * POST /v1/auth/refresh
  * Renueva el access token usando el refresh token.
+ *
+ * IMPORTANT: Uses raw fetch() — MUST NOT go through apiClient to avoid the
+ * 401 interceptor triggering a recursive refresh loop. The deduplication lock
+ * is handled by the caller (refreshAccessToken in client.ts or useAuthStore).
  */
 export async function refreshApi(refreshToken: string): Promise<LoginResponse> {
-    return apiClient.post<LoginResponse>('/v1/auth/refresh', { refresh_token: refreshToken });
+    const res = await fetch(`${BASE_URL}/v1/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!res.ok) {
+        throw new Error(`Refresh failed: ${res.status}`);
+    }
+
+    return res.json() as Promise<LoginResponse>;
 }
 
 /**

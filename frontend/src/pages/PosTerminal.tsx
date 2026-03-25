@@ -18,6 +18,7 @@ import { SaleHistoryModal } from '../components/pos/SaleHistoryModal';
 import { PostSaleModal } from '../components/pos/PostSaleModal';
 import { AbrirCajaModal } from '../components/pos/AbrirCajaModal';
 import { WeightInputModal } from '../components/pos/WeightInputModal';
+import { QuickProducts } from '../components/pos/QuickProducts';
 
 import { useCartStore } from '../store/useCartStore';
 import type { UnidadMedida } from '../store/useCartStore';
@@ -236,7 +237,10 @@ export function PosTerminal() {
     const handleScannerKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
             // Dejar que el listener global en window maneje los hotkeys F, Escape y +/-
-            if (e.key.startsWith('F') || e.key === 'Escape') return;
+            if (e.key.startsWith('F') || e.key === 'Escape') {
+                e.preventDefault();
+                return;
+            }
 
             // Flechas: navegar tabla sin mover el cursor del input
             if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -406,15 +410,15 @@ export function PosTerminal() {
                 <section className={styles.salesSection}>
                     <TextInput
                         ref={scannerRef}
-                        value={scannerValue}
-                        placeholder="Escanee código de barras o escriba nombre del producto..."
+                        value={scannerValue ?? ''}
+                        placeholder="Escaneá el código de barras o escribí el nombre del producto..."
                         leftSection={<ScanLine size={18} />}
                         size="md"
                         className={styles.scannerInput}
                         classNames={{ input: styles.scannerInputField }}
                         onKeyDown={handleScannerKeyDown}
                         onChange={(e) => {
-                            const val = e.currentTarget.value;
+                            const val = e.currentTarget.value ?? '';
                             setScannerValue(val);
                             // Si el valor contiene letras, abrir búsqueda automáticamente
                             if (val && /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/.test(val) && !searchVisible && !anyModalOpen) {
@@ -423,6 +427,11 @@ export function PosTerminal() {
                         }}
                         autoFocus
                     />
+
+                    <QuickProducts onSelect={(p) => addOrPromptWeight({
+                        id: p.id, nombre: p.nombre, precio: p.precio,
+                        codigoBarras: p.codigoBarras, unidadMedida: p.unidadMedida,
+                    })} />
 
                     <div className={styles.tableArea}>
                         <SalesTable />

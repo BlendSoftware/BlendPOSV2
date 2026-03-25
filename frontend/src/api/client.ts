@@ -21,17 +21,35 @@ export class OfflineError extends Error {
 // ── Auto-refresh shared state (B-03) ────────────────────────────────────────
 // Prevents multiple concurrent refresh attempts when several requests
 // receive 401 at the same time.
-let _refreshPromise: Promise<string> | null = null;
+
+/** Shape returned by the backend refresh endpoint. */
+export interface RefreshResult {
+    access_token: string;
+    refresh_token: string;
+    user?: {
+        id: string;
+        username: string;
+        nombre: string;
+        rol: string;
+        punto_de_venta: number | null;
+        sucursal_id: string | null;
+    };
+}
+
+let _refreshPromiseTyped: Promise<RefreshResult> | null = null;
 
 /**
  * Attempts to obtain a new access token using the stored refresh token.
  * Only ONE refresh request is in-flight at any time; concurrent callers
  * share the same promise.
+ *
+ * Uses raw fetch() — MUST NOT go through `request()` / apiClient to avoid
+ * the 401 interceptor triggering a recursive refresh loop.
  */
-async function refreshAccessToken(): Promise<string> {
-    if (_refreshPromise) return _refreshPromise;
+export async function refreshAccessToken(): Promise<RefreshResult> {
+    if (_refreshPromiseTyped) return _refreshPromiseTyped;
 
-    _refreshPromise = (async () => {
+    _refreshPromiseTyped = (async () => {
         const refreshToken = tokenStore.getRefreshToken();
         if (!refreshToken) throw new Error('No refresh token available');
 
@@ -43,22 +61,19 @@ async function refreshAccessToken(): Promise<string> {
 
         if (!res.ok) throw new Error('Refresh failed');
 
-        const data = (await res.json()) as {
-            access_token: string;
-            refresh_token: string;
-        };
+        const data = (await res.json()) as RefreshResult;
         tokenStore.setTokens(data.access_token, data.refresh_token);
 
         // Schedule proactive refresh before new access token expires.
         scheduleProactiveRefresh(data.access_token);
 
-        return data.access_token;
+        return data;
     })();
 
     try {
-        return await _refreshPromise;
+        return await _refreshPromiseTyped;
     } finally {
-        _refreshPromise = null;
+        _refreshPromiseTyped = null;
     }
 }
 
@@ -144,9 +159,13 @@ async function request<T>(
 
     if (response.status === 401) {
         // ── B-03: Try silent refresh before giving up ────────────────────
-        // Only attempt refresh if we had a token (session expired) and this
-        // isn't already a retry (prevents infinite loop).
-        if (token && !_isRetry) {
+        // Attempt refresh if:
+        //   - We had an access token (normal expiry), OR
+        //   - We have a refresh token in sessionStorage (page reload — access
+        //     token was in memory only and is gone, but refresh survived).
+        // Never retry more than once (prevents infinite loop).
+        const hasRefreshToken = !!tokenStore.getRefreshToken();
+        if (!_isRetry && (token || hasRefreshToken)) {
             try {
                 await refreshAccessToken();
                 // Retry the original request with the fresh token.
@@ -156,13 +175,20 @@ async function request<T>(
             }
         }
 
-        // Redirect to login only if there was a token and we're not already there.
-        if (token) {
+        // Clear auth state — ProtectedRoute will handle the redirect.
+        if (token || hasRefreshToken) {
             cancelProactiveRefresh();
             tokenStore.clearTokens();
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
+            // Lazy import to avoid circular dependency (useAuthStore → apiClient → useAuthStore).
+            // Only reset local state; do NOT call logout() which would hit apiClient again.
+            import('../store/useAuthStore').then(({ useAuthStore }) => {
+                useAuthStore.setState({
+                    user: null,
+                    isAuthenticated: false,
+                    tenantId: null,
+                    mustChangePassword: false,
+                });
+            });
         }
         throw new Error('Sesión expirada o no autorizado.');
     }

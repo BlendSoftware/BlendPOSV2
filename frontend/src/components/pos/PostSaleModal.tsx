@@ -283,8 +283,8 @@ export function PostSaleModal() {
             await fetchComprobante(record.id);
         } catch {
             notifications.show({
-                title: 'Factura aun no disponible',
-                message: 'Todavia no se genero el comprobante fiscal. Reintenta en unos segundos.',
+                title: 'Factura aún no disponible',
+                message: 'Todavía no se generó el comprobante fiscal. Reintentá en unos segundos.',
                 color: 'orange',
                 autoClose: 4000,
             });

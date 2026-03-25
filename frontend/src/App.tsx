@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Center, Loader } from '@mantine/core';
 
@@ -58,8 +58,20 @@ function LoadingSpinner() {
 function App() {
     // On mount, attempt a silent token refresh so the user stays logged in
     // after a hard page reload without re-entering credentials (P1-003).
+    // We gate the entire app render on this completing so that protected routes
+    // don't fire API calls before the access token is restored from the
+    // refresh token. Without this, there's a race: ProtectedRoute sees
+    // isAuthenticated=true (from localStorage) but the in-memory access token
+    // is still null, causing immediate 401s on child component API calls.
     const initAuth = useAuthStore((s) => s.initAuth);
-    useEffect(() => { void initAuth(); }, [initAuth]);
+    const [authReady, setAuthReady] = useState(false);
+    useEffect(() => {
+        initAuth().finally(() => setAuthReady(true));
+    }, [initAuth]);
+
+    if (!authReady) {
+        return <Center h="100vh"><Loader size="xl" /></Center>;
+    }
 
     return (
         <ErrorBoundary>

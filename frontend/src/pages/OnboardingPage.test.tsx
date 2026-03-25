@@ -36,7 +36,7 @@ describe('OnboardingPage', () => {
     it('renders stepper with all steps', () => {
         renderPage();
         expect(screen.getByText('Bienvenido')).toBeInTheDocument();
-        expect(screen.getByText('Facturacion')).toBeInTheDocument();
+        expect(screen.getByText('Facturación')).toBeInTheDocument();
         expect(screen.getByText('Productos')).toBeInTheDocument();
         expect(screen.getByText('Usuarios')).toBeInTheDocument();
     });

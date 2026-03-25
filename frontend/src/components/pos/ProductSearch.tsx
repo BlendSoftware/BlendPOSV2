@@ -6,6 +6,7 @@ import { searchCatalogProducts } from '../../offline/catalog';
 import { listarProductos } from '../../services/api/products';
 import { useCartStore } from '../../store/useCartStore';
 import styles from './ProductSearch.module.css';
+import { formatCurrency } from '../../utils/format';
 
 interface ProductSearchProps {
     onClose: () => void;
@@ -13,14 +14,6 @@ interface ProductSearchProps {
     initialQuery?: string;
     /** When provided, this callback handles adding the product (including weight prompt for kg/gramo). */
     onAddProduct?: (product: { id: string; nombre: string; precio: number; codigoBarras: string; unidadMedida?: string }) => void;
-}
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
 }
 
 export function ProductSearch({ onClose, inputRef, initialQuery = '', onAddProduct }: ProductSearchProps) {

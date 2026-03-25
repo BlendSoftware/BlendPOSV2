@@ -6,14 +6,7 @@ import { findCatalogProductByBarcode, searchCatalogProducts } from '../../offlin
 
 type MockProduct = { id: string; nombre: string; precio: number; codigoBarras: string };
 import styles from './PriceCheckModal.module.css';
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
+import { formatCurrency } from '../../utils/format';
 
 export function PriceCheckModal() {
     const isOpen = usePOSUIStore((s) => s.isPriceCheckModalOpen);

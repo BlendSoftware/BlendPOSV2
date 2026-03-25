@@ -6,14 +6,7 @@ import type { CartItem } from '../../store/useCartStore';
 import { usePromocionesStore } from '../../store/usePromocionesStore';
 import type { PromocionResponse } from '../../services/api/promociones';
 import styles from './SalesTable.module.css';
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
+import { formatCurrency } from '../../utils/format';
 
 // ── Display row types ─────────────────────────────────────────────────────────
 
@@ -182,8 +175,8 @@ export function SalesTable() {
         return (
             <Flex direction="column" align="center" justify="center" h="100%" className={styles.emptyState}>
                 <ScanBarcode size={80} strokeWidth={1} color="var(--mantine-color-dark-3)" />
-                <Text size="xl" fw={700} c="dark.3" mt="lg">ESCANEE UN PRODUCTO</Text>
-                <Text size="sm" c="dark.4" mt="xs">Use el escáner o presione F2 para buscar manualmente</Text>
+                <Text size="xl" fw={700} c="dark.3" mt="lg">ESCANEÁ UN PRODUCTO</Text>
+                <Text size="sm" c="dark.4" mt="xs">Usá el escáner o presioná F2 para buscar manualmente</Text>
             </Flex>
         );
     }

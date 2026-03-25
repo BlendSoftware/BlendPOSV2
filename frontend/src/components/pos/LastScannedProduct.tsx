@@ -2,14 +2,7 @@ import { Box, Text, Stack, Group } from '@mantine/core';
 import { ScanBarcode, PackageCheck } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import styles from './LastScannedProduct.module.css';
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
+import { formatCurrency } from '../../utils/format';
 
 export function LastScannedProduct() {
     const lastAdded = useCartStore((s) => s.lastAdded);
@@ -24,7 +17,7 @@ export function LastScannedProduct() {
                         color="var(--mantine-color-dark-4)"
                     />
                     <Text size="xs" c="dimmed" ta="center" style={{ userSelect: 'none' }}>
-                        Último producto escaneado
+                        Escaneá un producto
                     </Text>
                 </Stack>
             </Box>

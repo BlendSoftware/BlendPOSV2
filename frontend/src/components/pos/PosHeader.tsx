@@ -1,13 +1,14 @@
 import { useEffect, useState, memo } from 'react';
 import { Group, Text, Badge, Flex, Tooltip, ActionIcon, Modal, Button, useMantineColorScheme } from '@mantine/core';
 import { Wifi, WifiOff, User, Printer, PanelLeftOpen, Settings, LogOut, Calculator } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { useAuthStore } from '../../store/useAuthStore';
 import { thermalPrinter } from '../../services/ThermalPrinterService';
 import { useSyncStatus } from '../../hooks/useSyncStatus';
 import { usePrinterStore } from '../../store/usePrinterStore';
 import { useCajaStore } from '../../store/useCajaStore';
+import { useCartStore } from '../../store/useCartStore';
 import { PrinterSettingsModal } from './PrinterSettingsModal';
 import { ThemeToggle } from '../ThemeToggle';
 import styles from './PosHeader.module.css';
@@ -53,6 +54,8 @@ export function PosHeader() {
     const [printerConnected, setPrinterConnected] = useState(thermalPrinter.isConnected);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+    const [navConfirm, setNavConfirm] = useState<{ open: boolean; to: string }>({ open: false, to: '' });
+    const cartCount = useCartStore((s) => s.cart.length);
     const { pending: syncPending, syncState } = useSyncStatus();
 
     const { user, hasRole, logout } = useAuthStore();
@@ -171,6 +174,33 @@ export function PosHeader() {
                 </Group>
             </Modal>
 
+            <Modal
+                opened={navConfirm.open}
+                onClose={() => setNavConfirm({ open: false, to: '' })}
+                title="¿Salir del POS?"
+                centered
+                size="sm"
+            >
+                <Text size="sm" c="dimmed" mb="lg">
+                    Tenés {cartCount} producto{cartCount !== 1 ? 's' : ''} en el carrito. Si salís, se van a perder.
+                </Text>
+                <Group justify="flex-end" gap="sm">
+                    <Button variant="default" autoFocus onClick={() => setNavConfirm({ open: false, to: '' })}>
+                        Quedarme
+                    </Button>
+                    <Button
+                        color="red"
+                        onClick={() => {
+                            const to = navConfirm.to;
+                            setNavConfirm({ open: false, to: '' });
+                            navigate(to);
+                        }}
+                    >
+                        Sí, salir
+                    </Button>
+                </Group>
+            </Modal>
+
             <Flex align="center" justify="space-between" h="100%" px="lg">
                 <Text className={styles.brand}>BlendPOS</Text>
 
@@ -178,7 +208,7 @@ export function PosHeader() {
                     <User size={18} color="#909296" />
                     <Text size="sm" c="dimmed">Cajero:</Text>
                     <Text size="sm" fw={600} c={isDark ? 'white' : 'dark.7'}>
-                        {user?.nombre ?? 'Cargándose…'}
+                        {user?.nombre ?? 'Cargando…'}
                     </Text>
                     {user?.rol && (
                         <Badge
@@ -227,7 +257,7 @@ export function PosHeader() {
                             variant="subtle"
                             color="orange"
                             size="md"
-                            onClick={() => navigate('/admin/cierre-caja')}
+                            onClick={() => cartCount > 0 ? setNavConfirm({ open: true, to: '/admin/cierre-caja' }) : navigate('/admin/cierre-caja')}
                         >
                             <Calculator size={16} />
                         </ActionIcon>
@@ -239,7 +269,7 @@ export function PosHeader() {
                                 variant="subtle"
                                 color="blue"
                                 size="md"
-                                onClick={() => navigate('/admin/dashboard')}
+                                onClick={() => cartCount > 0 ? setNavConfirm({ open: true, to: '/admin/dashboard' }) : navigate('/admin/dashboard')}
                             >
                                 <PanelLeftOpen size={16} />
                             </ActionIcon>

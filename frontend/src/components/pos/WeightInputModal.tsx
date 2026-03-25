@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Modal, NumberInput, Button, Group, Text, Stack, Badge } from '@mantine/core';
 import { Scale } from 'lucide-react';
+import { formatCurrency } from '../../utils/format';
 
 interface WeightInputModalProps {
     opened: boolean;
@@ -9,14 +10,6 @@ interface WeightInputModalProps {
     productName: string;
     precioUnitario: number;
     unidadMedida: 'kg' | 'gramo';
-}
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
 }
 
 export function WeightInputModal({

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { formatARS } from '../../utils/format';
 import styles from './DashboardPage.module.css';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getAlertasStock } from '../../services/api/inventario';
 import type { AlertaStockResponse } from '../../services/api/inventario';
 import { listarVentas, type VentaListItem } from '../../services/api/ventas';
@@ -85,38 +85,42 @@ export function DashboardPage() {
 
     const { sucursalId, sucursalNombre } = useSucursalStore();
 
-    const fetchDashboardData = useCallback(async (showSpinner = false, p: Periodo = periodo) => {
-        if (showSpinner) setRefreshing(true);
+    const fetchData = useCallback(async (p: Periodo, sid: string | null, signal: AbortSignal) => {
         const range = getDateRange(p);
-        const sid = sucursalId ?? undefined;
-        try {
-            await recoverLostSales().then(() => trySyncQueue()).catch(() => { });
-            const [alertasRes, ventasRes, comprasRes] = await Promise.allSettled([
-                getAlertasStock(sid),
-                listarVentas({ ...range, estado: 'completada', sucursal_id: sid }),
-                listarCompras({ estado: 'pendiente', limit: 200 }),
-            ]);
-            if (alertasRes.status === 'fulfilled') setAlertas(alertasRes.value);
-            if (ventasRes.status === 'fulfilled') setApiVentas(ventasRes.value.data);
-            if (comprasRes.status === 'fulfilled') {
-                const items = comprasRes.value.data ?? [];
-                setComprasPendientes({ count: items.length, total: items.reduce((s, c) => s + Number(c.total), 0) });
-            }
-            setLastRefresh(new Date());
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
+        const sucId = sid ?? undefined;
+        await recoverLostSales().then(() => trySyncQueue()).catch(() => { });
+        const [alertasRes, ventasRes, comprasRes] = await Promise.allSettled([
+            getAlertasStock(sucId),
+            listarVentas({ ...range, estado: 'completada', sucursal_id: sucId }),
+            listarCompras({ estado: 'pendiente', limit: 200 }),
+        ]);
+        if (signal.aborted) return;
+        if (alertasRes.status === 'fulfilled') setAlertas(alertasRes.value);
+        if (ventasRes.status === 'fulfilled') setApiVentas(ventasRes.value.data);
+        if (comprasRes.status === 'fulfilled') {
+            const items = comprasRes.value.data ?? [];
+            setComprasPendientes({ count: items.length, total: items.reduce((s, c) => s + Number(c.total), 0) });
         }
-    }, [periodo, sucursalId]);
+        setLastRefresh(new Date());
+    }, []);
 
-    const fetchRef = useRef(fetchDashboardData);
-    fetchRef.current = fetchDashboardData;
     useEffect(() => {
+        const ac = new AbortController();
         setLoading(true);
-        fetchRef.current(false, periodo);
-        const interval = setInterval(() => fetchRef.current(false, periodo), 60_000);
-        return () => clearInterval(interval);
-    }, [periodo, sucursalId]);
+        fetchData(periodo, sucursalId, ac.signal).finally(() => {
+            if (!ac.signal.aborted) setLoading(false);
+        });
+        const interval = setInterval(() => {
+            fetchData(periodo, sucursalId, ac.signal);
+        }, 60_000);
+        return () => { ac.abort(); clearInterval(interval); };
+    }, [periodo, sucursalId, fetchData]);
+
+    const handleRefresh = useCallback(() => {
+        const ac = new AbortController();
+        setRefreshing(true);
+        fetchData(periodo, sucursalId, ac.signal).finally(() => setRefreshing(false));
+    }, [periodo, sucursalId, fetchData]);
 
     const parseNum = (v: unknown): number => typeof v === 'number' ? v : parseFloat(String(v)) || 0;
 
@@ -225,8 +229,8 @@ export function DashboardPage() {
                             </Badge>
                         )}
                     </Group>
-                    <Text c="dimmed" size="sm" style={{ textTransform: 'capitalize' }}>
-                        {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    <Text c="dimmed" size="sm">
+                        {(() => { const d = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); return d.charAt(0).toUpperCase() + d.slice(1); })()}
                     </Text>
                 </div>
                 <Group gap="md" align="center">
@@ -249,7 +253,7 @@ export function DashboardPage() {
                         <Tooltip label="Actualizar datos">
                             <ActionIcon
                                 variant="subtle" color="gray" size="lg"
-                                onClick={() => fetchDashboardData(true)}
+                                onClick={handleRefresh}
                                 loading={refreshing}
                                 aria-label="Actualizar dashboard"
                             >

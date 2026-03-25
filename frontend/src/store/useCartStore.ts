@@ -164,11 +164,6 @@ export const useCartStore = create<CartState>()((set, get) => ({
             selectedRowIndex: updatedCart.findIndex((c) => c.id === item.id),
         });
 
-        setTimeout(() => {
-            if (get().lastAdded?.id === item.id) {
-                set({ lastAdded: null });
-            }
-        }, 1500);
     },
 
     addWeightItem: (item) => {
@@ -199,11 +194,6 @@ export const useCartStore = create<CartState>()((set, get) => ({
             selectedRowIndex: updatedCart.length - 1,
         });
 
-        setTimeout(() => {
-            if (get().lastAdded?.id === lineId) {
-                set({ lastAdded: null });
-            }
-        }, 1500);
     },
 
     removeItem: (id) => {

@@ -15,14 +15,7 @@ import {
     obtenerCliente, registrarPago, listarMovimientos, listarDeudores,
     type ClienteResponse, type MovimientoCuentaResponse, type DeudorResponse,
 } from '../../services/api/clientes';
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
+import { formatCurrency } from '../../utils/format';
 
 function formatDate(isoDate: string): string {
     return new Date(isoDate).toLocaleDateString('es-AR', {
@@ -112,8 +105,8 @@ export function ClientesPage() {
         },
         validate: {
             nombre: (v) => (v.trim().length >= 2 ? null : 'Nombre requerido (min 2 caracteres)'),
-            email: (v) => (!v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'Email invalido'),
-            limite_credito: (v) => (v >= 0 ? null : 'El limite debe ser >= 0'),
+            email: (v) => (!v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'Email inválido'),
+            limite_credito: (v) => (v >= 0 ? null : 'El límite debe ser >= 0'),
         },
     });
 
@@ -198,7 +191,7 @@ export function ClientesPage() {
         if (!selectedCliente) return;
         const monto = typeof pagoMonto === 'string' ? parseFloat(pagoMonto) : pagoMonto;
         if (!monto || monto <= 0) {
-            notifications.show({ title: 'Error', message: 'Ingresa un monto valido', color: 'red' });
+            notifications.show({ title: 'Error', message: 'Ingresá un monto válido', color: 'red' });
             return;
         }
         setPagoLoading(true);
@@ -285,13 +278,13 @@ export function ClientesPage() {
                         </Text>
                     </Paper>
                     <Paper p="md" radius="md" withBorder>
-                        <Text size="xs" c="dimmed" fw={600}>Limite de Credito</Text>
+                        <Text size="xs" c="dimmed" fw={600}>Límite de Crédito</Text>
                         <Text size="xl" fw={800} ff="monospace">
-                            {selectedCliente.limite_credito > 0 ? formatCurrency(selectedCliente.limite_credito) : 'Sin limite'}
+                            {selectedCliente.limite_credito > 0 ? formatCurrency(selectedCliente.limite_credito) : 'Sin límite'}
                         </Text>
                     </Paper>
                     <Paper p="md" radius="md" withBorder>
-                        <Text size="xs" c="dimmed" fw={600}>Credito Disponible</Text>
+                        <Text size="xs" c="dimmed" fw={600}>Crédito Disponible</Text>
                         <Text size="xl" fw={800} c="blue" ff="monospace">
                             {selectedCliente.limite_credito > 0 ? formatCurrency(selectedCliente.credito_disponible) : 'Ilimitado'}
                         </Text>
@@ -337,7 +330,7 @@ export function ClientesPage() {
                                 <Table.Th>Tipo</Table.Th>
                                 <Table.Th>Monto</Table.Th>
                                 <Table.Th>Saldo Posterior</Table.Th>
-                                <Table.Th>Descripcion</Table.Th>
+                                <Table.Th>Descripción</Table.Th>
                             </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
@@ -429,7 +422,7 @@ export function ClientesPage() {
                             autoFocus
                         />
                         <TextInput
-                            label="Descripcion (opcional)"
+                            label="Descripción (opcional)"
                             placeholder="Ej: Pago parcial en efectivo"
                             value={pagoDescripcion}
                             onChange={(e) => setPagoDescripcion(e.currentTarget.value)}
@@ -457,7 +450,7 @@ export function ClientesPage() {
             <Group justify="space-between">
                 <div>
                     <Title order={2} fw={800}>Clientes — Fiado</Title>
-                    <Text c="dimmed" size="sm">Gestion de cuentas corrientes</Text>
+                    <Text c="dimmed" size="sm">Gestión de cuentas corrientes</Text>
                 </div>
                 <Button leftSection={<Plus size={16} />} onClick={openCreate}>Nuevo cliente</Button>
             </Group>
@@ -492,10 +485,10 @@ export function ClientesPage() {
                             <Table.Thead>
                                 <Table.Tr>
                                     <Table.Th>Nombre</Table.Th>
-                                    <Table.Th>Telefono</Table.Th>
+                                    <Table.Th>Teléfono</Table.Th>
                                     <Table.Th>DNI</Table.Th>
                                     <Table.Th>Saldo Deudor</Table.Th>
-                                    <Table.Th>Limite Credito</Table.Th>
+                                    <Table.Th>Límite Crédito</Table.Th>
                                     <Table.Th>Acciones</Table.Th>
                                 </Table.Tr>
                             </Table.Thead>
@@ -540,12 +533,12 @@ export function ClientesPage() {
                                                     {formatCurrency(c.saldo_deudor)}
                                                 </Badge>
                                             ) : (
-                                                <Text size="xs" c="dimmed">$0.00</Text>
+                                                <Text size="xs" c="dimmed">{formatCurrency(0)}</Text>
                                             )}
                                         </Table.Td>
                                         <Table.Td>
                                             <Text size="xs" ff="monospace">
-                                                {c.limite_credito > 0 ? formatCurrency(c.limite_credito) : 'Sin limite'}
+                                                {c.limite_credito > 0 ? formatCurrency(c.limite_credito) : 'Sin límite'}
                                             </Text>
                                         </Table.Td>
                                         <Table.Td>
@@ -575,9 +568,9 @@ export function ClientesPage() {
                             <Table.Thead>
                                 <Table.Tr>
                                     <Table.Th>Nombre</Table.Th>
-                                    <Table.Th>Telefono</Table.Th>
+                                    <Table.Th>Teléfono</Table.Th>
                                     <Table.Th>Saldo Deudor</Table.Th>
-                                    <Table.Th>Limite Credito</Table.Th>
+                                    <Table.Th>Límite Crédito</Table.Th>
                                     <Table.Th>Acciones</Table.Th>
                                 </Table.Tr>
                             </Table.Thead>
@@ -612,7 +605,7 @@ export function ClientesPage() {
                                         </Table.Td>
                                         <Table.Td>
                                             <Text size="xs" ff="monospace">
-                                                {d.limite_credito > 0 ? formatCurrency(d.limite_credito) : 'Sin limite'}
+                                                {d.limite_credito > 0 ? formatCurrency(d.limite_credito) : 'Sin límite'}
                                             </Text>
                                         </Table.Td>
                                         <Table.Td>
@@ -652,7 +645,7 @@ export function ClientesPage() {
                         />
                         <Group grow>
                             <TextInput
-                                label="Telefono"
+                                label="Teléfono"
                                 placeholder="11-1234-5678"
                                 {...form.getInputProps('telefono')}
                             />
@@ -668,7 +661,7 @@ export function ClientesPage() {
                             {...form.getInputProps('email')}
                         />
                         <NumberInput
-                            label="Limite de credito"
+                            label="Límite de crédito"
                             description="Dejar en 0 para sin limite"
                             placeholder="0.00"
                             min={0}

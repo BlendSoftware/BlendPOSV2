@@ -89,7 +89,9 @@ const UNIDAD_MEDIDA_OPTIONS = [
 
 export function GestionProductosPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = searchParams.get('tab') === 'promociones' ? 'promociones' : 'productos';
+    const [activeTab, setActiveTab] = useState<string>(
+        searchParams.get('tab') === 'promociones' ? 'promociones' : 'productos'
+    );
 
     const [productos, setProductos] = useState<IProducto[]>([]);
     const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
@@ -561,7 +563,11 @@ export function GestionProductosPage() {
 
     return (
         <Stack gap="md">
-            <Tabs value={activeTab} onChange={(v) => setSearchParams(v && v !== 'productos' ? { tab: v } : {})}>
+            <Tabs value={activeTab} onChange={(v) => {
+                const tab = v ?? 'productos';
+                setActiveTab(tab);
+                setSearchParams(tab !== 'productos' ? { tab } : {}, { replace: true });
+            }}>
                 <Tabs.List>
                     <Tabs.Tab value="productos" leftSection={<Package size={14} />}>Productos</Tabs.Tab>
                     <Tabs.Tab value="promociones" leftSection={<Tag size={14} />}>Promociones</Tabs.Tab>
@@ -859,6 +865,14 @@ export function GestionProductosPage() {
                 </Group>
             )}
 
+                </Stack>
+                </Tabs.Panel>
+
+                <Tabs.Panel value="promociones" pt="md">
+                    <PromocionesTab />
+                </Tabs.Panel>
+            </Tabs>
+
             {/* ── Modal Crear / Editar ─────────────────────────────────────── */}
             <Modal
                 opened={modalOpen}
@@ -1039,13 +1053,6 @@ export function GestionProductosPage() {
                     </Stack>
                 </form>
             </Modal>
-                </Stack>
-                </Tabs.Panel>
-
-                <Tabs.Panel value="promociones" pt="md">
-                    <PromocionesTab />
-                </Tabs.Panel>
-            </Tabs>
 
             {/* ── Modal Importar CSV ───────────────────────────────────── */}
             <ImportProductosModal

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import {
     Group, Text, Badge, Avatar, Menu, Burger,
     Tooltip, Divider, Select,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSucursalStore } from '../store/useSucursalStore';
+import { getAlertasStock } from '../services/api/inventario';
 import { ThemeToggle } from '../components/ThemeToggle';
 import styles from './AdminLayout.module.css';
 
@@ -58,11 +59,15 @@ export function AdminLayout() {
     const { user, logout } = useAuthStore();
     const { sucursalId, sucursales, setSucursal, fetchSucursales } = useSucursalStore();
     const navigate = useNavigate();
-    const location = useLocation();
+    const [stockAlertCount, setStockAlertCount] = useState(0);
 
     useEffect(() => {
         fetchSucursales();
     }, [fetchSucursales]);
+
+    useEffect(() => {
+        getAlertasStock().then((a) => setStockAlertCount(a.length)).catch(() => {});
+    }, []);
 
     const handleLogout = async () => {
         await logout();
@@ -88,32 +93,33 @@ export function AdminLayout() {
 
                 {NAV_ITEMS
                     .filter((item) => !item.roles || item.roles.includes(user?.rol ?? ''))
-                    .map((item) => {
-                        const isActive = location.pathname === item.path ||
-                            (item.path !== '/' && location.pathname.startsWith(item.path));
-                        return (
-                            <button
+                    .map((item) => (
+                            <NavLink
                                 key={item.path}
-                                className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-                                onClick={() => { navigate(item.path); setOpened(false); }}
+                                to={item.path}
+                                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
+                                onClick={() => setOpened(false)}
+                                end={item.path === '/admin/dashboard'}
                             >
                                 {item.icon}
                                 {item.label}
-                            </button>
-                        );
-                    })
+                                {item.path === '/admin/inventario' && stockAlertCount > 0 && (
+                                    <Badge size="xs" circle color="red" ml="auto">{stockAlertCount}</Badge>
+                                )}
+                            </NavLink>
+                        ))
                 }
 
                 <div style={{ flex: 1 }} />
                 <div className={styles.navSection}>
                     <Tooltip label="Ir al Terminal POS" position="right" withArrow>
-                        <button
+                        <NavLink
+                            to="/"
                             className={styles.navLink}
-                            onClick={() => navigate('/')}
                         >
                             <Home size={18} />
                             Volver al POS
-                        </button>
+                        </NavLink>
                     </Tooltip>
                     <Divider my="md" />
                     <button className={styles.navLinkDanger} onClick={handleLogout}>

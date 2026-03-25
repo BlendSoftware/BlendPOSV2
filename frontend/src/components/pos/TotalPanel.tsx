@@ -4,14 +4,7 @@ import { useCartStore } from '../../store/useCartStore';
 import { usePOSUIStore } from '../../store/usePOSUIStore';
 import { LastScannedProduct } from './LastScannedProduct';
 import styles from './TotalPanel.module.css';
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
+import { formatCurrency } from '../../utils/format';
 
 export function TotalPanel() {
     const total = useCartStore((s) => s.total);
