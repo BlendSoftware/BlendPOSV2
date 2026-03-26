@@ -1,4 +1,4 @@
-import { Box, Text, Stack, Group } from '@mantine/core';
+import { Box, Text, Stack, Group, Badge } from '@mantine/core';
 import { ScanBarcode, PackageCheck } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import styles from './LastScannedProduct.module.css';
@@ -31,13 +31,25 @@ export function LastScannedProduct() {
         );
     }
 
+    const unidad = lastAdded.unidadMedida === 'kg'
+        ? 'kg'
+        : lastAdded.unidadMedida === 'gramo'
+            ? 'g'
+            : 'ud';
+    const effectiveDiscount = Math.max(lastAdded.descuento, lastAdded.promoDescuento ?? 0);
+
     return (
         <Box className={styles.productContainer}>
-            <Group gap="xs" mb={6}>
+            <Group gap="xs" mb={6} justify="space-between" wrap="nowrap">
+                <Group gap="xs" wrap="nowrap">
                 <PackageCheck size={14} color="#2b8a3e" />
                 <Text size="xs" c="green.6" fw={600} tt="uppercase">
                     Producto escaneado
                 </Text>
+                </Group>
+                <Badge size="xs" variant="light" className={styles.unitBadge}>
+                    {unidad}
+                </Badge>
             </Group>
 
             <Text className={styles.productName} lineClamp={2}>
@@ -47,6 +59,18 @@ export function LastScannedProduct() {
             <Text size="xs" c="dimmed" ff="monospace" mt={4}>
                 {lastAdded.codigoBarras}
             </Text>
+
+            {effectiveDiscount > 0 && (
+                <Badge mt={8} size="sm" color="orange" variant="light" className={styles.discountBadge}>
+                    Descuento aplicado: {effectiveDiscount}%
+                </Badge>
+            )}
+
+            {lastAdded.promoNombre && (
+                <Text size="xs" mt={6} className={styles.promoText}>
+                    Promo: {lastAdded.promoNombre}
+                </Text>
+            )}
 
             <Group justify="space-between" mt={8} align="flex-end">
                 <Stack gap={0}>

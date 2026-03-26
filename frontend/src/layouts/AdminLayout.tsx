@@ -125,14 +125,14 @@ export function AdminLayout() {
 
             <section className={styles.main}>
                 <header className={styles.header}>
-                    <Group gap="sm">
+                    <Group gap="sm" className={styles.headerTitleGroup}>
                         <Burger
                             opened={opened}
                             onClick={() => setOpened((o) => !o)}
                             hiddenFrom="sm"
                             size="sm"
                         />
-                        <Text fw={700} size="sm" c="dimmed">
+                        <Text fw={700} size="sm" c="dimmed" className={styles.headerTitle}>
                             BlendPOS — Panel de Administración
                         </Text>
                     </Group>
@@ -140,6 +140,7 @@ export function AdminLayout() {
                     <div className={styles.userMenu}>
                         {sucursales.length > 0 && (
                             <Select
+                                className={styles.branchSelect}
                                 placeholder="Todas las sucursales"
                                 data={[
                                     { value: '', label: 'Todas las sucursales' },
@@ -154,10 +155,11 @@ export function AdminLayout() {
                                 clearable={false}
                                 size="xs"
                                 w={200}
-                                styles={{ input: { fontWeight: 500 } }}
                             />
                         )}
-                        <ThemeToggle size="sm" />
+                        <div className={styles.themeToggleWrap}>
+                            <ThemeToggle size="sm" />
+                        </div>
 
                         <Badge
                             className={styles.rolBadge}
@@ -170,14 +172,14 @@ export function AdminLayout() {
 
                         <Menu shadow="md" width={200} position="bottom-end">
                             <Menu.Target>
-                                <Group gap="xs" style={{ cursor: 'pointer' }}>
-                                    <Avatar size="sm" radius="xl" color="blue">
+                                <Group gap="xs" className={styles.userTrigger}>
+                                    <Avatar size="sm" radius="xl" color="blue" className={styles.userAvatar}>
                                         {user?.nombre.charAt(0).toUpperCase()}
                                     </Avatar>
                                     <Text size="sm" fw={500} visibleFrom="sm">
                                         {user?.nombre.split(' ')[0]}
                                     </Text>
-                                    <ChevronRight size={14} />
+                                    <ChevronRight size={14} className={styles.userChevron} />
                                 </Group>
                             </Menu.Target>
                             <Menu.Dropdown>

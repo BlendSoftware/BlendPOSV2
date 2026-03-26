@@ -6,6 +6,10 @@ interface HotkeyHint {
     label: string;
 }
 
+interface HotkeysFooterProps {
+    variant?: 'footer' | 'rail';
+}
+
 const HOTKEYS: HotkeyHint[] = [
     { key: 'F2', label: 'Buscar' },
     { key: 'F3', label: 'Desc. ítem' },
@@ -16,23 +20,31 @@ const HOTKEYS: HotkeyHint[] = [
     { key: 'ESC', label: 'Cancelar' },
 ];
 
-export function HotkeysFooter() {
+export function HotkeysFooter({ variant = 'footer' }: HotkeysFooterProps) {
     return (
-        <footer className={styles.footer}>
-            <Flex align="center" justify="center" h="100%" gap="xl" px="lg">
+        <footer className={`${styles.footer} ${variant === 'rail' ? styles.footerRail : ''}`}>
+            <Flex
+                align="center"
+                justify="space-between"
+                h="100%"
+                px="md"
+                className={`${styles.hotkeysRail} ${variant === 'rail' ? styles.hotkeysRailVertical : ''}`}
+            >
                 {HOTKEYS.map((hotkey, index) => (
-                    <Group key={hotkey.key} gap="xs">
+                    <Group key={hotkey.key} gap="xs" className={`${styles.hotkeyItem} ${variant === 'rail' ? styles.hotkeyItemVertical : ''}`}>
                         <Kbd className={styles.kbd}>{hotkey.key}</Kbd>
-                        <Text size="xs" c="dimmed">
+                        <Text size="xs" className={styles.hotkeyLabel}>
                             {hotkey.label}
                         </Text>
-                        {index < HOTKEYS.length - 1 && (
-                            <Text size="xs" c="dimmed" ml="sm" opacity={0.3}>
-                                |
-                            </Text>
-                        )}
+                        {index < HOTKEYS.length - 1 && <div className={`${styles.hotkeyDivider} ${variant === 'rail' ? styles.hotkeyDividerVertical : ''}`} />}
                     </Group>
                 ))}
+
+                {variant !== 'rail' && (
+                    <Text size="xs" className={styles.opsHint}>
+                        Navegacion rapida: ↑↓ seleccionar | +/- cantidad | Supr eliminar
+                    </Text>
+                )}
             </Flex>
         </footer>
     );

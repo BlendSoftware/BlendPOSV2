@@ -32,10 +32,19 @@ import { getPrecioPorBarcode } from '../services/api/products';
 
 import styles from './PosTerminal.module.css';
 
+function formatCurrency(value: number): string {
+    return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        minimumFractionDigits: 2,
+    }).format(value);
+}
+
 export function PosTerminal() {
     const scannerRef = useRef<HTMLInputElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
     const [scannerValue, setScannerValue] = useState('');
+    const [scannerFeedback, setScannerFeedback] = useState<'idle' | 'success' | 'error'>('idle');
     const [searchVisible, setSearchVisible] = useState(false);
     const [searchInitialQuery, setSearchInitialQuery] = useState('');
     const [historyOpen, setHistoryOpen] = useState(false);
@@ -52,6 +61,8 @@ export function PosTerminal() {
 
     const {
         cart,
+        total,
+        totalConDescuento,
         addItem,
         addWeightItem,
         clearCart,
@@ -62,6 +73,10 @@ export function PosTerminal() {
         updateQuantity,
         setPromoDiscounts,
     } = useCartStore();
+
+    const totalUnits = cart.reduce((sum, item) => sum + item.cantidad, 0);
+    const ahorroActual = Math.max(0, total - totalConDescuento);
+    const selectedItem = selectedRowIndex >= 0 && selectedRowIndex < cart.length ? cart[selectedRowIndex] : null;
 
     const {
         isPaymentModalOpen,
@@ -252,7 +267,13 @@ export function PosTerminal() {
 
             if (e.key !== 'Enter') return;
             handleAddProduct(scannerValue).then((added) => {
-                if (added) setScannerValue('');
+                if (added) {
+                    setScannerValue('');
+                    setScannerFeedback('success');
+                } else {
+                    setScannerFeedback('error');
+                }
+                window.setTimeout(() => setScannerFeedback('idle'), 180);
             });
         },
         [handleAddProduct, scannerValue]
@@ -397,44 +418,71 @@ export function PosTerminal() {
 
     return (
         <div className={styles.posLayout}>
-            {/* ── Header ─────────────────────────────────────────── */}
-            <PosHeader />
+            <div className={styles.workspaceFrame}>
+                <PosHeader />
 
-            {/* ── Main Content ───────────────────────────────────── */}
-            <main className={styles.mainContent}>
-                {/* Columna izquierda: Scanner + Tabla de Ventas (70%) */}
-                <section className={styles.salesSection}>
-                    <TextInput
-                        ref={scannerRef}
-                        value={scannerValue}
-                        placeholder="Escanee código de barras o escriba nombre del producto..."
-                        leftSection={<ScanLine size={18} />}
-                        size="md"
-                        className={styles.scannerInput}
-                        classNames={{ input: styles.scannerInputField }}
-                        onKeyDown={handleScannerKeyDown}
-                        onChange={(e) => {
-                            const val = e.currentTarget.value;
-                            setScannerValue(val);
-                            // Si el valor contiene letras, abrir búsqueda automáticamente
-                            if (val && /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/.test(val) && !searchVisible && !anyModalOpen) {
-                                openSearch(val);
-                            }
-                        }}
-                        autoFocus
-                    />
+                <main className={styles.mainContent}>
+                    <section className={styles.salesSection}>
+                        <div className={styles.scannerDock}>
+                            <div className={styles.sectionLabel}>Ingreso de Productos</div>
+                            <TextInput
+                                ref={scannerRef}
+                                value={scannerValue}
+                                placeholder="Escanee código o escriba producto para búsqueda inmediata"
+                                leftSection={<ScanLine size={18} />}
+                                size="md"
+                                className={`${styles.scannerInput} ${scannerFeedback === 'success' ? styles.scannerInputSuccess : ''} ${scannerFeedback === 'error' ? styles.scannerInputError : ''}`}
+                                classNames={{ input: `${styles.scannerInputField} ${scannerFeedback === 'success' ? styles.scannerInputFieldSuccess : ''} ${scannerFeedback === 'error' ? styles.scannerInputFieldError : ''}` }}
+                                onKeyDown={handleScannerKeyDown}
+                                onChange={(e) => {
+                                    const val = e.currentTarget.value;
+                                    setScannerValue(val);
+                                    // Si el valor contiene letras, abrir búsqueda automáticamente
+                                    if (val && /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/.test(val) && !searchVisible && !anyModalOpen) {
+                                        openSearch(val);
+                                    }
+                                }}
+                                autoFocus
+                            />
 
-                    <div className={styles.tableArea}>
-                        <SalesTable />
-                    </div>
-                </section>
+                            <div className={styles.quickStatsRow}>
+                                <div className={styles.quickPill}>
+                                    <span className={styles.quickLabel}>Items</span>
+                                    <strong className={styles.quickValue}>{totalUnits}</strong>
+                                </div>
+                                <div className={styles.quickPill}>
+                                    <span className={styles.quickLabel}>Productos</span>
+                                    <strong className={styles.quickValue}>{cart.length}</strong>
+                                </div>
+                                <div className={styles.quickPill}>
+                                    <span className={styles.quickLabel}>Ahorro</span>
+                                    <strong className={styles.quickValue}>{formatCurrency(ahorroActual)}</strong>
+                                </div>
+                            </div>
 
-                {/* Columna derecha: Panel de Total (30%) */}
-                <TotalPanel />
-            </main>
+                            <div className={styles.contextHint}>
+                                {selectedItem
+                                    ? `Seleccionado: ${selectedItem.nombre} • ${selectedItem.cantidad} ud. • +/- para ajustar`
+                                    : 'Tip: Enter agrega al carrito, F2 abre búsqueda y F10 cobra rápido'}
+                            </div>
+                        </div>
 
-            {/* ── Footer ─────────────────────────────────────────── */}
-            <HotkeysFooter />
+                        <div className={styles.tableShell}>
+                            <div className={styles.sectionLabel}>Detalle de Venta</div>
+                            <div className={styles.tableArea}>
+                                <SalesTable />
+                            </div>
+                        </div>
+                    </section>
+
+                    <aside className={styles.totalSectionWrap}>
+                        <div className={styles.sectionLabel}>Resumen y Cobro</div>
+                        <TotalPanel />
+                    </aside>
+                </main>
+
+                <HotkeysFooter />
+            </div>
 
             {/* ── Modales ────────────────────────────────────────── */}
             {/* ComprobanteModal removido - se selecciona tipo dentro de PaymentModal */}

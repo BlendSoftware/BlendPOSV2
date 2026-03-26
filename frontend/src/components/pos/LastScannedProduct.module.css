@@ -6,23 +6,38 @@
     align-items: center;
     justify-content: center;
     min-height: 100px;
-    opacity: 0.5;
+    opacity: 0.6;
+    background: rgba(255, 255, 255, 0.01);
 }
 
 .productContainer {
-    background-color: var(--mantine-color-dark-6);
+    background: linear-gradient(180deg, rgba(39, 43, 49, 0.95), rgba(33, 36, 41, 0.9));
     border: 1px solid rgba(43, 138, 62, 0.35);
     border-left: 3px solid #2b8a3e;
     border-radius: var(--mantine-radius-md);
     padding: var(--mantine-spacing-md);
-    animation: scanIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: scanIn 220ms ease-out;
     min-height: 100px;
+    position: relative;
+    overflow: hidden;
+}
+
+.productContainer::before {
+    content: '';
+    position: absolute;
+    right: -22px;
+    top: -22px;
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(43, 138, 62, 0.26), rgba(43, 138, 62, 0));
+    pointer-events: none;
 }
 
 @keyframes scanIn {
     0% {
         opacity: 0;
-        transform: translateX(12px) scale(0.97);
+        transform: translateX(8px) scale(0.985);
     }
     100% {
         opacity: 1;
@@ -37,16 +52,47 @@
     line-height: 1.3;
 }
 
+.unitBadge {
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: rgba(125, 211, 252, 0.95);
+    background: rgba(56, 189, 248, 0.08);
+}
+
+.discountBadge {
+    border: 1px solid rgba(245, 159, 0, 0.35);
+}
+
+.promoText {
+    color: rgba(125, 211, 252, 0.9);
+    letter-spacing: 0.01em;
+}
+
 /* Light mode */
 :global([data-mantine-color-scheme='light']) .emptyContainer {
     border-color: var(--mantine-color-gray-4);
 }
 
 :global([data-mantine-color-scheme='light']) .productContainer {
-    background-color: var(--mantine-color-green-0);
+    background: linear-gradient(180deg, rgba(235, 251, 238, 0.95), rgba(239, 250, 241, 0.9));
     border-color: rgba(43, 138, 62, 0.3);
+}
+
+:global([data-mantine-color-scheme='light']) .unitBadge {
+    color: #075985;
+    background: rgba(14, 165, 233, 0.1);
+    border-color: rgba(14, 165, 233, 0.35);
+}
+
+:global([data-mantine-color-scheme='light']) .promoText {
+    color: #075985;
 }
 
 :global([data-mantine-color-scheme='light']) .productName {
     color: var(--mantine-color-dark-8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .productContainer {
+        animation: none;
+    }
 }

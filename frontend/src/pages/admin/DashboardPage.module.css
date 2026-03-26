@@ -1,20 +1,121 @@
+:global([data-mantine-color-scheme='light']) .dashboardRoot {
+    position: relative;
+}
+
+.dashboardTopbar {
+    position: relative;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: linear-gradient(180deg, rgba(20, 29, 39, 0.76), rgba(17, 24, 33, 0.9));
+}
+
+:global([data-mantine-color-scheme='light']) .dashboardTopbar {
+    border-color: rgba(56, 189, 248, 0.28);
+    background:
+        radial-gradient(85% 170% at 0% -50%, rgba(125, 211, 252, 0.32), rgba(125, 211, 252, 0)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.94));
+    box-shadow: 0 10px 24px rgba(14, 165, 233, 0.12);
+}
+
+.dashboardTitle {
+    letter-spacing: 0.02em;
+}
+
+:global([data-mantine-color-scheme='light']) .dashboardTitle {
+    color: #075985;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 12px rgba(56, 189, 248, 0.24);
+}
+
+.dashboardSucursalBadge {
+    border: 1px solid rgba(56, 189, 248, 0.34);
+}
+
+.dashboardDate {
+    opacity: 0.95;
+}
+
+.dashboardControls {
+    border-radius: 999px;
+}
+
+.dashboardSegmented :global(.mantine-SegmentedControl-root) {
+    background: rgba(15, 23, 42, 0.36);
+    border: 1px solid rgba(56, 189, 248, 0.24);
+}
+
+.dashboardSegmented :global(.mantine-SegmentedControl-control) {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.dashboardSegmented :global(.mantine-SegmentedControl-indicator) {
+    background: linear-gradient(180deg, rgba(14, 165, 233, 0.7), rgba(2, 132, 199, 0.82));
+}
+
+:global([data-mantine-color-scheme='light']) .dashboardSegmented :global(.mantine-SegmentedControl-root) {
+    background: rgba(224, 242, 254, 0.8);
+    border-color: rgba(56, 189, 248, 0.34);
+}
+
+:global([data-mantine-color-scheme='light']) .dashboardSegmented :global(.mantine-SegmentedControl-control) {
+    color: #075985;
+    font-weight: 600;
+}
+
+:global([data-mantine-color-scheme='light']) .dashboardSegmented :global(.mantine-SegmentedControl-indicator) {
+    background: linear-gradient(180deg, rgba(186, 230, 253, 0.98), rgba(125, 211, 252, 0.92));
+    border: 1px solid rgba(14, 165, 233, 0.44);
+}
+
+.dashboardRefreshWrap {
+    padding: 3px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    background: rgba(56, 189, 248, 0.08);
+}
+
+:global([data-mantine-color-scheme='light']) .dashboardRefreshWrap {
+    border-color: rgba(56, 189, 248, 0.34);
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.dashboardRefreshText {
+    font-weight: 600;
+}
+
+.dashboardRefreshBtn {
+    border: 1px solid rgba(56, 189, 248, 0.32);
+}
+
+:global([data-mantine-color-scheme='light']) .dashboardRefreshBtn {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(224, 242, 254, 0.88));
+    color: #0369a1;
+}
+
 /* Card base */
 .card {
-    background: var(--mantine-color-dark-7);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    background:
+        linear-gradient(180deg, rgba(24, 30, 38, 0.94), rgba(17, 22, 30, 0.96)),
+        var(--mantine-color-dark-7);
+    border-color: rgba(56, 189, 248, 0.16);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    border-color: rgba(56, 189, 248, 0.34);
+    box-shadow: 0 10px 26px rgba(2, 132, 199, 0.18);
 }
 
 :global([data-mantine-color-scheme='light']) .card {
-    background: var(--mantine-color-white);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.92));
+    border-color: rgba(56, 189, 248, 0.26);
 }
 
 :global([data-mantine-color-scheme='light']) .card:hover {
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+    border-color: rgba(14, 165, 233, 0.42);
+    box-shadow: 0 10px 28px rgba(14, 165, 233, 0.14);
 }
 
 /* KPI card: glow sutil en el borde izquierdo */
@@ -27,40 +128,55 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+    background: linear-gradient(135deg, rgba(125, 211, 252, 0.14) 0%, transparent 62%);
     pointer-events: none;
 }
 
 /* Filas de alerta de stock */
 .alertRow {
-    background: var(--mantine-color-dark-6);
+    background: rgba(31, 41, 55, 0.72);
     border-radius: var(--mantine-radius-sm);
-    transition: background 0.12s ease;
+    transition: background 0.12s ease, border-color 0.12s ease;
+    border: 1px solid rgba(56, 189, 248, 0.14);
 }
 
 .alertRow:hover {
-    background: var(--mantine-color-dark-5);
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(56, 189, 248, 0.26);
 }
 
 :global([data-mantine-color-scheme='light']) .alertRow {
-    background: var(--mantine-color-gray-1);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(240, 249, 255, 0.84));
+    border-color: rgba(56, 189, 248, 0.22);
 }
 
 /* Texto de totales en la tabla */
 .totalCell {
-    color: var(--mantine-color-teal-4);
+    color: #67e8f9;
 }
 
 :global([data-mantine-color-scheme='light']) .totalCell {
-    color: var(--mantine-color-teal-7);
+    color: #0f766e;
 }
 
 .ticketCell {
-    color: var(--mantine-color-blue-4);
+    color: #7dd3fc;
 }
 
 :global([data-mantine-color-scheme='light']) .ticketCell {
-    color: var(--mantine-color-blue-7);
+    color: #075985;
+}
+
+:global([data-mantine-color-scheme='light']) .kpiCard {
+    box-shadow: 0 8px 18px rgba(14, 165, 233, 0.12);
+}
+
+:global([data-mantine-color-scheme='light']) .kpiCard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(100% 120% at 0% 0%, rgba(186, 230, 253, 0.32), transparent 56%);
+    pointer-events: none;
 }
 
 /* Acento de color en paneles de gráficos */

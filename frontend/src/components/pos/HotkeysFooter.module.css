@@ -1,22 +1,154 @@
 .footer {
-    background-color: var(--mantine-color-dark-8);
-    border-top: 1px solid var(--mantine-color-dark-4);
-    height: 42px;
+    background:
+        linear-gradient(180deg, rgba(15, 17, 21, 0.98), rgba(15, 17, 21, 0.93)),
+        var(--mantine-color-dark-8);
+    border-top: 0;
+    height: 60px;
     flex-shrink: 0;
     user-select: none;
+    box-shadow: 0 -8px 14px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.45), rgba(56, 189, 248, 0));
+    pointer-events: none;
+}
+
+.footerRail {
+    height: auto;
+    flex: 1;
+    border-top: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 156, 166, 0.22);
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.hotkeysRail {
+    height: 100%;
+    gap: 10px;
+    align-items: center;
+}
+
+.opsHint {
+    margin-left: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 156, 166, 0.2);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(148, 156, 166, 0.95);
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.hotkeysRailVertical {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 8px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.hotkeyItem {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    justify-content: center;
+    border-radius: 8px;
+    border: 0;
+    background: rgba(255, 255, 255, 0.045);
+    position: relative;
+    transition: transform 110ms ease, background-color 110ms ease;
+}
+
+.hotkeyItem:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .kbd {
     font-size: 11px;
-    padding: 2px 6px;
-    min-width: 28px;
+    font-weight: 700;
+    padding: 3px 7px;
+    min-width: 30px;
     text-align: center;
+    border-radius: 6px;
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(148, 156, 166, 0.25);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+}
+
+.hotkeyLabel {
+    color: var(--mantine-color-gray-4);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+}
+
+.hotkeyItem:first-child .hotkeyLabel,
+.hotkeyItem:nth-child(6) .hotkeyLabel {
+    color: rgba(125, 211, 252, 0.95);
+}
+
+.hotkeyDivider {
+    width: 0;
+    height: 18px;
+    background: transparent;
+    position: absolute;
+    right: -4px;
 }
 
 /* Light mode */
 :global([data-mantine-color-scheme='light']) .footer {
-    background-color: var(--mantine-color-white);
-    border-top-color: var(--mantine-color-gray-3);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92)),
+        var(--mantine-color-white);
+    border-top-color: transparent;
+    box-shadow: 0 -5px 12px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-mantine-color-scheme='light']) .hotkeyItem {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+:global([data-mantine-color-scheme='light']) .kbd {
+    border-color: rgba(134, 142, 150, 0.28);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9));
+}
+
+:global([data-mantine-color-scheme='light']) .hotkeyItem:hover {
+    background: rgba(255, 255, 255, 0.96);
+}
+
+:global([data-mantine-color-scheme='light']) .hotkeyLabel {
+    color: var(--mantine-color-gray-7);
+}
+
+:global([data-mantine-color-scheme='light']) .hotkeyItem:first-child .hotkeyLabel,
+:global([data-mantine-color-scheme='light']) .hotkeyItem:nth-child(6) .hotkeyLabel {
+    color: #0c4a6e;
+}
+
+:global([data-mantine-color-scheme='light']) .opsHint {
+    border-color: rgba(134, 142, 150, 0.26);
+    background: rgba(255, 255, 255, 0.86);
+    color: rgba(15, 23, 42, 0.62);
+}
+
+@media (max-width: 1380px) {
+    .opsHint {
+        display: none;
+    }
 }
 
 /* Hide hotkeys footer on touch devices — F-keys don't work on touch */
@@ -24,4 +156,23 @@
     .footer {
         display: none;
     }
+}
+
+.hotkeyItemVertical {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0 8px;
+}
+
+.hotkeyDividerVertical {
+    width: 100%;
+    height: 1px;
+    right: auto;
+    left: 0;
+    bottom: -5px;
+}
+
+:global([data-mantine-color-scheme='light']) .footerRail {
+    border-color: rgba(134, 142, 150, 0.24);
+    background: rgba(255, 255, 255, 0.86);
 }

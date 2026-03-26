@@ -214,23 +214,24 @@ export function DashboardPage() {
         }));
 
     return (
-        <Stack gap="xl">
-            <Group justify="space-between" align="flex-end">
-                <div>
+        <Stack gap="xl" className={styles.dashboardRoot}>
+            <Group justify="space-between" align="flex-end" className={styles.dashboardTopbar}>
+                <div className={styles.dashboardTitleBlock}>
                     <Group gap="sm" align="center">
-                        <Title order={2} fw={800} c="blue.4">BlendPOS</Title>
+                        <Title order={2} fw={800} c="blue.4" className={styles.dashboardTitle}>BlendPOS</Title>
                         {sucursalNombre && (
-                            <Badge variant="light" color="indigo" size="lg" leftSection={<Building2 size={14} />}>
+                            <Badge variant="light" color="indigo" size="lg" leftSection={<Building2 size={14} />} className={styles.dashboardSucursalBadge}>
                                 {sucursalNombre}
                             </Badge>
                         )}
                     </Group>
-                    <Text c="dimmed" size="sm" style={{ textTransform: 'capitalize' }}>
+                    <Text c="dimmed" size="sm" style={{ textTransform: 'capitalize' }} className={styles.dashboardDate}>
                         {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </Text>
                 </div>
-                <Group gap="md" align="center">
+                <Group gap="md" align="center" className={styles.dashboardControls}>
                     <SegmentedControl
+                        className={styles.dashboardSegmented}
                         value={periodo}
                         onChange={(v) => setPeriodo(v as Periodo)}
                         data={[
@@ -240,14 +241,15 @@ export function DashboardPage() {
                         ]}
                         size="sm"
                     />
-                    <Group gap="xs" align="center">
+                    <Group gap="xs" align="center" className={styles.dashboardRefreshWrap}>
                         {lastRefresh && (
-                            <Text size="xs" c="dimmed">
+                            <Text size="xs" c="dimmed" className={styles.dashboardRefreshText}>
                                 Actualizado: {lastRefresh.toLocaleTimeString('es-AR')}
                             </Text>
                         )}
                         <Tooltip label="Actualizar datos">
                             <ActionIcon
+                                className={styles.dashboardRefreshBtn}
                                 variant="subtle" color="gray" size="lg"
                                 onClick={() => fetchDashboardData(true)}
                                 loading={refreshing}

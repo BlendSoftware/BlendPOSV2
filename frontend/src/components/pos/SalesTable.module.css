@@ -1,6 +1,28 @@
 .emptyState {
-    opacity: 0.6;
+    opacity: 1;
     user-select: none;
+    margin: 16px;
+    border-radius: 12px;
+    border: 1px dashed rgba(148, 156, 166, 0.26);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+    text-align: center;
+    padding: 24px 16px;
+}
+
+.emptyStateIcon {
+    color: rgba(56, 189, 248, 0.82);
+}
+
+.emptyStateTitle {
+    font-size: 1.02rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: rgba(241, 243, 245, 0.96);
+}
+
+.emptyStateSubtitle {
+    font-size: 0.78rem;
+    color: rgba(148, 156, 166, 0.96);
 }
 
 .tableWrapper {
@@ -8,65 +30,149 @@
     height: 100%;
     scrollbar-width: thin;
     scrollbar-color: var(--mantine-color-dark-4) transparent;
+    border-radius: 8px;
 }
 
 .table {
     table-layout: fixed;
     width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
 }
 
 .headerRow {
     position: sticky;
     top: 0;
-    background-color: var(--mantine-color-dark-7);
+    background: rgba(14, 16, 20, 0.98);
     z-index: 1;
+    box-shadow: none;
+}
+
+.headerRow :global(th) {
+    letter-spacing: 0.04em;
+    font-size: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    color: rgba(56, 189, 248, 0.8);
 }
 
 .row {
-    height: 52px;
-    transition: background-color 300ms ease;
+    height: 56px;
+    transition: background-color 110ms ease;
     cursor: pointer;
+    border-bottom: 1px solid rgba(148, 156, 166, 0.08);
+    position: relative;
+}
+
+.row :global(td) {
+    vertical-align: middle;
+}
+
+.row:hover {
+    background-color: rgba(77, 171, 247, 0.1);
+}
+
+.row::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.16), rgba(56, 189, 248, 0));
+    pointer-events: none;
 }
 
 .rowHighlight {
-    animation: highlightFlash 1.5s ease-out;
+    animation: highlightFlash 520ms ease-out;
 }
 
 .rowSelected {
-    background-color: rgba(24, 100, 171, 0.15) !important;
-    box-shadow: inset 3px 0 0 0 #1864ab;
+    background-color: rgba(76, 110, 245, 0.16) !important;
+    box-shadow: inset 3px 0 0 0 #4c6ef5;
+}
+
+.rowSelected::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.08), rgba(56, 189, 248, 0));
+    pointer-events: none;
+}
+
+.rowSelected :global(td) {
+    font-weight: 600;
 }
 
 @keyframes highlightFlash {
-    0%   { background-color: rgba(43, 138, 62, 0.35); }
+    0%   { background-color: rgba(43, 138, 62, 0.42); }
     100% { background-color: transparent; }
 }
 
 .quantityControl {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
 }
 
 .quantityBadge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--mantine-color-dark-5);
-    border-radius: var(--mantine-radius-sm);
-    min-width: 34px;
-    padding: 2px 8px;
+    background-color: rgba(148, 156, 166, 0.16);
+    border-radius: 8px;
+    min-width: 42px;
+    padding: 4px 10px;
     cursor: pointer;
-    transition: background-color 100ms;
+    transition: background-color 100ms, transform 100ms ease;
 }
 
 .quantityBadge:hover {
-    background-color: var(--mantine-color-dark-4);
+    background-color: rgba(148, 156, 166, 0.28);
+    transform: translateY(-1px);
+}
+
+.quantityBadge:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.32);
 }
 
 /* Light mode */
 :global([data-mantine-color-scheme='light']) .headerRow {
-    background-color: var(--mantine-color-gray-1);
+    background: rgba(241, 243, 245, 0.98);
+}
+
+:global([data-mantine-color-scheme='light']) .emptyState {
+    border-color: rgba(134, 142, 150, 0.28);
+    background: linear-gradient(180deg, rgba(241, 245, 249, 0.94), rgba(248, 250, 252, 0.92));
+}
+
+:global([data-mantine-color-scheme='light']) .emptyStateIcon {
+    color: #0284c7;
+}
+
+:global([data-mantine-color-scheme='light']) .emptyStateTitle {
+    color: #0f172a;
+}
+
+:global([data-mantine-color-scheme='light']) .emptyStateSubtitle {
+    color: rgba(15, 23, 42, 0.62);
+}
+
+:global([data-mantine-color-scheme='light']) .headerRow :global(th) {
+    color: #075985;
+}
+
+:global([data-mantine-color-scheme='light']) .row {
+    border-bottom-color: rgba(0, 0, 0, 0.035);
+}
+
+:global([data-mantine-color-scheme='light']) .rowSelected {
+    background-color: rgba(54, 79, 199, 0.1) !important;
 }
 
 :global([data-mantine-color-scheme='light']) .quantityBadge {
@@ -84,11 +190,13 @@
 
 .deleteBtn {
     opacity: 0;
-    transition: opacity 120ms ease;
+    transition: opacity 120ms ease, transform 120ms ease, filter 120ms ease;
 }
 
 .row:hover .deleteBtn {
     opacity: 1;
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 8px rgba(248, 113, 113, 0.25));
 }
 
 .rowSelected .deleteBtn {

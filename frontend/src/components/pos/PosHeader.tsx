@@ -14,27 +14,37 @@ import styles from './PosHeader.module.css';
 
 const Clock = memo(function Clock() {
     const [time, setTime] = useState(new Date());
-    const { colorScheme } = useMantineColorScheme();
-    const isDark = colorScheme === 'dark';
 
     useEffect(() => {
-        const interval = setInterval(() => setTime(new Date()), 1000);
-        return () => clearInterval(interval);
+        setTime(new Date());
+        const untilNextMinute = 60_000 - (Date.now() % 60_000);
+        let interval: ReturnType<typeof setInterval> | null = null;
+
+        const timeout = setTimeout(() => {
+            setTime(new Date());
+            interval = setInterval(() => setTime(new Date()), 60_000);
+        }, untilNextMinute);
+
+        return () => {
+            clearTimeout(timeout);
+            if (interval) clearInterval(interval);
+        };
     }, []);
 
     const formattedTime = time.toLocaleTimeString('es-AR', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+        hour: '2-digit', minute: '2-digit', hour12: false,
     });
     const formattedDate = time.toLocaleDateString('es-AR', {
-        weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
+        weekday: 'short', day: '2-digit', month: '2-digit',
     });
 
     return (
-        <div className={styles.clock}>
-            <Text size="lg" fw={700} c={isDark ? 'white' : 'dark.7'} ff="monospace">
+        <div className={styles.clock} aria-label={`Hora actual ${formattedTime}, ${formattedDate}`}>
+            <Text className={styles.clockTime} ff="monospace">
                 {formattedTime}
             </Text>
-            <Text size="xs" c="dimmed" ta="right">
+            <span className={styles.clockDot} />
+            <Text className={styles.clockDate}>
                 {formattedDate}
             </Text>
         </div>
@@ -171,104 +181,104 @@ export function PosHeader() {
                 </Group>
             </Modal>
 
-            <Flex align="center" justify="space-between" h="100%" px="lg">
-                <Text className={styles.brand}>BlendPOS</Text>
+            <div className={styles.headerInner}>
+                <div className={styles.mainRow}>
+                    <div className={styles.brandBlock}>
+                        <Text className={styles.brand}>BlendPOS</Text>
+                        <Text className={styles.brandSub}>Punto de Venta</Text>
+                    </div>
 
-                <Group gap="xs">
-                    <User size={18} color="#909296" />
-                    <Text size="sm" c="dimmed">Cajero:</Text>
-                    <Text size="sm" fw={600} c={isDark ? 'white' : 'dark.7'}>
-                        {user?.nombre ?? 'Cargándose…'}
-                    </Text>
-                    {user?.rol && (
-                        <Badge
-                            color={ROL_COLOR[user.rol] ?? 'gray'}
-                            size="xs"
-                            variant="light"
-                        >
-                            {user.rol}
-                        </Badge>
-                    )}
-                    <Text size="sm" c="dimmed" ml="md">
-                        Terminal #{user?.puntoDeVenta != null
-                            ? String(user.puntoDeVenta).padStart(2, '0')
-                            : 'POS'}
-                    </Text>
-                </Group>
+                    <div className={styles.operatorBlock}>
+                        <User size={16} color="#909296" />
+                        <Text size="xs" c="dimmed">Operador</Text>
+                        <Text size="sm" fw={700} c={isDark ? 'white' : 'dark.7'}>
+                            {user?.nombre ?? 'Cargándose…'}
+                        </Text>
+                        {user?.rol && (
+                            <Badge color={ROL_COLOR[user.rol] ?? 'gray'} size="xs" variant="light">
+                                {user.rol}
+                            </Badge>
+                        )}
+                        <Text size="xs" c="dimmed">
+                            Terminal #{user?.puntoDeVenta != null
+                                ? String(user.puntoDeVenta).padStart(2, '0')
+                                : 'POS'}
+                        </Text>
+                    </div>
 
-                <Group gap="md">
-                    <Tooltip
-                        label={printerConnected ? 'Desconectar impresora' : 'Conectar impresora térmica'}
-                        withArrow
-                    >
-                        <ActionIcon
-                            variant={printerConnected ? 'filled' : 'subtle'}
-                            color={printerConnected ? 'teal' : 'gray'}
-                            size="md"
-                            onClick={handlePrinterToggle}
-                        >
-                            <Printer size={16} />
-                        </ActionIcon>
-                    </Tooltip>
-
-                    <Tooltip label="Configuración de impresora" withArrow>
-                        <ActionIcon
-                            variant="subtle"
-                            color="gray"
-                            size="md"
-                            onClick={() => setSettingsOpen(true)}
-                        >
-                            <Settings size={16} />
-                        </ActionIcon>
-                    </Tooltip>
-
-                    <Tooltip label="Cerrar Caja" withArrow>
-                        <ActionIcon
-                            variant="subtle"
-                            color="orange"
-                            size="md"
-                            onClick={() => navigate('/admin/cierre-caja')}
-                        >
-                            <Calculator size={16} />
-                        </ActionIcon>
-                    </Tooltip>
-
-                    {hasRole(['admin', 'supervisor']) && (
-                        <Tooltip label="Panel Admin" withArrow>
+                    <Group gap="xs" className={styles.actionsBlock}>
+                        <Tooltip label={printerConnected ? 'Desconectar impresora' : 'Conectar impresora térmica'} withArrow>
                             <ActionIcon
-                                variant="subtle"
-                                color="blue"
+                                variant={printerConnected ? 'filled' : 'subtle'}
+                                color={printerConnected ? 'teal' : 'gray'}
                                 size="md"
-                                onClick={() => navigate('/admin/dashboard')}
+                                onClick={handlePrinterToggle}
                             >
-                                <PanelLeftOpen size={16} />
+                                <Printer size={16} />
                             </ActionIcon>
                         </Tooltip>
-                    )}
 
-                    <ThemeToggle size="md" />
+                        <Tooltip label="Configuración de impresora" withArrow>
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                size="md"
+                                onClick={() => setSettingsOpen(true)}
+                            >
+                                <Settings size={16} />
+                            </ActionIcon>
+                        </Tooltip>
 
-                    <div style={{ width: 1, height: 24, background: 'var(--mantine-color-default-border)', margin: '0 8px' }} />
-                    <Tooltip label="Cerrar sesión" withArrow>
-                        <ActionIcon
-                            variant="light"
-                            color="red"
-                            size="md"
-                            onClick={() => setLogoutConfirmOpen(true)}
-                        >
-                            <LogOut size={16} />
-                        </ActionIcon>
-                    </Tooltip>
+                        <Tooltip label="Cerrar Caja" withArrow>
+                            <ActionIcon
+                                variant="subtle"
+                                color="orange"
+                                size="md"
+                                onClick={() => navigate('/admin/cierre-caja')}
+                            >
+                                <Calculator size={16} />
+                            </ActionIcon>
+                        </Tooltip>
 
+                        {hasRole(['admin', 'supervisor']) && (
+                            <Tooltip label="Panel Admin" withArrow>
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="blue"
+                                    size="md"
+                                    onClick={() => navigate('/admin/dashboard')}
+                                >
+                                    <PanelLeftOpen size={16} />
+                                </ActionIcon>
+                            </Tooltip>
+                        )}
+
+                        <ThemeToggle size="md" />
+
+                        <Tooltip label="Cerrar sesión" withArrow>
+                            <ActionIcon
+                                variant="light"
+                                color="red"
+                                size="md"
+                                onClick={() => setLogoutConfirmOpen(true)}
+                            >
+                                <LogOut size={16} />
+                            </ActionIcon>
+                        </Tooltip>
+                    </Group>
+                </div>
+
+                <Flex align="center" justify="space-between" className={styles.statusRow}>
                     {/* Unified sync + connectivity badge (F1-7) */}
                     {(() => {
                         // Red: offline
                         if (!isOnline) return (
                             <Tooltip label="Sin conexión al servidor" withArrow>
-                                <Badge color="red" size="lg" variant="light">
+                                <Badge size="lg" variant="light" className={`${styles.statusBadge} ${styles.statusOffline}`}>
                                     <Group gap={4}>
+                                        <span className={`${styles.statusDot} ${styles.statusDotOffline}`} />
                                         <WifiOff size={12} />
-                                        <span>Sin conexión</span>
+                                        <span className={styles.statusText}>Sin conexión</span>
                                     </Group>
                                 </Badge>
                             </Tooltip>
@@ -281,10 +291,11 @@ export function PosHeader() {
                                     : `${syncPending} venta${syncPending !== 1 ? 's' : ''} pendiente${syncPending !== 1 ? 's' : ''} de sincronizar`}
                                 withArrow
                             >
-                                <Badge color="yellow" size="lg" variant="light">
+                                <Badge size="lg" variant="light" className={`${styles.statusBadge} ${styles.statusSync}`}>
                                     <Group gap={4}>
+                                        <span className={`${styles.statusDot} ${styles.statusDotSync}`} />
                                         <Wifi size={12} />
-                                        <span>{syncState === 'syncing' ? `⟳ ${syncPending}` : `Sync ${syncPending}`}</span>
+                                        <span className={styles.statusText}>{syncState === 'syncing' ? `⟳ ${syncPending}` : `Sync ${syncPending}`}</span>
                                     </Group>
                                 </Badge>
                             </Tooltip>
@@ -292,18 +303,19 @@ export function PosHeader() {
                         // Green: online + fully synced
                         return (
                             <Tooltip label="Conectado y sincronizado" withArrow>
-                                <Badge color="green" size="lg" variant="light">
+                                <Badge size="lg" variant="light" className={`${styles.statusBadge} ${styles.statusOnline}`}>
                                     <Group gap={4}>
+                                        <span className={`${styles.statusDot} ${styles.statusDotOnline}`} />
                                         <Wifi size={12} />
-                                        <span>Conectado</span>
+                                        <span className={styles.statusText}>Conectado</span>
                                     </Group>
                                 </Badge>
                             </Tooltip>
                         );
                     })()}
                     <Clock />
-                </Group>
-            </Flex>
+                </Flex>
+            </div>
         </header>
     );
 }

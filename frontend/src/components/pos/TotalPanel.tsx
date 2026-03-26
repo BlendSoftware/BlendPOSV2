@@ -1,5 +1,5 @@
 import { Stack, Text, Button, Divider, Group, Badge, Box } from '@mantine/core';
-import { ShoppingCart, CreditCard, X, Percent } from 'lucide-react';
+import { CreditCard, X, Percent } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import { usePOSUIStore } from '../../store/usePOSUIStore';
 import { LastScannedProduct } from './LastScannedProduct';
@@ -28,9 +28,8 @@ export function TotalPanel() {
 
     return (
         <div className={styles.panel}>
-            {/* ── Último producto escaneado (feedback visual) ─────── */}
             <Stack gap="xs" className={styles.scanSection}>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={600} style={{ letterSpacing: '0.05em' }}>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700} className={styles.blockTitle}>
                     Último Escaneado
                 </Text>
                 <LastScannedProduct />
@@ -38,10 +37,20 @@ export function TotalPanel() {
 
             <Divider my="sm" />
 
-            {/* ── Total ─────────────────────────────────────────────── */}
+            <Group grow className={styles.metricsRow}>
+                <Box className={styles.metricCard}>
+                    <Text size="xs" c="dimmed">Artículos</Text>
+                    <Text size="lg" fw={700} ff="monospace">{itemCount}</Text>
+                </Box>
+                <Box className={styles.metricCard}>
+                    <Text size="xs" c="dimmed">Descuento</Text>
+                    <Text size="lg" fw={700} ff="monospace">{hasDiscount ? `${descuentoGlobal}%` : '0%'}</Text>
+                </Box>
+            </Group>
+
             <Stack gap="xs" align="center" className={styles.totalSection}>
-                <Text size="sm" c="dimmed" tt="uppercase" fw={600}>
-                    Total a pagar
+                <Text size="sm" c="dimmed" tt="uppercase" fw={700} className={styles.blockTitle}>
+                    Total a Cobrar
                 </Text>
 
                 {hasDiscount && (
@@ -58,13 +67,6 @@ export function TotalPanel() {
                 <Text className={`${styles.totalAmount} ${hasDiscount ? styles.totalDiscount : styles.totalNormal}`} fw={800}>
                     {formatCurrency(displayTotal)}
                 </Text>
-
-                <Group gap="xs" mt={4}>
-                    <ShoppingCart size={16} color="#909296" />
-                    <Text size="sm" c="dimmed">
-                        {itemCount} {itemCount === 1 ? 'artículo' : 'artículos'}
-                    </Text>
-                </Group>
             </Stack>
 
             <Divider my="md" />
@@ -77,7 +79,7 @@ export function TotalPanel() {
                     fullWidth
                     onClick={openPaymentModal}
                     disabled={cart.length === 0}
-                    className={styles.actionButton}
+                    className={`${styles.actionButton} ${styles.payButton}`}
                 >
                     <Stack gap={0} align="flex-start">
                         <Text size="lg" fw={700}>COBRAR</Text>
@@ -93,7 +95,7 @@ export function TotalPanel() {
                     fullWidth
                     onClick={openDiscountModal}
                     disabled={cart.length === 0}
-                    className={styles.actionButton}
+                    className={`${styles.actionButton} ${styles.discountButton}`}
                 >
                     <Stack gap={0} align="flex-start">
                         <Text size="sm" fw={700}>
@@ -111,7 +113,7 @@ export function TotalPanel() {
                     fullWidth
                     onClick={clearCart}
                     disabled={cart.length === 0}
-                    className={styles.actionButton}
+                    className={`${styles.actionButton} ${styles.cancelButton}`}
                 >
                     <Stack gap={0} align="flex-start">
                         <Text size="lg" fw={700}>CANCELAR</Text>

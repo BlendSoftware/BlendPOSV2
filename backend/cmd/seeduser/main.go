@@ -34,16 +34,22 @@ func main() {
 		log.Fatalf("db connect error: %v", err)
 	}
 
+	var tenantID string
+	err = db.Raw("SELECT id FROM tenants WHERE slug = ?", "legacy").Scan(&tenantID).Error
+	if err != nil || tenantID == "" {
+		log.Fatalf("error fetching legacy tenant (did you run migrations?): %v", err)
+	}
+
 	result := db.WithContext(context.Background()).Exec(`
-		INSERT INTO usuarios (username, nombre, email, password_hash, rol)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO usuarios (username, nombre, email, password_hash, rol, tenant_id)
+		VALUES (?, ?, ?, ?, ?, ?)
 		ON CONFLICT (username) DO UPDATE
 		SET password_hash = EXCLUDED.password_hash,
 		    nombre = EXCLUDED.nombre,
 		    email = EXCLUDED.email,
 		    rol = EXCLUDED.rol,
 		    activo = true
-	`, username, nombre, email, string(hash), rol)
+	`, username, nombre, email, string(hash), rol, tenantID)
 
 	if result.Error != nil {
 		log.Fatalf("insert error: %v", result.Error)

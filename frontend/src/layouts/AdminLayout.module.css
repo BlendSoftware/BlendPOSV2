@@ -4,6 +4,18 @@
     height: 100vh;
     display: flex;
     background: var(--mantine-color-dark-9);
+    position: relative;
+}
+
+.shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(55% 38% at 10% -8%, rgba(14, 165, 233, 0.14), transparent 70%),
+        radial-gradient(48% 28% at 98% 6%, rgba(56, 189, 248, 0.12), transparent 72%);
+    z-index: 0;
 }
 
 .overlay {
@@ -13,13 +25,18 @@
 .sidebar {
     width: 230px;
     flex: 0 0 230px;
-    background: var(--mantine-color-dark-8);
-    border-right: 1px solid var(--mantine-color-dark-6);
+    background:
+        linear-gradient(180deg, rgba(12, 17, 24, 0.96), rgba(15, 23, 33, 0.92)),
+        var(--mantine-color-dark-8);
+    border-right: 1px solid rgba(56, 189, 248, 0.22);
     padding: var(--mantine-spacing-sm) var(--mantine-spacing-xs);
     display: flex;
     flex-direction: column;
     gap: 4px;
     overflow-y: auto;
+    position: relative;
+    z-index: 2;
+    box-shadow: 8px 0 22px rgba(0, 0, 0, 0.22);
 }
 
 .main {
@@ -27,19 +44,22 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
+    position: relative;
+    z-index: 1;
 }
 
 .navHeader {
     padding: var(--mantine-spacing-sm) var(--mantine-spacing-xs);
     margin-bottom: var(--mantine-spacing-xs);
-    border-bottom: 1px solid var(--mantine-color-dark-6);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
 }
 
 .brand {
     font-size: 1.25rem;
     font-weight: 800;
     letter-spacing: -0.5px;
-    color: var(--mantine-color-blue-4);
+    color: #7dd3fc;
+    text-shadow: 0 0 18px rgba(56, 189, 248, 0.28);
 }
 
 .brandSub {
@@ -59,33 +79,38 @@
     color: var(--mantine-color-dark-1);
     font-size: 0.875rem;
     font-weight: 500;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
     cursor: pointer;
     border: none;
     background: none;
     width: 100%;
     text-align: left;
+    border: 1px solid transparent;
 }
 
 .navLink:hover {
-    background: var(--mantine-color-dark-6);
+    background: rgba(56, 189, 248, 0.14);
+    border-color: rgba(56, 189, 248, 0.28);
     color: var(--mantine-color-white);
+    transform: translateX(2px);
 }
 
 .navLinkActive {
-    background: var(--mantine-color-blue-9);
-    color: var(--mantine-color-blue-3);
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.42), rgba(14, 165, 233, 0.22));
+    color: #bae6fd;
+    border-color: rgba(56, 189, 248, 0.44);
+    box-shadow: inset 0 1px 0 rgba(186, 230, 253, 0.26), 0 4px 10px rgba(2, 132, 199, 0.2);
 }
 
 .navLinkActive:hover {
-    background: var(--mantine-color-blue-8);
-    color: var(--mantine-color-blue-2);
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.52), rgba(14, 165, 233, 0.28));
+    color: #e0f2fe;
 }
 
 .navSection {
     margin-top: var(--mantine-spacing-sm);
     padding-top: var(--mantine-spacing-sm);
-    border-top: 1px solid var(--mantine-color-dark-6);
+    border-top: 1px solid rgba(56, 189, 248, 0.2);
 }
 
 .navSectionLabel {
@@ -105,14 +130,25 @@
     justify-content: space-between;
     padding: 0 var(--mantine-spacing-md);
     height: 100%;
-    border-bottom: 1px solid var(--mantine-color-dark-6);
-    background: var(--mantine-color-dark-8);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.16);
+    background:
+        linear-gradient(180deg, rgba(16, 23, 31, 0.94), rgba(14, 20, 28, 0.9)),
+        var(--mantine-color-dark-8);
+    backdrop-filter: blur(3px);
+}
+
+.headerTitleGroup {
+    min-width: 0;
+}
+
+.headerTitle {
+    letter-spacing: 0.015em;
 }
 
 .content {
     flex: 1;
     overflow: auto;
-    background: var(--mantine-color-dark-9);
+    background: linear-gradient(180deg, rgba(6, 12, 18, 0.94), rgba(8, 13, 20, 0.98));
     padding: var(--mantine-spacing-xl);
 }
 
@@ -120,6 +156,40 @@
     display: flex;
     align-items: center;
     gap: var(--mantine-spacing-sm);
+}
+
+.branchSelect :global(.mantine-Input-input) {
+    font-weight: 600;
+}
+
+.themeToggleWrap {
+    display: inline-flex;
+    padding: 2px;
+    border-radius: 999px;
+    border: 1px solid rgba(56, 189, 248, 0.26);
+    background: rgba(56, 189, 248, 0.08);
+}
+
+.userTrigger {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: rgba(56, 189, 248, 0.08);
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.userTrigger:hover {
+    border-color: rgba(56, 189, 248, 0.38);
+    background: rgba(56, 189, 248, 0.14);
+}
+
+.userAvatar {
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.24);
+}
+
+.userChevron {
+    opacity: 0.8;
 }
 
 .rolBadge {
@@ -136,7 +206,7 @@
     color: var(--mantine-color-red-4);
     font-size: 0.875rem;
     font-weight: 500;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, transform 0.15s;
     cursor: pointer;
     border: none;
     background: none;
@@ -145,8 +215,9 @@
 }
 
 .navLinkDanger:hover {
-    background: var(--mantine-color-dark-6);
+    background: rgba(239, 68, 68, 0.12);
     color: var(--mantine-color-red-3);
+    transform: translateX(2px);
 }
 
 /* Mobile: sidebar overlay */
@@ -187,47 +258,60 @@
    ═══════════════════════════════════════════════════ */
 
 :global([data-mantine-color-scheme='light']) .shell {
-    background: var(--mantine-color-gray-1);
+    background: #ecf8ff;
+}
+
+:global([data-mantine-color-scheme='light']) .shell::before {
+    background:
+        radial-gradient(58% 36% at 6% -8%, rgba(14, 165, 233, 0.22), transparent 72%),
+        radial-gradient(48% 30% at 102% 8%, rgba(125, 211, 252, 0.24), transparent 70%),
+        linear-gradient(180deg, rgba(236, 253, 255, 0.5), rgba(224, 242, 254, 0.22));
 }
 
 :global([data-mantine-color-scheme='light']) .sidebar {
-    background: var(--mantine-color-white);
-    border-right-color: var(--mantine-color-gray-3);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.96));
+    border-right-color: rgba(56, 189, 248, 0.28);
+    box-shadow: 8px 0 24px rgba(2, 132, 199, 0.12);
 }
 
 :global([data-mantine-color-scheme='light']) .navHeader {
-    border-bottom-color: var(--mantine-color-gray-3);
+    border-bottom-color: rgba(56, 189, 248, 0.24);
 }
 
 :global([data-mantine-color-scheme='light']) .brand {
-    color: var(--mantine-color-blue-7);
+    color: #0369a1;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 12px rgba(125, 211, 252, 0.32);
 }
 
 :global([data-mantine-color-scheme='light']) .navLink {
-    color: var(--mantine-color-dark-6);
+    color: #0f172a;
 }
 
 :global([data-mantine-color-scheme='light']) .navLink:hover {
-    background: var(--mantine-color-gray-1);
-    color: var(--mantine-color-dark-9);
+    background: linear-gradient(90deg, rgba(224, 242, 254, 0.92), rgba(240, 249, 255, 0.92));
+    color: #0c4a6e;
+    border-color: rgba(56, 189, 248, 0.32);
 }
 
 :global([data-mantine-color-scheme='light']) .navLinkActive {
-    background: var(--mantine-color-blue-0);
-    color: var(--mantine-color-blue-7);
+    background: linear-gradient(90deg, rgba(186, 230, 253, 0.92), rgba(224, 242, 254, 0.98));
+    color: #075985;
+    border-color: rgba(14, 165, 233, 0.44);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 3px 10px rgba(14, 165, 233, 0.14);
 }
 
 :global([data-mantine-color-scheme='light']) .navLinkActive:hover {
-    background: var(--mantine-color-blue-1);
-    color: var(--mantine-color-blue-8);
+    background: linear-gradient(90deg, rgba(125, 211, 252, 0.35), rgba(224, 242, 254, 0.98));
+    color: #0c4a6e;
 }
 
 :global([data-mantine-color-scheme='light']) .navSectionLabel {
-    color: var(--mantine-color-gray-6);
+    color: rgba(3, 105, 161, 0.76);
 }
 
 :global([data-mantine-color-scheme='light']) .navSection {
-    border-top-color: var(--mantine-color-gray-3);
+    border-top-color: rgba(56, 189, 248, 0.24);
 }
 
 :global([data-mantine-color-scheme='light']) .navLinkDanger {
@@ -240,12 +324,80 @@
 }
 
 :global([data-mantine-color-scheme='light']) .header {
-    background: var(--mantine-color-white);
-    border-bottom-color: var(--mantine-color-gray-3);
+    background:
+        radial-gradient(85% 150% at 8% -50%, rgba(56, 189, 248, 0.26), rgba(56, 189, 248, 0)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(240, 249, 255, 0.95));
+    border-bottom-color: rgba(56, 189, 248, 0.26);
+    box-shadow: 0 8px 18px rgba(14, 165, 233, 0.11);
+}
+
+:global([data-mantine-color-scheme='light']) .headerTitle {
+    color: #075985;
+    font-weight: 800;
 }
 
 :global([data-mantine-color-scheme='light']) .content {
-    background: var(--mantine-color-gray-1);
+    background:
+        radial-gradient(120% 80% at 12% -20%, rgba(186, 230, 253, 0.36), rgba(186, 230, 253, 0)),
+        linear-gradient(180deg, rgba(240, 249, 255, 0.96), rgba(236, 253, 255, 0.92));
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Paper-root) {
+    border-color: rgba(56, 189, 248, 0.24);
+    box-shadow: 0 8px 20px rgba(2, 132, 199, 0.08);
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Button-root) {
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-ActionIcon-root) {
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(240, 249, 255, 0.9));
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Badge-root) {
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(224, 242, 254, 0.9));
+    color: #0c4a6e;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Table-th) {
+    background: rgba(224, 242, 254, 0.68);
+    color: #075985;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Table-tr:hover td) {
+    background: rgba(224, 242, 254, 0.36);
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Input-input),
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Select-input),
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-NumberInput-input) {
+    border-color: rgba(56, 189, 248, 0.3);
+    background: rgba(255, 255, 255, 0.92);
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Input-input:focus),
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Select-input:focus),
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-NumberInput-input:focus) {
+    border-color: rgba(14, 165, 233, 0.62);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+
+:global([data-mantine-color-scheme='light']) .themeToggleWrap {
+    border-color: rgba(56, 189, 248, 0.34);
+    background: rgba(224, 242, 254, 0.8);
+}
+
+:global([data-mantine-color-scheme='light']) .userTrigger {
+    border-color: rgba(56, 189, 248, 0.3);
+    background: rgba(255, 255, 255, 0.76);
+}
+
+:global([data-mantine-color-scheme='light']) .userAvatar {
+    box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.44);
 }
 
 /* ── Tablet: reduce padding, allow horizontal scroll on tables ─────── */

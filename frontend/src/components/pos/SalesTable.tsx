@@ -181,9 +181,9 @@ export function SalesTable() {
     if (cart.length === 0) {
         return (
             <Flex direction="column" align="center" justify="center" h="100%" className={styles.emptyState}>
-                <ScanBarcode size={80} strokeWidth={1} color="var(--mantine-color-dark-3)" />
-                <Text size="xl" fw={700} c="dark.3" mt="lg">ESCANEE UN PRODUCTO</Text>
-                <Text size="sm" c="dark.4" mt="xs">Use el escáner o presione F2 para buscar manualmente</Text>
+                <ScanBarcode size={62} strokeWidth={1.4} className={styles.emptyStateIcon} />
+                <Text className={styles.emptyStateTitle} mt="md">ESCANEE UN PRODUCTO</Text>
+                <Text className={styles.emptyStateSubtitle} mt={6}>Use el escáner o presione F2 para buscar manualmente</Text>
             </Flex>
         );
     }
