@@ -96,7 +96,7 @@ export function RegisterPage() {
             await useAuthStore.getState().refresh();
             navigate('/onboarding', { replace: true });
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Error al registrar. Intente nuevamente.';
+            const msg = e instanceof Error ? e.message : 'Error al registrar. Intentá nuevamente.';
             setError(msg);
         } finally {
             setLoading(false);

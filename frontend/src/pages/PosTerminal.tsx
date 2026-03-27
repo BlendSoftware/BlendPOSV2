@@ -18,6 +18,7 @@ import { SaleHistoryModal } from '../components/pos/SaleHistoryModal';
 import { PostSaleModal } from '../components/pos/PostSaleModal';
 import { AbrirCajaModal } from '../components/pos/AbrirCajaModal';
 import { WeightInputModal } from '../components/pos/WeightInputModal';
+import { QuickProducts } from '../components/pos/QuickProducts';
 
 import { useCartStore } from '../store/useCartStore';
 import type { UnidadMedida } from '../store/useCartStore';
@@ -251,7 +252,10 @@ export function PosTerminal() {
     const handleScannerKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
             // Dejar que el listener global en window maneje los hotkeys F, Escape y +/-
-            if (e.key.startsWith('F') || e.key === 'Escape') return;
+            if (e.key.startsWith('F') || e.key === 'Escape') {
+                e.preventDefault();
+                return;
+            }
 
             // Flechas: navegar tabla sin mover el cursor del input
             if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {

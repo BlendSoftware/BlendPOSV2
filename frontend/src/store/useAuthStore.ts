@@ -10,8 +10,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { IUser, Rol } from '../types';
-import { loginApi, refreshApi } from '../services/api/auth';
-import { apiClient, scheduleProactiveRefresh, cancelProactiveRefresh } from '../api/client';
+import { loginApi } from '../services/api/auth';
+import { apiClient, scheduleProactiveRefresh, cancelProactiveRefresh, refreshAccessToken } from '../api/client';
 import { tokenStore } from './tokenStore';
 
 // ── Usuarios demo — SOLO desarrollo (P1-004) ──────────────────────────────────
@@ -60,6 +60,7 @@ interface AuthState {
     tenantId: string | null;
     /** SEC-03: true when the backend requires a password change on first login */
     mustChangePassword: boolean;
+    _hasHydrated: boolean;
 
     login: (usernameOrEmail: string, password: string) => Promise<boolean>;
     logout: () => Promise<void>;
@@ -78,6 +79,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             tenantId: null,
             mustChangePassword: false,
+            _hasHydrated: false,
 
             login: async (usernameOrEmail, password) => {
                 const backendAvailable = !!(import.meta.env.VITE_API_BASE as string | undefined);
@@ -103,7 +105,12 @@ export const useAuthStore = create<AuthState>()(
                         const tenantId = extractTenantIdFromToken(resp.access_token);
                         set({ user, isAuthenticated: true, tenantId, mustChangePassword: resp.must_change_password ?? false });
                         return true;
-                    } catch {
+                    } catch (err) {
+                        // Re-throw network/server errors so the UI can show appropriate messages.
+                        // Only swallow 401-type errors (bad credentials) by returning false.
+                        if (err instanceof Error && (err.name === 'OfflineError' || /^5\d{2}\s/.test(err.message) || /fetch|network/i.test(err.message))) {
+                            throw err;
+                        }
                         return false;
                     }
                 }
@@ -143,17 +150,28 @@ export const useAuthStore = create<AuthState>()(
                 const refreshToken = tokenStore.getRefreshToken();
                 if (!refreshToken) return false;
                 try {
-                    const resp = await refreshApi(refreshToken);
-                    const u = resp.user;
-                    const user: IUser = {
-                        id: u.id, nombre: u.nombre, email: '',
-                        rol: mapRol(u.rol), activo: true, creadoEn: new Date().toISOString(),
-                        sucursalId: u.sucursal_id ?? undefined,
-                    };
-                    tokenStore.setTokens(resp.access_token, resp.refresh_token);
-                    scheduleProactiveRefresh(resp.access_token);
-                    const tenantId = extractTenantIdFromToken(resp.access_token);
-                    set({ user, isAuthenticated: true, tenantId });
+                    // Uses the shared refreshAccessToken which:
+                    // 1) Deduplicates concurrent calls via _refreshPromiseTyped
+                    // 2) Uses raw fetch() to bypass the 401 interceptor
+                    // 3) Stores new tokens + schedules proactive refresh
+                    const result = await refreshAccessToken();
+                    const tenantId = extractTenantIdFromToken(result.access_token);
+                    if (result.user) {
+                        const u = result.user;
+                        const user: IUser = {
+                            id: u.id,
+                            nombre: u.nombre,
+                            email: '',
+                            rol: mapRol(u.rol),
+                            activo: true,
+                            creadoEn: new Date().toISOString(),
+                            sucursalId: u.sucursal_id ?? undefined,
+                        };
+                        set({ user, isAuthenticated: true, tenantId });
+                    } else {
+                        // No user in response — keep existing user, just update tenantId
+                        set({ isAuthenticated: true, tenantId });
+                    }
                     return true;
                 } catch {
                     cancelProactiveRefresh();
@@ -191,12 +209,28 @@ export const useAuthStore = create<AuthState>()(
         }),
         {
             name: 'blendpos-auth',
-            // Only persist non-sensitive state — tokens stay in memory (P1-003)
             partialize: (state) => ({
                 user: state.user,
                 isAuthenticated: state.isAuthenticated,
                 tenantId: state.tenantId,
             }),
+            onRehydrateStorage: () => (_state, error) => {
+                if (error) {
+                    console.warn('[useAuthStore] Hydration error, clearing corrupt state:', error);
+                }
+                queueMicrotask(() => useAuthStore.setState({ _hasHydrated: true }));
+            },
         }
     )
 );
+
+// ── Safety net: if onRehydrateStorage never fires (edge case with some
+// Zustand versions or SSR), force _hasHydrated after a short delay. ──────────
+if (typeof window !== 'undefined') {
+    setTimeout(() => {
+        if (!useAuthStore.getState()._hasHydrated) {
+            console.warn('[useAuthStore] Hydration timeout — forcing _hasHydrated = true');
+            useAuthStore.setState({ _hasHydrated: true });
+        }
+    }, 500);
+}

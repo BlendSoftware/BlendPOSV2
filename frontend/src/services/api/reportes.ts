@@ -5,6 +5,8 @@
 
 import { apiClient } from '../../api/client';
 
+type ReportQueryParams = Record<string, string | number | boolean | undefined | null>;
+
 // ── Response Types ────────────────────────────────────────────────────────────
 
 export interface ResumenResponse {
@@ -59,7 +61,7 @@ export interface TurnoResponse {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Build query params, omitting undefined/null values. */
-function buildParams(base: Record<string, unknown>, sucursalId?: string): Record<string, unknown> {
+function buildParams(base: ReportQueryParams, sucursalId?: string): ReportQueryParams {
     if (sucursalId) {
         return { ...base, sucursal_id: sucursalId };
     }

@@ -294,7 +294,7 @@ func (r *reportesRepo) GetReporteTurnos(ctx context.Context, tenantID uuid.UUID,
 	var rows []row
 
 	q := r.db.WithContext(ctx).
-		Table("sesiones_caja sc").
+		Table("sesion_cajas sc").
 		Select(`sc.id AS sesion_id,
 			u.nombre AS cajero_nombre,
 			sc.opened_at AS fecha_apertura,

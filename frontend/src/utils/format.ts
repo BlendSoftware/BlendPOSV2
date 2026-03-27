@@ -9,3 +9,5 @@ export function formatARS(value: number): string {
         minimumFractionDigits: 2,
     }).format(value);
 }
+
+export const formatCurrency = formatARS;

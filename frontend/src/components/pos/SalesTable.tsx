@@ -6,14 +6,7 @@ import type { CartItem } from '../../store/useCartStore';
 import { usePromocionesStore } from '../../store/usePromocionesStore';
 import type { PromocionResponse } from '../../services/api/promociones';
 import styles from './SalesTable.module.css';
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
+import { formatCurrency } from '../../utils/format';
 
 // ── Display row types ─────────────────────────────────────────────────────────
 

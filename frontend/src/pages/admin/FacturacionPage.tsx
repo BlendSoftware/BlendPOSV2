@@ -372,7 +372,7 @@ export function FacturacionPage() {
         } catch {
             notifications.show({
                 title: 'Error al anular',
-                message: 'No se pudo anular la venta. Verifique la conexión con el servidor.',
+                message: 'No se pudo anular la venta. Verificá la conexión con el servidor.',
                 color: 'orange',
                 icon: <AlertTriangle size={14} />,
             });

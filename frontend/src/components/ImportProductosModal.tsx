@@ -11,6 +11,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import { crearProductoBulk, type CrearProductoRequest, type BulkImportResponse } from '../services/api/products';
+import { formatCurrency } from '../utils/format';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ function parseCsv(text: string): { rows: ParsedRow[]; headerError: string | null
 
         const precio_venta = parseFloat(precio_venta_raw);
         if (isNaN(precio_venta) || precio_venta <= 0) {
-            errors.push('precio_venta debe ser un numero mayor a 0');
+            errors.push('precio_venta debe ser un número mayor a 0');
         }
 
         const stock_actual = parseInt(stock_actual_raw, 10);
@@ -84,7 +85,7 @@ function parseCsv(text: string): { rows: ParsedRow[]; headerError: string | null
             errors.push('stock_actual debe ser un entero >= 0');
         }
 
-        if (!categoria) errors.push('categoria es requerida');
+        if (!categoria) errors.push('categoría es requerida');
 
         rows.push({
             rowNumber: i + 1,
@@ -178,14 +179,14 @@ export function ImportProductosModal({ opened, onClose, onImported }: ImportProd
 
             if (failed === 0) {
                 notifications.show({
-                    title: 'Importacion completada',
+                    title: 'Importación completada',
                     message: `${created} producto${created !== 1 ? 's' : ''} creado${created !== 1 ? 's' : ''} correctamente.`,
                     color: 'teal',
                     icon: <CheckCircle size={14} />,
                 });
             } else {
                 notifications.show({
-                    title: 'Importacion parcial',
+                    title: 'Importación parcial',
                     message: `${created} creados, ${failed} fallaron. Revisa los detalles.`,
                     color: 'orange',
                     icon: <AlertCircle size={14} />,
@@ -194,7 +195,7 @@ export function ImportProductosModal({ opened, onClose, onImported }: ImportProd
 
             onImported();
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Error durante la importacion';
+            const msg = e instanceof Error ? e.message : 'Error durante la importación';
             notifications.show({ title: 'Error', message: msg, color: 'red' });
         } finally {
             setImporting(false);
@@ -230,8 +231,8 @@ export function ImportProductosModal({ opened, onClose, onImported }: ImportProd
                 {active === 0 && (
                     <Stack gap="md">
                         <Text size="sm" c="dimmed">
-                            Subi un archivo CSV con las columnas: <strong>nombre</strong>, <strong>codigo_barras</strong>,{' '}
-                            <strong>precio_venta</strong>, <strong>categoria</strong>, <strong>stock_actual</strong>.
+                            Subí un archivo CSV con las columnas: <strong>nombre</strong>, <strong>codigo_barras</strong>,{' '}
+                            <strong>precio_venta</strong>, <strong>categoría</strong>, <strong>stock_actual</strong>.
                         </Text>
 
                         <Anchor component="button" size="sm" onClick={handleDownloadTemplate}>
@@ -243,7 +244,7 @@ export function ImportProductosModal({ opened, onClose, onImported }: ImportProd
 
                         <FileInput
                             label="Archivo CSV"
-                            placeholder="Selecciona un archivo .csv"
+                            placeholder="Seleccioná un archivo .csv"
                             accept=".csv,text/csv"
                             value={file}
                             onChange={handleFileChange}
@@ -285,9 +286,9 @@ export function ImportProductosModal({ opened, onClose, onImported }: ImportProd
                                     <Table.Tr>
                                         <Table.Th style={{ width: 50 }}>Fila</Table.Th>
                                         <Table.Th>Nombre</Table.Th>
-                                        <Table.Th>Codigo</Table.Th>
+                                        <Table.Th>Código</Table.Th>
                                         <Table.Th>Precio</Table.Th>
-                                        <Table.Th>Categoria</Table.Th>
+                                        <Table.Th>Categoría</Table.Th>
                                         <Table.Th>Stock</Table.Th>
                                         <Table.Th>Estado</Table.Th>
                                     </Table.Tr>
@@ -299,9 +300,9 @@ export function ImportProductosModal({ opened, onClose, onImported }: ImportProd
                                             style={row.errors.length > 0 ? { background: 'var(--mantine-color-red-light)' } : undefined}
                                         >
                                             <Table.Td>{row.rowNumber}</Table.Td>
-                                            <Table.Td>{row.nombre || <Text c="red" size="xs">vacio</Text>}</Table.Td>
+                                            <Table.Td>{row.nombre || <Text c="red" size="xs">vacío</Text>}</Table.Td>
                                             <Table.Td><Text size="xs" ff="monospace">{row.codigo_barras}</Text></Table.Td>
-                                            <Table.Td>${row.precio_venta.toFixed(2)}</Table.Td>
+                                            <Table.Td>{formatCurrency(row.precio_venta)}</Table.Td>
                                             <Table.Td>{row.categoria}</Table.Td>
                                             <Table.Td>{row.stock_actual}</Table.Td>
                                             <Table.Td>

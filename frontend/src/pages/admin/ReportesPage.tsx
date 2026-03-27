@@ -21,6 +21,8 @@ import {
     Title,
     Tooltip,
     ActionIcon,
+    Button,
+    Menu,
 } from '@mantine/core';
 import { DatePickerInput, type DatesRangeValue } from '@mantine/dates';
 import {
@@ -34,6 +36,7 @@ import {
     ShoppingCart,
     TrendingUp,
     User,
+    Download,
 } from 'lucide-react';
 import { formatARS } from '../../utils/format';
 import {
@@ -288,6 +291,27 @@ export function ReportesPage() {
 
     const totalMediosPago = mediosPago.reduce((s, m) => s + m.total, 0);
 
+    const exportCSV = useCallback((type: 'ventas' | 'productos' | 'medios' | 'cajeros') => {
+        let csv = '';
+        const sep = ';';
+        if (type === 'ventas') {
+            csv = `Periodo${sep}Ventas\n` + ventasPeriodo.map((v) => `${v.periodo}${sep}${v.total}`).join('\n');
+        } else if (type === 'productos') {
+            csv = `Producto${sep}Cantidad${sep}Total\n` + topProductos.map((p) => `${p.nombre}${sep}${p.cantidad_vendida}${sep}${p.total_recaudado}`).join('\n');
+        } else if (type === 'medios') {
+            csv = `Método${sep}Cantidad${sep}Total${sep}Porcentaje\n` + mediosPago.map((m) => `${m.medio_pago}${sep}${m.cantidad}${sep}${m.total}${sep}${(m.total / (totalMediosPago || 1) * 100).toFixed(1)}%`).join('\n');
+        } else if (type === 'cajeros') {
+            csv = `Cajero${sep}Ventas${sep}Total${sep}Ticket Promedio\n` + cajeros.map((c) => `${c.nombre_cajero}${sep}${c.cantidad_ventas}${sep}${c.total_ventas}${sep}${c.ticket_promedio}`).join('\n');
+        }
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte_${type}_${toDateStr(new Date())}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [ventasPeriodo, topProductos, mediosPago, cajeros, totalMediosPago]);
+
     return (
         <Stack gap="xl">
             {/* ── Header + Date Picker ────────────────────────────────────────── */}
@@ -297,13 +321,13 @@ export function ReportesPage() {
                         Reportes
                     </Title>
                     <Text c="dimmed" size="sm">
-                        Analisis de ventas y rendimiento del negocio
+                        Análisis de ventas y rendimiento del negocio
                     </Text>
                 </div>
                 <Group gap="md" align="flex-end">
                     <DatePickerInput
                         type="range"
-                        label="Periodo"
+                        label="Período"
                         placeholder="Seleccionar rango"
                         value={dateRange}
                         onChange={setDateRange}
@@ -313,6 +337,19 @@ export function ReportesPage() {
                         size="sm"
                         w={280}
                     />
+                    <Menu shadow="md" width={200}>
+                        <Menu.Target>
+                            <Button variant="light" size="sm" leftSection={<Download size={16} />}>
+                                Exportar CSV
+                            </Button>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                            <Menu.Item onClick={() => exportCSV('ventas')}>Ventas por período</Menu.Item>
+                            <Menu.Item onClick={() => exportCSV('productos')}>Top productos</Menu.Item>
+                            <Menu.Item onClick={() => exportCSV('medios')}>Medios de pago</Menu.Item>
+                            <Menu.Item onClick={() => exportCSV('cajeros')}>Por cajero</Menu.Item>
+                        </Menu.Dropdown>
+                    </Menu>
                     <Tooltip label="Actualizar datos">
                         <ActionIcon
                             variant="subtle"

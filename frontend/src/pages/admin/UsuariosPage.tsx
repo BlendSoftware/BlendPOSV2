@@ -98,7 +98,7 @@ export function UsuariosPage() {
             },
             confirmPassword: (v, vals) => {
                 if (editTarget && !vals.password) return null; // No requerido si no cambia password
-                if (!editTarget && !v) return 'Confirme la contraseña';
+                if (!editTarget && !v) return 'Confirmá la contraseña';
                 if (vals.password && v !== vals.password) return 'Las contraseñas no coinciden';
                 return null;
             },

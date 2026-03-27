@@ -1,8 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MantineProvider } from '@mantine/core';
+import { DatesProvider } from '@mantine/dates';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
+import 'dayjs/locale/es';
 
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
@@ -34,10 +36,12 @@ createRoot(document.getElementById('root')!).render(
       la preferencia en localStorage automáticamente.
     */}
     <MantineProvider theme={posTheme} defaultColorScheme="dark">
-      <ModalsProvider>
-        <Notifications position="top-right" zIndex={1000} />
-        <App />
-      </ModalsProvider>
+      <DatesProvider settings={{ locale: 'es' }}>
+        <ModalsProvider>
+          <Notifications position="top-right" zIndex={1000} />
+          <App />
+        </ModalsProvider>
+      </DatesProvider>
     </MantineProvider>
   </StrictMode>
 );

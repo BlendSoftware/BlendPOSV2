@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Paper, Title, Text, TextInput, PasswordInput,
-    Button, Stack, Alert, Box, Anchor,
+    Button, Stack, Alert, Anchor, Checkbox, Group,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { AlertCircle, ShieldAlert, WifiOff, Building2, FileCheck } from 'lucide-react';
+import { AlertCircle, ShieldAlert, WifiOff, Building2, FileCheck, Chrome } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { changePasswordApi } from '../../services/api/auth';
 import classes from './LoginPage.module.css';
@@ -14,12 +14,12 @@ const FEATURES = [
     {
         icon: <WifiOff size={20} />,
         label: 'Funciona offline',
-        description: '48hs de autonomía sin internet',
+        description: 'Hasta 48hs sin conexión',
     },
     {
         icon: <Building2 size={20} />,
         label: 'Multi-sucursal',
-        description: 'Gestioná todos tus locales desde un lugar',
+        description: 'Controlá todos tus locales desde un solo lugar',
     },
     {
         icon: <FileCheck size={20} />,
@@ -34,21 +34,26 @@ export function LoginPage() {
     const { login, isAuthenticated, user, mustChangePassword, clearMustChangePassword } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [rememberMe, setRememberMe] = useState(true);
+
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/';
 
     // Route guard: redirect if already authenticated AND password change is not required
     useEffect(() => {
         if (isAuthenticated && !mustChangePassword) {
-            const isAdminRole = user?.rol === 'admin' || user?.rol === 'supervisor';
-            navigate(isAdminRole ? '/admin/dashboard' : '/', { replace: true });
+            if (from !== '/' && from !== '/login') {
+                navigate(from, { replace: true });
+            } else {
+                const isAdminRole = user?.rol === 'admin' || user?.rol === 'supervisor';
+                navigate(isAdminRole ? '/admin/dashboard' : '/', { replace: true });
+            }
         }
-    }, [isAuthenticated, user, mustChangePassword, navigate]);
-
-    const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/';
+    }, [isAuthenticated, user, mustChangePassword, navigate, from]);
 
     const form = useForm<{ email: string; password: string }>({
         initialValues: { email: '', password: '' },
         validate: {
-            email: (v) => (v.trim().length >= 2 ? null : 'Ingrese usuario o email'),
+            email: (v) => (v.trim().length >= 2 ? null : 'Ingresá usuario o email'),
             password: (v) => (v.length >= 4 ? null : 'Mínimo 4 caracteres'),
         },
     });
@@ -63,26 +68,40 @@ export function LoginPage() {
     });
 
     const handleSubmit = form.onSubmit(async ({ email, password }) => {
+        // Guard against duplicate submissions (React StrictMode double-mount,
+        // rapid double-clicks, etc.)
+        if (loading) return;
         setError('');
         setLoading(true);
-        const ok = await login(email, password);
-        setLoading(false);
-        if (ok) {
-            // If must_change_password is set, the useEffect won't redirect —
-            // we stay on this page and show the password change form.
-            const needsChange = useAuthStore.getState().mustChangePassword;
-            if (!needsChange) {
-                const updatedUser = useAuthStore.getState().user;
-                const isAdminRole = updatedUser?.rol === 'admin' || updatedUser?.rol === 'supervisor';
-                const isAdminRoute = from.startsWith('/admin');
-                if (isAdminRole && !isAdminRoute) {
-                    navigate('/admin/dashboard', { replace: true });
-                } else {
-                    navigate(from === '/login' ? '/' : from, { replace: true });
+        try {
+            const ok = await login(email, password);
+            if (ok) {
+                // If must_change_password is set, the useEffect won't redirect —
+                // we stay on this page and show the password change form.
+                const needsChange = useAuthStore.getState().mustChangePassword;
+                if (!needsChange) {
+                    const updatedUser = useAuthStore.getState().user;
+                    const isAdminRole = updatedUser?.rol === 'admin' || updatedUser?.rol === 'supervisor';
+                    const isAdminRoute = from.startsWith('/admin');
+                    if (isAdminRole && !isAdminRoute) {
+                        navigate('/admin/dashboard', { replace: true });
+                    } else {
+                        navigate(from === '/login' ? '/' : from, { replace: true });
+                    }
                 }
+            } else {
+                setError('Credenciales inválidas o usuario inactivo.');
             }
-        } else {
-            setError('Credenciales inválidas o usuario inactivo.');
+        } catch (err) {
+            if (err instanceof Error && (err.name === 'OfflineError' || /fetch|network/i.test(err.message))) {
+                setError('Error de conexión con el servidor. Verificá que el servidor esté corriendo.');
+            } else if (err instanceof Error && /^5\d{2}\s/.test(err.message)) {
+                setError('Error de conexión con el servidor. Verificá que el servidor esté corriendo.');
+            } else {
+                setError('Error inesperado. Intentá de nuevo.');
+            }
+        } finally {
+            setLoading(false);
         }
     });
 
@@ -97,7 +116,7 @@ export function LoginPage() {
             const isAdminRole = updatedUser?.rol === 'admin' || updatedUser?.rol === 'supervisor';
             navigate(isAdminRole ? '/admin/dashboard' : '/', { replace: true });
         } catch {
-            setError('Error al cambiar la contraseña. Intente nuevamente.');
+            setError('Error al cambiar la contraseña. Intentá nuevamente.');
         } finally {
             setLoading(false);
         }
@@ -110,9 +129,8 @@ export function LoginPage() {
                 <div className={classes.hero}>
                     <div className={classes.heroContent}>
                         <div className={classes.logo}>BlendPOS</div>
-                        <p className={classes.tagline}>
-                            Tu POS inteligente para el comercio argentino
-                        </p>
+                        <p className={classes.headline}>Gestioná tu negocio de forma simple y eficiente</p>
+                        <p className={classes.subheadline}>Un POS inteligente pensado para el comercio argentino</p>
                     </div>
                 </div>
 
@@ -128,7 +146,7 @@ export function LoginPage() {
                             <Title order={3} mb="lg">Cambiar contraseña</Title>
 
                             <Alert icon={<ShieldAlert size={16} />} color="orange" mb="md" variant="light">
-                                Por seguridad, debe cambiar su contraseña antes de continuar.
+                                Por seguridad, tenés que cambiar tu contraseña antes de continuar.
                             </Alert>
 
                             {error && (
@@ -169,9 +187,8 @@ export function LoginPage() {
             <div className={classes.hero}>
                 <div className={`${classes.heroContent} ${classes.fadeIn}`}>
                     <div className={classes.logo}>BlendPOS</div>
-                    <p className={classes.tagline}>
-                        Tu POS inteligente para el comercio argentino
-                    </p>
+                    <p className={classes.headline}>Gestioná tu negocio de forma simple y eficiente</p>
+                    <p className={classes.subheadline}>Un POS inteligente pensado para el comercio argentino</p>
 
                     <div className={classes.featureList}>
                         {FEATURES.map((f) => (
@@ -195,13 +212,13 @@ export function LoginPage() {
                     {/* Mobile branding */}
                     <div className={classes.mobileBranding}>
                         <div className={classes.mobileLogo}>BlendPOS</div>
-                        <span className={classes.mobileTagline}>Panel de Administración</span>
+                        <span className={classes.mobileTagline}>POS moderno para negocios reales</span>
                     </div>
 
-                    <Paper p="xl" radius="md" withBorder className={classes.formCard}>
+                    <Paper p="xl" radius="xl" withBorder className={classes.formCard}>
                         <Title order={3} mb="xs">Iniciar sesión</Title>
                         <Text size="sm" c="dimmed" mb="lg">
-                            Ingresá tus credenciales para acceder
+                            Ingresá tus credenciales para continuar
                         </Text>
 
                         {error && (
@@ -223,8 +240,38 @@ export function LoginPage() {
                                     placeholder="Tu contraseña"
                                     {...form.getInputProps('password')}
                                 />
+
+                                <Group justify="space-between" align="center" mt={2}>
+                                    <Checkbox
+                                        checked={rememberMe}
+                                        onChange={(event) => setRememberMe(event.currentTarget.checked)}
+                                        label="Recordarme"
+                                        size="sm"
+                                    />
+                                    <Anchor
+                                        href="#"
+                                        size="sm"
+                                        fw={600}
+                                        className={classes.forgotLink}
+                                        onClick={(event) => event.preventDefault()}
+                                    >
+                                        ¿Olvidaste tu contraseña?
+                                    </Anchor>
+                                </Group>
+
                                 <Button type="submit" fullWidth loading={loading} mt="sm" size="md">
                                     Ingresar
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    fullWidth
+                                    variant="default"
+                                    size="md"
+                                    leftSection={<Chrome size={16} />}
+                                    className={classes.googleButton}
+                                >
+                                    Continuar con Google
                                 </Button>
                             </Stack>
                         </form>

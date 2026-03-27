@@ -5,14 +5,7 @@ import { useCartStore } from '../../store/useCartStore';
 import { usePOSUIStore } from '../../store/usePOSUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import styles from './DiscountModal.module.css';
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
+import { formatCurrency } from '../../utils/format';
 
 const QUICK_DISCOUNTS = [5, 10, 15, 20, 25, 30];
 

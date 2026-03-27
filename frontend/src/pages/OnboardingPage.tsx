@@ -51,29 +51,29 @@ const STEPS: OnboardingStep[] = [
         description: 'Tu cuenta fue creada con el plan Starter gratuito. En pocos pasos vas a estar listo para vender.',
         bullets: [
             '2 terminales de caja incluidas',
-            'Facturacion AFIP habilitada',
-            'Catalogo ilimitado de productos',
-            'Modo offline automatico',
+            'Facturación AFIP habilitada',
+            'Catálogo ilimitado de productos',
+            'Modo offline automático',
         ],
     },
     {
         kind: 'fiscal',
-        label: 'Facturacion',
+        label: 'Facturación',
         icon: <Receipt size={20} />,
-        title: 'Configura la facturacion AFIP',
-        description: 'Para emitir comprobantes electronicos, carga los datos fiscales de tu negocio. Si no facturas aun, podes saltear este paso.',
+        title: 'Configurá la facturación AFIP',
+        description: 'Para emitir comprobantes electrónicos, cargá los datos fiscales de tu negocio. Si no facturás aún, podés saltear este paso.',
     },
     {
         kind: 'catalog',
         label: 'Productos',
         icon: <ShoppingCart size={20} />,
-        title: 'Tus productos de ejemplo estan listos',
-        description: 'Cargamos categorias y productos de ejemplo segun tu tipo de negocio. Podes editarlos, agregar mas o importar desde CSV.',
+        title: 'Tus productos de ejemplo están listos',
+        description: 'Cargamos categorías y productos de ejemplo según tu tipo de negocio. Podés editarlos, agregar más o importar desde CSV.',
         bullets: [
             'Ir a Admin -> Productos para ver los productos cargados',
             'Editalos con tus precios y stock reales',
-            'Importacion CSV: Admin -> Productos -> Importar CSV',
-            'Las categorias ayudan a organizar el catalogo en el POS',
+            'Importación CSV: Admin -> Productos -> Importar CSV',
+            'Las categorías ayudan a organizar el catálogo en el POS',
         ],
     },
     {
@@ -81,7 +81,7 @@ const STEPS: OnboardingStep[] = [
         label: 'Usuarios',
         icon: <Users size={20} />,
         title: 'Invita a tu equipo',
-        description: 'Podes crear cajeros y supervisores para que usen el POS sin acceder al panel de administracion.',
+        description: 'Podés crear cajeros y supervisores para que usen el POS sin acceder al panel de administración.',
         bullets: [
             'Ir a Admin -> Usuarios -> Nuevo usuario',
             'Roles: Cajero (solo POS), Supervisor (POS + reportes), Administrador (todo)',
@@ -115,8 +115,8 @@ function FiscalConfigForm({ onSaved, onSkip }: { onSaved: () => void; onSkip: ()
             cuit_emisor: (v) =>
                 /^\d{2}-?\d{8}-?\d$/.test(v.replace(/-/g, '').length === 11 ? v : '')
                     ? null
-                    : 'CUIT invalido (11 digitos)',
-            razon_social: (v) => (v.trim().length >= 2 ? null : 'Minimo 2 caracteres'),
+                    : 'CUIT inválido (11 dígitos)',
+            razon_social: (v) => (v.trim().length >= 2 ? null : 'Mínimo 2 caracteres'),
             punto_de_venta: (v) => (v >= 1 && v <= 99999 ? null : 'Punto de venta entre 1 y 99999'),
         },
     });
@@ -136,7 +136,7 @@ function FiscalConfigForm({ onSaved, onSkip }: { onSaved: () => void; onSkip: ()
             // Auto-advance after a brief moment
             setTimeout(onSaved, 800);
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Error al guardar. Intente nuevamente.';
+            const msg = e instanceof Error ? e.message : 'Error al guardar. Intentá nuevamente.';
             setError(msg);
         } finally {
             setLoading(false);
@@ -146,7 +146,7 @@ function FiscalConfigForm({ onSaved, onSkip }: { onSaved: () => void; onSkip: ()
     if (saved) {
         return (
             <Alert color="teal" variant="light" icon={<CheckCircle size={16} />}>
-                Configuracion fiscal guardada correctamente.
+                Configuración fiscal guardada correctamente.
             </Alert>
         );
     }
@@ -167,13 +167,13 @@ function FiscalConfigForm({ onSaved, onSkip }: { onSaved: () => void; onSkip: ()
                     {...form.getInputProps('cuit_emisor')}
                 />
                 <TextInput
-                    label="Razon social"
+                    label="Razón social"
                     placeholder="Mi Kiosco SRL"
                     required
                     {...form.getInputProps('razon_social')}
                 />
                 <Select
-                    label="Condicion fiscal"
+                    label="Condición fiscal"
                     data={[
                         { value: 'Monotributo', label: 'Monotributo' },
                         { value: 'Responsable Inscripto', label: 'Responsable Inscripto' },
@@ -194,7 +194,7 @@ function FiscalConfigForm({ onSaved, onSkip }: { onSaved: () => void; onSkip: ()
                         Saltear por ahora
                     </Button>
                     <Button type="submit" loading={loading}>
-                        Guardar configuracion
+                        Guardar configuración
                     </Button>
                 </Group>
             </Stack>
@@ -317,7 +317,7 @@ export function OnboardingPage() {
                     <Title order={1} c="blue.4" fw={800} style={{ letterSpacing: '-1px' }}>
                         BlendPOS
                     </Title>
-                    <Text c="dimmed" size="sm">Configuracion inicial</Text>
+                    <Text c="dimmed" size="sm">Configuración inicial</Text>
                 </Stack>
 
                 <Paper p="xl" radius="md" withBorder>
@@ -348,7 +348,7 @@ export function OnboardingPage() {
                 </Paper>
 
                 <Text size="xs" c="dimmed" ta="center" mt="md">
-                    Podes saltear la configuracion y volver a esta guia desde el panel de administracion.
+                    Podés saltear la configuración y volver a esta guía desde el panel de administración.
                 </Text>
             </Box>
         </Center>

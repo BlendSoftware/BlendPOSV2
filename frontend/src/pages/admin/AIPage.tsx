@@ -351,9 +351,9 @@ export function AIPage() {
                                     </Text>
                                     <Stack gap="xs" align="center">
                                         {[
-                                            'Como fueron las ventas este mes?',
-                                            'Cuales son mis productos estrella?',
-                                            'Que horarios son los mas fuertes?',
+                                            'Cómo fueron las ventas este mes?',
+                                            'Cuáles son mis productos estrella?',
+                                            'Qué horarios son los más fuertes?',
                                             'Tengo productos con stock bajo?',
                                         ].map((suggestion) => (
                                             <Button
@@ -416,7 +416,7 @@ export function AIPage() {
                             <TextInput
                                 ref={inputRef}
                                 flex={1}
-                                placeholder={notConfigured ? 'IA no configurada...' : 'Escribi tu pregunta...'}
+                                placeholder={notConfigured ? 'IA no configurada...' : 'Escribí tu pregunta...'}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.currentTarget.value)}
                                 onKeyDown={handleKeyDown}
@@ -576,7 +576,7 @@ export function AIPage() {
                                         <Group justify="space-between" mb="md">
                                             <div>
                                                 <Title order={5} c="orange.4">Horas pico</Title>
-                                                <Text size="xs" c="dimmed">Horarios con mas ventas</Text>
+                                                <Text size="xs" c="dimmed">Horarios con más ventas</Text>
                                             </div>
                                             <ThemeIcon variant="light" color="orange" size="md" radius="sm">
                                                 <Clock size={16} />

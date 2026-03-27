@@ -431,7 +431,7 @@ export function SuperadminPage() {
 
                         {detailModal.plan && (
                             <>
-                                <Text size="sm" fw={600} mt="sm">Limites del Plan</Text>
+                                <Text size="sm" fw={600} mt="sm">Límites del Plan</Text>
                                 <SimpleGrid cols={2}>
                                     <div>
                                         <Text size="xs" c="dimmed">Max Terminales</Text>

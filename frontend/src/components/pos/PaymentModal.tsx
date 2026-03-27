@@ -12,14 +12,7 @@ import { useSaleStore } from '../../store/useSaleStore';
 import { useConfiguracionFiscal } from '../../hooks/useConfiguracionFiscal';
 import { listarClientes, type ClienteResponse } from '../../services/api/clientes';
 import styles from './PaymentModal.module.css';
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
+import { formatCurrency } from '../../utils/format';
 
 type TipoComprobante = 'auto' | 'ticket_interno' | 'factura_a' | 'factura_b' | 'factura_c';
 type TipoDocumentoReceptor = 'dni' | 'cuit';
@@ -80,7 +73,7 @@ export function PaymentModal() {
     // Determine allowed invoice types based on fiscal condition
     const opcionesComprobante = useMemo(() => {
         const baseOptions: Array<{ value: TipoComprobante; label: string }> = [
-            { value: 'auto', label: 'Automatico' },
+            { value: 'auto', label: 'Automático' },
             { value: 'ticket_interno', label: 'Ticket' },
             { value: 'factura_c', label: 'Factura C' },
         ];
@@ -367,7 +360,7 @@ export function PaymentModal() {
                         <Alert icon={<AlertCircle size={14} />} color="blue" variant="light" p="xs">
                             <Text size="xs">
                                 {tipoComprobante === 'auto' 
-                                    ? 'Se determinara segun tu condicion fiscal. Monotributo/Exento -> Factura C. Responsable Inscripto -> Factura B o A.'
+                                    ? 'Se determinará según tu condición fiscal. Monotributo/Exento -> Factura C. Responsable Inscripto -> Factura B o A.'
                                     : tipoComprobante === 'ticket_interno'
                                     ? 'Comprobante no fiscal. Solo para uso interno.'
                                     : tipoComprobante === 'factura_c'
@@ -401,15 +394,15 @@ export function PaymentModal() {
                         <TextInput
                             label={resolvedDocType === 'cuit' ? 'CUIT del comprador' : 'DNI del comprador'}
                             description={resolvedDocType === 'cuit'
-                                ? '11 digitos sin guiones'
-                                : '7 u 8 digitos sin puntos'}
+                                ? '11 dígitos sin guiones'
+                                : '7 u 8 dígitos sin puntos'}
                             placeholder={resolvedDocType === 'cuit' ? '20123456789' : '30123456'}
                             value={documentoReceptor}
                             onChange={(e) => setDocumentoReceptor(e.currentTarget.value.replace(/\D/g, '').slice(0, resolvedDocType === 'cuit' ? 11 : 8))}
                             error={documentoReceptor && !isDocumentoValid
                                 ? resolvedDocType === 'cuit'
-                                    ? 'El CUIT debe tener 11 digitos'
-                                    : 'El DNI debe tener 7 u 8 digitos'
+                                    ? 'El CUIT debe tener 11 dígitos'
+                                    : 'El DNI debe tener 7 u 8 dígitos'
                                 : undefined}
                             size="sm"
                             required
@@ -421,7 +414,7 @@ export function PaymentModal() {
                             placeholder={resolvedDocType === 'cuit' ? 'EMPRESA SA' : 'Juan Pérez'}
                             value={nombreReceptor}
                             onChange={(e) => setNombreReceptor(e.currentTarget.value)}
-                            error={nombreReceptor && !isNombreValid ? 'Ingresa un nombre valido (minimo 3 caracteres)' : undefined}
+                            error={nombreReceptor && !isNombreValid ? 'Ingresá un nombre válido (mínimo 3 caracteres)' : undefined}
                             size="sm"
                             required
                         />
@@ -432,7 +425,7 @@ export function PaymentModal() {
                             placeholder="Av. Siempre Viva 742, Springfield"
                             value={domicilioReceptor}
                             onChange={(e) => setDomicilioReceptor(e.currentTarget.value)}
-                            error={domicilioReceptor && !isDomicilioValid ? 'Ingresa un domicilio valido (minimo 5 caracteres)' : undefined}
+                            error={domicilioReceptor && !isDomicilioValid ? 'Ingresá un domicilio válido (mínimo 5 caracteres)' : undefined}
                             size="sm"
                             required
                         />
@@ -442,7 +435,7 @@ export function PaymentModal() {
                 {/* Método de pago */}
                 <Select
                     label="Método de pago"
-                    placeholder="Seleccione un método"
+                    placeholder="Seleccioná un método"
                     value={metodoPago}
                     onChange={(val) => setMetodoPago((val as MetodoPago) ?? 'efectivo')}
                     data={[
@@ -481,6 +474,17 @@ export function PaymentModal() {
                             }}
                         />
 
+                        <Group gap={6}>
+                            {[1000, 2000, 5000, 10000, 20000].map((m) => (
+                                <Button key={m} variant="light" size="compact-xs" onClick={() => setMontoRecibido(m)}>
+                                    {formatCurrency(m)}
+                                </Button>
+                            ))}
+                            <Button variant="light" size="compact-xs" color="teal" onClick={() => setMontoRecibido(Math.ceil(finalTotal / 1000) * 1000)}>
+                                Exacto
+                            </Button>
+                        </Group>
+
                         {vuelto !== null && vuelto >= 0 && (
                             <Box className={styles.vueltoBox}>
                                 <Group justify="space-between">
@@ -515,7 +519,7 @@ export function PaymentModal() {
                             nothingFoundMessage={fiadoLoading ? 'Buscando...' : 'Sin resultados'}
                             data={fiadoClientes.map((c) => ({
                                 value: c.id,
-                                label: `${c.nombre}${c.saldo_deudor > 0 ? ` (Debe: $${c.saldo_deudor.toFixed(2)})` : ''}`,
+                                label: `${c.nombre}${c.saldo_deudor > 0 ? ` (Debe: ${formatCurrency(c.saldo_deudor)})` : ''}`,
                             }))}
                             value={fiadoClienteId}
                             onChange={setFiadoClienteId}
@@ -537,17 +541,17 @@ export function PaymentModal() {
                                     <Text size="sm" fw={600}>{selectedFiadoCliente.nombre}</Text>
                                     {selectedFiadoCliente.saldo_deudor > 0 && (
                                         <Badge color="red" variant="light" size="sm">
-                                            Debe: ${selectedFiadoCliente.saldo_deudor.toFixed(2)}
+                                            Debe: {formatCurrency(selectedFiadoCliente.saldo_deudor)}
                                         </Badge>
                                     )}
                                 </Group>
                                 <Group gap="xl">
                                     <div>
-                                        <Text size="xs" c="dimmed">Limite de credito</Text>
+                                        <Text size="xs" c="dimmed">Límite de crédito</Text>
                                         <Text size="sm" fw={500} ff="monospace">
                                             {selectedFiadoCliente.limite_credito > 0
                                                 ? formatCurrency(selectedFiadoCliente.limite_credito)
-                                                : 'Sin limite'}
+                                                : 'Sin límite'}
                                         </Text>
                                     </div>
                                     <div>

@@ -4,18 +4,11 @@ import { History, Clock, ShoppingBag, CreditCard, ChevronDown, ChevronUp } from 
 import { useState } from 'react';
 import { useSaleStore, type SaleRecord } from '../../store/useSaleStore';
 import styles from './SaleHistoryModal.module.css';
+import { formatCurrency } from '../../utils/format';
 
 interface Props {
     opened: boolean;
     onClose: () => void;
-}
-
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-    }).format(value);
 }
 
 function formatTime(date: Date): string {

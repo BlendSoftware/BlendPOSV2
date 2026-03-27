@@ -32,11 +32,11 @@ export function ForcePasswordChangeModal() {
         },
         validate: {
             currentPassword: (v) =>
-                v.trim().length > 0 ? null : 'Ingresa tu contrasena actual',
+                v.trim().length > 0 ? null : 'Ingresá tu contraseña actual',
             newPassword: (v) =>
-                v.length >= 8 ? null : 'Minimo 8 caracteres',
+                v.length >= 8 ? null : 'Mínimo 8 caracteres',
             confirmPassword: (v, values) =>
-                v === values.newPassword ? null : 'Las contrasenas no coinciden',
+                v === values.newPassword ? null : 'Las contraseñas no coinciden',
         },
     });
 
@@ -47,7 +47,7 @@ export function ForcePasswordChangeModal() {
             await changePasswordApi(values.newPassword);
             clearMustChangePassword();
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Error al cambiar la contrasena. Intenta nuevamente.';
+            const msg = e instanceof Error ? e.message : 'Error al cambiar la contraseña. Intentá nuevamente.';
             setError(msg);
         } finally {
             setLoading(false);
@@ -72,9 +72,9 @@ export function ForcePasswordChangeModal() {
                 <Stack gap="md">
                     <Stack gap="xs" align="center">
                         <Lock size={32} />
-                        <Title order={3} ta="center">Cambia tu contrasena</Title>
+                        <Title order={3} ta="center">Cambia tu contraseña</Title>
                         <Text size="sm" c="dimmed" ta="center">
-                            Por seguridad, debes cambiar tu contrasena antes de continuar.
+                            Por seguridad, tenés que cambiar tu contraseña antes de continuar.
                         </Text>
                     </Stack>
 
@@ -86,25 +86,25 @@ export function ForcePasswordChangeModal() {
 
                     <PasswordInput
                         label="Contrasena actual"
-                        placeholder="Ingresa tu contrasena actual"
+                        placeholder="Ingresá tu contraseña actual"
                         required
                         {...form.getInputProps('currentPassword')}
                     />
                     <PasswordInput
-                        label="Nueva contrasena"
-                        placeholder="Minimo 8 caracteres"
+                        label="Nueva contraseña"
+                        placeholder="Mínimo 8 caracteres"
                         required
                         {...form.getInputProps('newPassword')}
                     />
                     <PasswordInput
-                        label="Confirmar nueva contrasena"
-                        placeholder="Repeti la nueva contrasena"
+                        label="Confirmar nueva contraseña"
+                        placeholder="Repetí la nueva contraseña"
                         required
                         {...form.getInputProps('confirmPassword')}
                     />
 
                     <Button type="submit" loading={loading} fullWidth mt="sm">
-                        Cambiar contrasena
+                        Cambiar contraseña
                     </Button>
                 </Stack>
             </form>
