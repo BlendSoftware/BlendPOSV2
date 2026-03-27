@@ -1,52 +1,88 @@
+/* ── SaleHistoryModal — Digital Engineering ──────────────────────── */
+
+/* ── Stats row cards ─────────────────────────────────────────────── */
+
 .statsRow {
-    gap: var(--mantine-spacing-md);
+    gap: 10px;
 }
 
 .statCard {
-    background-color: var(--mantine-color-dark-6);
-    border-radius: var(--mantine-radius-md);
-    padding: var(--mantine-spacing-md);
-    border: 1px solid var(--mantine-color-dark-4);
+    background: rgba(2, 6, 23, 0.55);
+    border-radius: 10px;
+    padding: 12px 16px;
+    border: 0.5px solid rgba(37, 99, 235, 0.18);
+    position: relative;
+    overflow: hidden;
+    font-family: 'Manrope', sans-serif;
+    transition: border-color 150ms ease;
 }
+
+.statCard::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.5), transparent);
+}
+
+.statCard:hover {
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+:global([data-mantine-color-scheme='light']) .statCard {
+    background: #f0f4ff;
+    border-color: rgba(37, 99, 235, 0.14);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+}
+
+/* ── Sale cards ──────────────────────────────────────────────────── */
 
 .saleCard {
-    background-color: var(--mantine-color-dark-6);
-    border-radius: var(--mantine-radius-md);
-    border: 1px solid var(--mantine-color-dark-5);
+    background: rgba(13, 21, 38, 0.7);
+    border-radius: 10px;
+    border: 0.5px solid rgba(37, 99, 235, 0.15);
     overflow: hidden;
+    transition: border-color 150ms ease;
+    font-family: 'Manrope', sans-serif;
 }
 
+.saleCard:hover {
+    border-color: rgba(37, 99, 235, 0.28);
+}
+
+:global([data-mantine-color-scheme='light']) .saleCard {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.12);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+}
+
+/* ── Sale header (clickable to expand) ──────────────────────────── */
+
 .saleHeader {
-    padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+    padding: 10px 14px;
     cursor: pointer;
-    transition: background-color 100ms ease;
+    transition: background 100ms ease;
     user-select: none;
 }
 
 .saleHeader:hover {
-    background-color: rgba(255, 255, 255, 0.03);
-}
-
-.saleDetail {
-    padding: var(--mantine-spacing-xs) var(--mantine-spacing-md) var(--mantine-spacing-sm);
-    background-color: var(--mantine-color-dark-7);
-}
-
-/* Light mode */
-:global([data-mantine-color-scheme='light']) .statCard {
-    background-color: var(--mantine-color-white);
-    border-color: var(--mantine-color-gray-3);
-}
-
-:global([data-mantine-color-scheme='light']) .saleCard {
-    background-color: var(--mantine-color-white);
-    border-color: var(--mantine-color-gray-3);
+    background: rgba(37, 99, 235, 0.08);
 }
 
 :global([data-mantine-color-scheme='light']) .saleHeader:hover {
-    background-color: var(--mantine-color-gray-1);
+    background: #f0f4ff;
+}
+
+/* ── Expanded sale detail ────────────────────────────────────────── */
+
+.saleDetail {
+    padding: 8px 14px 12px;
+    background: rgba(2, 6, 23, 0.4);
+    border-top: 0.5px solid rgba(37, 99, 235, 0.14);
+    font-family: 'Manrope', sans-serif;
 }
 
 :global([data-mantine-color-scheme='light']) .saleDetail {
-    background-color: var(--mantine-color-gray-0);
+    background: #f8faff;
+    border-top-color: rgba(37, 99, 235, 0.1);
 }

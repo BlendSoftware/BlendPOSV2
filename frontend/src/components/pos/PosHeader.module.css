@@ -1,353 +1,385 @@
+/* ── PosHeader — Digital Engineering — aligned to #2563eb ─────────── */
+
 .header {
-  background:
-    linear-gradient(180deg, rgba(24, 28, 33, 0.96), rgba(18, 22, 27, 0.94)),
-    var(--mantine-color-dark-8);
-  border-bottom: 0;
-  height: 88px;
-  flex-shrink: 0;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(4px);
-  position: relative;
+    background: #07101f;
+    border-bottom: 0.5px solid rgba(37, 99, 235, 0.18);
+    height: 82px;          /* 52px main row + 30px status row */
+    flex-shrink: 0;
+    box-shadow: 0 2px 14px rgba(2, 6, 23, 0.4);
+    position: relative;
+    font-family: 'Manrope', -apple-system, sans-serif;
 }
 
-.header::after {
-  content: '';
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.4), rgba(56, 189, 248, 0));
-  pointer-events: none;
-}
+/* ── Layout: 2-row grid ─────────────────────────────────────────── */
 
 .headerInner {
-  height: 100%;
-  display: grid;
-  grid-template-rows: 52px 36px;
+    height: 100%;
+    display: grid;
+    grid-template-rows: 52px 30px;
 }
 
 .mainRow {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px 4px;
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    height: 100%;
 }
 
-.brand {
-  font-size: 1.12rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  color: #7dd3fc;
-  line-height: 1;
-  text-transform: uppercase;
-  text-shadow: 0 0 16px rgba(56, 189, 248, 0.28);
+/* ── Status row (bottom strip) ───────────────────────────────────── */
+
+.statusRow {
+    padding: 0 14px;
+    background: rgba(2, 6, 23, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
 }
 
-.brandSub {
-  font-size: 0.68rem;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--mantine-color-gray-5);
-  margin-top: 2px;
+/* Bottom blue accent line under the whole header */
+.header::after {
+    content: '';
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.45), transparent);
+    pointer-events: none;
 }
+
+/* ── Brand block ─────────────────────────────────────────────────── */
 
 .brandBlock {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  padding-left: 10px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding-left: 12px;
 }
 
 .brandBlock::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 4px;
-  width: 4px;
-  height: 18px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    border-radius: 2px;
+    background: #2563eb;
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
 }
 
+.brand {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    color: #f8fafc;
+    line-height: 1;
+    font-family: 'Manrope', sans-serif;
+}
+
+.brandSub {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(100, 116, 139, 0.8);
+    margin-top: 2px;
+    font-family: 'Manrope', sans-serif;
+}
+
+/* ── Operator block ──────────────────────────────────────────────── */
+
 .operatorBlock {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 0;
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 0.5px solid rgba(255, 255, 255, 0.09);
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .operatorBlock :global(.mantine-Text-root) {
-  white-space: nowrap;
+    white-space: nowrap;
+    font-family: 'Manrope', sans-serif;
 }
+
+/* ── Actions block ───────────────────────────────────────────────── */
 
 .actionsBlock {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.statusRow {
-  border-top: 0;
-  padding: 0 12px;
-  background: rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
+/* ── Status badges ───────────────────────────────────────────────── */
 
 .statusBadge {
-  border: 1px solid rgba(148, 156, 166, 0.24);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(241, 243, 245, 0.95);
-  overflow: visible;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(241, 243, 245, 0.92);
+    overflow: visible;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.72rem !important;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 6px;
+    display: inline-flex !important;
+    align-items: center;
 }
 
 .statusBadge :global(.mantine-Badge-label) {
-  display: flex;
-  align-items: center;
-  overflow: visible;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: visible;
+    line-height: 1;
 }
 
 .statusText {
-  font-weight: 700;
-  letter-spacing: 0.01em;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.72rem;
 }
 
 .statusDot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
+/* Offline */
 .statusOffline {
-  border-color: rgba(248, 113, 113, 0.35);
-  background: rgba(248, 113, 113, 0.12);
-  color: #fecaca;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #fecaca !important;
 }
 
 .statusDotOffline {
-  background: #ef4444;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
+    background: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
+/* Syncing */
 .statusSync {
-  border-color: rgba(250, 176, 5, 0.34);
-  background: rgba(250, 176, 5, 0.12);
-  color: #fde68a;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+    background: rgba(245, 158, 11, 0.1) !important;
+    color: #fde68a !important;
 }
 
 .statusDotSync {
-  background: #f59f00;
-  box-shadow: 0 0 0 2px rgba(245, 159, 0, 0.18);
-  animation: statusPulse 1.2s ease-in-out infinite;
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 159, 0, 0.2);
+    animation: statusPulse 1.4s ease-in-out infinite;
 }
 
+/* Online / connected */
 .statusOnline {
-  border-color: rgba(51, 154, 240, 0.34);
-  background: rgba(51, 154, 240, 0.14);
-  color: #bae6fd;
+    border-color: rgba(37, 99, 235, 0.3) !important;
+    background: rgba(37, 99, 235, 0.1) !important;
+    color: #bfdbfe !important;
 }
 
 .statusDotOnline {
-  background: #0ea5e9;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18);
+    background: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 @keyframes statusPulse {
-  0%,
-  100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
 }
 
+/* ── Clock ───────────────────────────────────────────────────────── */
+
 .clock {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 156, 166, 0.2);
-  background: rgba(255, 255, 255, 0.04);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 0 10px;
+    border-radius: 6px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    flex-shrink: 0;
 }
 
 .clockTime {
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.92);
-  line-height: 1;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    line-height: 1 !important;
+    font-variant-numeric: tabular-nums;
+    font-family: 'Manrope', monospace !important;
+    letter-spacing: 0.03em;
 }
 
 .clockDot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: rgba(56, 189, 248, 0.8);
-  flex-shrink: 0;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #2563eb;
+    flex-shrink: 0;
 }
 
 .clockDate {
-  font-size: 0.68rem;
-  color: rgba(148, 156, 166, 0.9);
-  text-transform: capitalize;
-  line-height: 1;
+    font-size: 0.65rem !important;
+    font-weight: 500 !important;
+    color: rgba(100, 116, 139, 0.85) !important;
+    text-transform: capitalize;
+    line-height: 1 !important;
+    font-family: 'Manrope', sans-serif !important;
+    white-space: nowrap;
 }
 
-@media (max-width: 1200px) {
-  .mainRow {
-    grid-template-columns: 150px minmax(0, 1fr) auto;
-  }
-
-  .brandSub {
-    display: none;
-  }
-}
+/* ── ActionIcons in header ───────────────────────────────────────── */
 
 .header :global(.mantine-ActionIcon-root) {
-  border: 1px solid rgba(148, 156, 166, 0.18);
-  background: rgba(255, 255, 255, 0.035);
-  backdrop-filter: blur(2px);
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    transition: background 150ms ease, border-color 150ms ease, transform 120ms ease;
 }
 
-.header :global(.mantine-ActionIcon-root:hover) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-  border-color: rgba(56, 189, 248, 0.38);
+.header :global(.mantine-ActionIcon-root:hover):not(:disabled) {
+    background: rgba(37, 99, 235, 0.12);
+    border-color: rgba(37, 99, 235, 0.3);
+    transform: translateY(-1px);
 }
 
 .header :global(.mantine-ActionIcon-root:active) {
-  transform: scale(0.97);
+    transform: scale(0.96);
 }
 
+/* Override badge variant=light background from Mantine */
 .header :global(.mantine-Badge-root) {
-  border: 0;
-  font-weight: 700;
+    border: 0;
+    font-weight: 700;
 }
 
-/* ─── Light mode ─────────────────────────────────── */
+/* ── Light mode ──────────────────────────────────────────────────── */
+
 :global([data-mantine-color-scheme='light']) .header {
-  background:
-    radial-gradient(80% 120% at 8% -30%, rgba(56, 189, 248, 0.24), rgba(56, 189, 248, 0)),
-    radial-gradient(70% 90% at 92% 8%, rgba(125, 211, 252, 0.2), rgba(125, 211, 252, 0)),
-    linear-gradient(180deg, rgba(247, 252, 255, 0.99), rgba(240, 249, 255, 0.95)),
-    var(--mantine-color-white);
-  border-bottom-color: transparent;
-  box-shadow: 0 10px 22px rgba(2, 132, 199, 0.14);
-}
-
-:global([data-mantine-color-scheme='light']) .header::before {
-  content: '';
-  position: absolute;
-  left: 12px;
-  top: -14px;
-  width: 170px;
-  height: 56px;
-  border-radius: 999px;
-  background: rgba(186, 230, 253, 0.5);
-  filter: blur(12px);
-  pointer-events: none;
+    background: #ffffff;
+    border-bottom-color: rgba(37, 99, 235, 0.14);
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.07);
 }
 
 :global([data-mantine-color-scheme='light']) .header::after {
-  background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(14, 165, 233, 0.5), rgba(56, 189, 248, 0));
-}
-
-:global([data-mantine-color-scheme='light']) .operatorBlock {
-  background: linear-gradient(180deg, rgba(236, 253, 255, 0.96), rgba(224, 242, 254, 0.88));
-  border: 1px solid rgba(56, 189, 248, 0.22);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 3px 8px rgba(14, 116, 144, 0.08);
-}
-
-:global([data-mantine-color-scheme='light']) .header :global(.mantine-ActionIcon-root) {
-  border-color: rgba(56, 189, 248, 0.28);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(240, 249, 255, 0.92));
-  color: #0369a1;
-}
-
-:global([data-mantine-color-scheme='light']) .statusRow {
-  background: linear-gradient(90deg, rgba(224, 242, 254, 0.44), rgba(240, 249, 255, 0.32));
-  box-shadow: inset 0 1px 0 rgba(14, 165, 233, 0.16);
-}
-
-:global([data-mantine-color-scheme='light']) .statusBadge {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(240, 249, 255, 0.82));
-  color: #0f172a;
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.12);
-}
-
-:global([data-mantine-color-scheme='light']) .statusOffline {
-  background: rgba(254, 226, 226, 0.9);
-  border-color: rgba(248, 113, 113, 0.35);
-  color: #b91c1c;
-}
-
-:global([data-mantine-color-scheme='light']) .statusSync {
-  background: rgba(254, 243, 199, 0.94);
-  border-color: rgba(245, 159, 0, 0.34);
-  color: #92400e;
-}
-
-:global([data-mantine-color-scheme='light']) .statusOnline {
-  background: linear-gradient(180deg, rgba(224, 242, 254, 0.98), rgba(186, 230, 253, 0.9));
-  border-color: rgba(14, 165, 233, 0.45);
-  color: #0c4a6e;
-}
-
-:global([data-mantine-color-scheme='light']) .clock {
-  border-color: rgba(56, 189, 248, 0.34);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(224, 242, 254, 0.84));
-  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.1);
-}
-
-:global([data-mantine-color-scheme='light']) .clockTime {
-  color: #0f172a;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
-}
-
-:global([data-mantine-color-scheme='light']) .clockDate {
-  color: rgba(3, 105, 161, 0.74);
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.3), transparent);
 }
 
 :global([data-mantine-color-scheme='light']) .brand {
-  color: #075985;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85), 0 0 14px rgba(125, 211, 252, 0.32);
+    color: #0f172a;
 }
 
 :global([data-mantine-color-scheme='light']) .brandSub {
-  color: rgba(3, 105, 161, 0.72);
+    color: rgba(71, 85, 105, 0.75);
+}
+
+:global([data-mantine-color-scheme='light']) .operatorBlock {
+    background: #f8faff;
+    border-color: rgba(37, 99, 235, 0.15);
+}
+
+:global([data-mantine-color-scheme='light']) .statusRow {
+    background: rgba(240, 244, 255, 0.55);
+    border-top-color: rgba(37, 99, 235, 0.1);
+}
+
+:global([data-mantine-color-scheme='light']) .statusBadge {
+    background: #f0f4ff !important;
+    color: #1e293b !important;
+    border-color: rgba(37, 99, 235, 0.2) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .statusOffline {
+    background: rgba(254, 226, 226, 0.9) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #b91c1c !important;
+}
+
+:global([data-mantine-color-scheme='light']) .statusSync {
+    background: rgba(254, 243, 199, 0.9) !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+    color: #92400e !important;
+}
+
+:global([data-mantine-color-scheme='light']) .statusOnline {
+    background: #eef2ff !important;
+    border-color: rgba(37, 99, 235, 0.28) !important;
+    color: #1e40af !important;
+}
+
+:global([data-mantine-color-scheme='light']) .statusDotOnline {
+    background: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+:global([data-mantine-color-scheme='light']) .clock {
+    border-color: rgba(37, 99, 235, 0.18);
+    background: #f0f4ff;
+}
+
+:global([data-mantine-color-scheme='light']) .clockTime {
+    color: #0f172a !important;
+}
+
+:global([data-mantine-color-scheme='light']) .clockDate {
+    color: rgba(71, 85, 105, 0.75) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .header :global(.mantine-ActionIcon-root) {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.16);
+    color: #1e40af;
+}
+
+:global([data-mantine-color-scheme='light']) .header :global(.mantine-ActionIcon-root:hover):not(:disabled) {
+    background: #eef2ff;
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+@media (max-width: 1200px) {
+    .mainRow {
+        grid-template-columns: 150px minmax(0, 1fr) auto;
+    }
+
+    .brandSub {
+        display: none;
+    }
 }
 
 @media (max-width: 920px) {
-  .clockDate,
-  .clockDot {
-    display: none;
-  }
+    .clockDate,
+    .clockDot {
+        display: none;
+    }
 
-  .clock {
-    padding: 0 9px;
-  }
+    .clock {
+        padding: 0 8px;
+    }
 
-  .statusText {
-    font-size: 0.72rem;
-  }
+    .statusText {
+        font-size: 0.68rem;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .statusDotSync {
-    animation: none;
-  }
+    .statusDotSync {
+        animation: none;
+    }
 }

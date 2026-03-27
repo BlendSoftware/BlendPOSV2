@@ -39,20 +39,20 @@ body,
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--mantine-color-dark-4, #373a40);
+  background-color: rgba(37, 99, 235, 0.25);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--mantine-color-dark-3, #495057);
+  background-color: rgba(37, 99, 235, 0.4);
 }
 
 /* Light mode scrollbar */
 [data-mantine-color-scheme='light'] ::-webkit-scrollbar-thumb {
-  background-color: var(--mantine-color-gray-4);
+  background-color: rgba(37, 99, 235, 0.2);
 }
 [data-mantine-color-scheme='light'] ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--mantine-color-gray-6);
+  background-color: rgba(37, 99, 235, 0.35);
 }
 
 /* Prevent text selection on POS layout (except inputs) */
@@ -82,4 +82,188 @@ body,
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* ═══════════════════════════════════════════════════
+   Global Mantine Tooltip — Digital Engineering
+   ═══════════════════════════════════════════════════ */
+
+.mantine-Tooltip-tooltip {
+  background: #0d1526 !important;
+  color: rgba(241, 245, 249, 0.95) !important;
+  border: 0.5px solid rgba(37, 99, 235, 0.25) !important;
+  border-radius: 7px !important;
+  font-family: 'Manrope', -apple-system, sans-serif !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 5px 10px !important;
+  box-shadow: 0 4px 14px rgba(2, 6, 23, 0.4) !important;
+  letter-spacing: 0.01em;
+}
+
+.mantine-Tooltip-arrow {
+  background: #0d1526 !important;
+  border-color: rgba(37, 99, 235, 0.25) !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-Tooltip-tooltip {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25) !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-Tooltip-arrow {
+  background: #0f172a !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   Global Mantine Notification — Digital Engineering
+   ═══════════════════════════════════════════════════ */
+
+.mantine-Notification-root {
+  background: #0d1526 !important;
+  border: 0.5px solid rgba(37, 99, 235, 0.22) !important;
+  border-radius: 10px !important;
+  font-family: 'Manrope', -apple-system, sans-serif !important;
+  box-shadow: 0 8px 28px rgba(2, 6, 23, 0.5) !important;
+  padding: 12px 14px !important;
+}
+
+.mantine-Notification-title {
+  font-family: 'Manrope', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.84rem !important;
+  color: #f8fafc !important;
+}
+
+.mantine-Notification-description {
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 0.77rem !important;
+  color: rgba(148, 163, 184, 0.9) !important;
+}
+
+/* Color accent bar on left via box-shadow */
+.mantine-Notification-root[data-with-border] {
+  border-left-width: 3px !important;
+}
+
+/* Blue = info */
+.mantine-Notification-root[data-color='blue'] {
+  border-left-color: #2563eb !important;
+}
+/* Green = success */
+.mantine-Notification-root[data-color='green'],
+.mantine-Notification-root[data-color='teal'] {
+  border-left-color: #22c55e !important;
+}
+/* Red = error */
+.mantine-Notification-root[data-color='red'] {
+  border-left-color: #ef4444 !important;
+}
+/* Orange/yellow = warning */
+.mantine-Notification-root[data-color='orange'],
+.mantine-Notification-root[data-color='yellow'] {
+  border-left-color: #f59e0b !important;
+}
+
+/* Light mode notifications */
+[data-mantine-color-scheme='light'] .mantine-Notification-root {
+  background: #ffffff !important;
+  border-color: rgba(37, 99, 235, 0.16) !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.1) !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-Notification-title {
+  color: #0f172a !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-Notification-description {
+  color: rgba(51, 65, 85, 0.75) !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   Global Mantine Modal — Digital Engineering
+   ═══════════════════════════════════════════════════ */
+
+.mantine-Modal-content {
+  background: #0d1526 !important;
+  border: 0.5px solid rgba(37, 99, 235, 0.2) !important;
+  border-radius: 14px !important;
+  font-family: 'Manrope', -apple-system, sans-serif !important;
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.65) !important;
+}
+
+.mantine-Modal-header {
+  background: rgba(2, 6, 23, 0.35) !important;
+  border-bottom: 0.5px solid rgba(37, 99, 235, 0.16) !important;
+  padding: 14px 18px !important;
+  position: relative;
+}
+
+/* Blue accent line under header */
+.mantine-Modal-header::after {
+  content: '';
+  position: absolute;
+  left: 16px; right: 16px; bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.4), transparent);
+}
+
+.mantine-Modal-title {
+  font-family: 'Manrope', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: -0.01em !important;
+  color: #f8fafc !important;
+}
+
+.mantine-Modal-body {
+  padding: 16px 18px !important;
+}
+
+.mantine-Modal-close {
+  border: 0.5px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-radius: 8px !important;
+  color: rgba(148, 163, 184, 0.85) !important;
+  transition: background 150ms ease, border-color 150ms ease !important;
+}
+
+.mantine-Modal-close:hover {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+}
+
+.mantine-Modal-overlay {
+  backdrop-filter: blur(3px) !important;
+  background: rgba(2, 6, 23, 0.7) !important;
+}
+
+/* Light mode modal */
+[data-mantine-color-scheme='light'] .mantine-Modal-content {
+  background: #ffffff !important;
+  border-color: rgba(37, 99, 235, 0.16) !important;
+  box-shadow: 0 16px 48px rgba(37, 99, 235, 0.14) !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-Modal-header {
+  background: #f0f4ff !important;
+  border-bottom-color: rgba(37, 99, 235, 0.12) !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-Modal-title {
+  color: #0f172a !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-Modal-close {
+  border-color: rgba(37, 99, 235, 0.16) !important;
+  background: #ffffff !important;
+  color: rgba(51, 65, 85, 0.7) !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-Modal-overlay {
+  background: rgba(15, 23, 42, 0.5) !important;
 }

@@ -1,239 +1,444 @@
-/* ── Login Page — Two-column layout ──────────────────────────────────────── */
+/* ── BlendPOS Login — Digital Engineering Aesthetic ────────────────────────
+   Palette:
+     Background:   #020617  (midnight blue, deep)
+     Surface:      #0d1526  (slightly raised panel)
+     Surface-2:    #111d33  (card surface)
+     Primary:      #2563eb  (electric blue actions)
+     Text-main:    #f8fafc  (near-white)
+     Text-sub:     rgba(148,163,184,0.85)  (slate w/ opacity)
+     Border:       rgba(255,255,255,0.10)–0.16
+   Font: Manrope (loaded via Google Fonts in LoginPage.tsx)
+────────────────────────────────────────────────────────────────────────── */
+
+/* ── Layout wrapper ──────────────────────────────────────────────────────── */
 
 .wrapper {
     display: grid;
     grid-template-columns: 55% 45%;
     min-height: 100vh;
-    background:
-        radial-gradient(1100px 620px at 14% 8%, rgba(30, 64, 175, 0.16), transparent 65%),
-        linear-gradient(115deg, #0f172a 0%, #111827 45%, #1f2937 100%);
+    background-color: #020617;
+    /* Micro-grid technical overlay */
+    background-image:
+        linear-gradient(rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-:global([data-mantine-color-scheme='light']) .wrapper {
-    background:
-        radial-gradient(980px 580px at 8% 2%, rgba(59, 130, 246, 0.1), transparent 62%),
-        linear-gradient(120deg, #f8fbff 0%, #eef4ff 44%, #f8fafc 100%);
-}
-
-/* ── Hero (left column) ─────────────────────────────────────────────────── */
+/* ── Left column — Branding / Hero ──────────────────────────────────────── */
 
 .hero {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 4rem 4.5rem;
+    padding: 4.5rem 5rem;
     position: relative;
     overflow: hidden;
+    /* Subtle blue radial light from top-left — no glow/bloom */
     background:
-        radial-gradient(650px 450px at 6% 50%, rgba(59, 130, 246, 0.16), transparent 68%),
-        linear-gradient(180deg, rgba(9, 15, 28, 0.9), rgba(7, 12, 22, 0.96));
+        radial-gradient(700px 500px at -8% 10%, rgba(37, 99, 235, 0.13), transparent 68%),
+        linear-gradient(180deg, rgba(2, 6, 23, 0.0), rgba(2, 6, 23, 0.0));
+    /* Thin border-right separator */
+    border-right: 0.5px solid rgba(255, 255, 255, 0.08);
 }
 
-:global([data-mantine-color-scheme='light']) .hero {
-    background:
-        radial-gradient(620px 420px at 6% 52%, rgba(59, 130, 246, 0.11), transparent 68%),
-        linear-gradient(180deg, rgba(238, 246, 255, 0.94), rgba(229, 239, 255, 0.9));
-}
-
+/* Accent top-left corner glow — restrained, no bloom */
 .hero::before {
     content: '';
     position: absolute;
-    width: 460px;
-    height: 460px;
-    left: -120px;
-    top: -100px;
+    width: 380px;
+    height: 380px;
+    left: -80px;
+    top: -80px;
     border-radius: 999px;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.28), rgba(59, 130, 246, 0));
-    filter: blur(6px);
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.18), transparent 70%);
     pointer-events: none;
 }
 
-:global([data-mantine-color-scheme='light']) .hero::before {
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.22), rgba(59, 130, 246, 0));
+/* Bottom-right accent — extra depth */
+.hero::after {
+    content: '';
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    right: 40px;
+    bottom: -80px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.08), transparent 70%);
+    pointer-events: none;
 }
 
 .heroContent {
     position: relative;
     z-index: 1;
-    max-width: 520px;
+    max-width: 500px;
+    width: 100%;
 }
 
-.logo {
-    font-size: clamp(2.4rem, 4vw, 3.2rem);
+/* ── Brand logo mark ────────────────────────────────────────────────────── */
+
+.logoMark {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 2.6rem;
+}
+
+.logoIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    /* Subtle border to reinforce precision feel */
+    border: 0.5px solid rgba(37, 99, 235, 0.7);
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25), 0 4px 16px rgba(37, 99, 235, 0.22);
+}
+
+.logoText {
+    font-size: 1.6rem;
     font-weight: 800;
-    letter-spacing: -0.04em;
-    color: #4ea5f5;
+    letter-spacing: -0.045em;
+    color: #f8fafc;
+    font-family: 'Manrope', sans-serif;
     line-height: 1;
-    margin-bottom: 1rem;
 }
 
-:global([data-mantine-color-scheme='light']) .logo {
-    color: #1d4ed8;
+.logoTextAccent {
+    color: #2563eb;
 }
+
+/* ── Headline block ─────────────────────────────────────────────────────── */
 
 .headline {
-    font-size: clamp(1.7rem, 2.6vw, 2.2rem);
+    font-size: clamp(1.75rem, 2.7vw, 2.35rem);
     font-weight: 700;
-    color: #e5eefb;
-    letter-spacing: -0.02em;
-    line-height: 1.25;
-    margin: 0;
-}
-
-:global([data-mantine-color-scheme='light']) .headline {
-    color: #0f172a;
+    color: #f8fafc;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin: 0 0 0.9rem;
+    font-family: 'Manrope', sans-serif;
 }
 
 .subheadline {
-    margin: 0.8rem 0 2.4rem;
-    font-size: 1.03rem;
-    line-height: 1.55;
-    color: rgba(226, 232, 240, 0.85);
-    max-width: 470px;
+    font-size: 1.02rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: rgba(148, 163, 184, 0.82);
+    max-width: 440px;
+    margin: 0 0 2.6rem;
+    font-family: 'Manrope', sans-serif;
 }
 
-:global([data-mantine-color-scheme='light']) .subheadline {
-    color: rgba(15, 23, 42, 0.72);
-}
+/* ── Feature list ───────────────────────────────────────────────────────── */
 
-/* Feature list on hero */
 .featureList {
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
+    gap: 0.75rem;
+    margin-bottom: 2.6rem;
 }
 
 .featureItem {
     display: flex;
     align-items: flex-start;
-    gap: 0.85rem;
-    padding: 0.8rem 0.9rem;
-    border-radius: 14px;
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    background: rgba(15, 23, 42, 0.34);
-    backdrop-filter: blur(5px);
+    gap: 1rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 12px;
+    border: 0.5px solid rgba(255, 255, 255, 0.09);
+    background: rgba(13, 21, 38, 0.72);
+    transition: border-color 180ms ease, background 180ms ease;
 }
 
-:global([data-mantine-color-scheme='light']) .featureItem {
-    border-color: rgba(59, 130, 246, 0.2);
-    background: rgba(255, 255, 255, 0.72);
+.featureItem:hover {
+    border-color: rgba(37, 99, 235, 0.3);
+    background: rgba(13, 21, 38, 0.88);
 }
 
-.featureIcon {
-    width: 36px;
-    height: 36px;
-    border-radius: 11px;
+.featureIconWrap {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(37, 99, 235, 0.16);
     color: #60a5fa;
     flex-shrink: 0;
-}
-
-:global([data-mantine-color-scheme='light']) .featureIcon {
-    background: rgba(59, 130, 246, 0.12);
-    color: #2563eb;
-}
-
-.featureText {
-    font-size: 0.96rem;
-    color: rgba(226, 232, 240, 0.76);
-    line-height: 1.4;
-}
-
-:global([data-mantine-color-scheme='light']) .featureText {
-    color: rgba(15, 23, 42, 0.72);
+    border: 0.5px solid rgba(37, 99, 235, 0.22);
 }
 
 .featureLabel {
     font-weight: 700;
-    font-size: 0.97rem;
-    color: #f8fafc;
+    font-size: 0.92rem;
+    color: #f1f5f9;
+    font-family: 'Manrope', sans-serif;
+    line-height: 1.3;
+    margin-bottom: 0.2rem;
 }
 
-:global([data-mantine-color-scheme='light']) .featureLabel {
-    color: #0f172a;
+.featureDesc {
+    font-size: 0.84rem;
+    font-weight: 400;
+    color: rgba(148, 163, 184, 0.78);
+    line-height: 1.4;
+    font-family: 'Manrope', sans-serif;
 }
 
-/* ── Form (right column) ────────────────────────────────────────────────── */
+/* ── Trust badge ─────────────────────────────────────────────────────────── */
+
+.trustBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 99px;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    background: rgba(37, 99, 235, 0.09);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(148, 163, 184, 0.9);
+    font-family: 'Manrope', sans-serif;
+    letter-spacing: 0.01em;
+}
+
+.trustBadgeDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
+    /* Subtle pulse */
+    animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+/* ── Right column — Form side ────────────────────────────────────────────── */
 
 .formSide {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2.4rem;
-    background: linear-gradient(180deg, rgba(31, 41, 55, 0.74), rgba(30, 41, 59, 0.8));
-}
-
-:global([data-mantine-color-scheme='light']) .formSide {
-    background: linear-gradient(180deg, rgba(241, 245, 249, 0.92), rgba(236, 243, 253, 0.88));
+    padding: 2.8rem 3rem;
+    /* Very slightly lighter than background to create depth */
+    background: rgba(9, 14, 28, 0.55);
 }
 
 .formContainer {
     width: 100%;
-    max-width: 430px;
+    max-width: 420px;
 }
+
+/* ── Form card — solid, matte, no glass ──────────────────────────────────── */
 
 .formCard {
-    background: rgba(17, 24, 39, 0.76);
-    border-color: rgba(148, 163, 184, 0.25);
-    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.33);
-    backdrop-filter: blur(10px);
+    /* Override Mantine Paper with our design tokens */
+    background: #0d1526 !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 16px !important;
+    box-shadow:
+        0 0 0 1px rgba(37, 99, 235, 0.12),
+        0 20px 48px rgba(2, 6, 23, 0.55),
+        0 4px 12px rgba(2, 6, 23, 0.35) !important;
 }
 
-:global([data-mantine-color-scheme='light']) .formCard {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(203, 213, 225, 0.72);
-    box-shadow: 0 16px 38px rgba(15, 23, 42, 0.12);
+/* Form card title */
+.formTitle {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #f8fafc;
+    margin-bottom: 0.4rem;
+    font-family: 'Manrope', sans-serif;
 }
+
+.formSubtitle {
+    font-size: 0.88rem;
+    font-weight: 400;
+    color: rgba(148, 163, 184, 0.78);
+    margin-bottom: 1.75rem;
+    font-family: 'Manrope', sans-serif;
+    line-height: 1.45;
+}
+
+/* ── Mantine input overrides ─────────────────────────────────────────────── */
 
 .formCard :global(.mantine-InputWrapper-label) {
-    font-weight: 600;
-    margin-bottom: 4px;
+    font-weight: 500;
+    font-size: 0.84rem;
+    color: rgba(226, 232, 240, 0.9);
+    margin-bottom: 5px;
+    font-family: 'Manrope', sans-serif;
+    letter-spacing: 0.005em;
 }
 
 .formCard :global(.mantine-Input-input) {
-    border-radius: 11px;
-    border-color: rgba(148, 163, 184, 0.35);
-    background: rgba(15, 23, 42, 0.26);
-    transition: border-color 140ms ease, box-shadow 140ms ease;
+    background: rgba(2, 6, 23, 0.65) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.13) !important;
+    border-radius: 10px !important;
+    color: #f8fafc !important;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 400;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.formCard :global(.mantine-Input-input:focus) {
-    border-color: rgba(59, 130, 246, 0.74);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.17);
+.formCard :global(.mantine-Input-input::placeholder) {
+    color: rgba(100, 116, 139, 0.7);
 }
 
-:global([data-mantine-color-scheme='light']) .formCard :global(.mantine-Input-input) {
-    background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(203, 213, 225, 0.8);
+.formCard :global(.mantine-Input-input:focus),
+.formCard :global(.mantine-Input-input[data-focused]) {
+    border-color: rgba(37, 99, 235, 0.75) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
 }
 
-.formCard :global(.mantine-Button-root) {
-    border-radius: 11px;
-    transition: transform 130ms ease, box-shadow 130ms ease;
+/* Password reveal icon */
+.formCard :global(.mantine-PasswordInput-innerInput) {
+    background: transparent !important;
+    font-family: 'Manrope', sans-serif;
 }
 
-.formCard :global(.mantine-Button-root:hover) {
+/* ── Primary CTA button ──────────────────────────────────────────────────── */
+
+.formCard :global(.mantine-Button-root[data-variant='filled']) {
+    background: #2563eb !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 0.93rem;
+    letter-spacing: 0.01em;
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.28) !important;
+    transition: background 160ms ease, box-shadow 160ms ease, transform 130ms ease !important;
+}
+
+.formCard :global(.mantine-Button-root[data-variant='filled']:hover):not(:disabled) {
+    background: #1d4ed8 !important;
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.38) !important;
     transform: translateY(-1px);
 }
 
-.googleButton {
-    border-color: rgba(148, 163, 184, 0.4);
+.formCard :global(.mantine-Button-root[data-variant='filled']:active):not(:disabled) {
+    background: #1e40af !important;
+    transform: translateY(0);
+    box-shadow: 0 1px 6px rgba(37, 99, 235, 0.22) !important;
 }
 
+.formCard :global(.mantine-Button-root[data-variant='filled']:disabled),
+.formCard :global(.mantine-Button-root[data-variant='filled'][data-disabled]) {
+    background: rgba(37, 99, 235, 0.35) !important;
+    color: rgba(248, 250, 252, 0.45) !important;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none !important;
+}
+
+/* Default variant — Google/secondary button */
+.formCard :global(.mantine-Button-root[data-variant='default']) {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 10px !important;
+    color: rgba(226, 232, 240, 0.88) !important;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: background 160ms ease, border-color 160ms ease;
+}
+
+.formCard :global(.mantine-Button-root[data-variant='default']:hover):not(:disabled) {
+    background: rgba(255, 255, 255, 0.09) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+/* ── Checkbox ────────────────────────────────────────────────────────────── */
+
+.formCard :global(.mantine-Checkbox-input) {
+    border-radius: 5px !important;
+    background: rgba(2, 6, 23, 0.7) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.formCard :global(.mantine-Checkbox-input:checked) {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+}
+
+.formCard :global(.mantine-Checkbox-label) {
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(148, 163, 184, 0.9);
+}
+
+/* ── Forgot link ─────────────────────────────────────────────────────────── */
+
 .forgotLink {
-    color: #60a5fa;
+    font-size: 0.83rem;
+    font-weight: 500;
+    color: rgba(96, 165, 250, 0.88);
+    font-family: 'Manrope', sans-serif;
+    text-decoration: none;
+    transition: color 150ms ease;
 }
 
 .forgotLink:hover {
     color: #93c5fd;
-    text-decoration: none;
 }
 
-:global([data-mantine-color-scheme='light']) .forgotLink {
-    color: #2563eb;
+/* ── Alert override ──────────────────────────────────────────────────────── */
+
+.formCard :global(.mantine-Alert-root) {
+    border-radius: 10px !important;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.87rem;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+
+.formFooter {
+    margin-top: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.footerLinks {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: rgba(100, 116, 139, 0.75);
+    font-family: 'Manrope', sans-serif;
+}
+
+.footerDivider {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(100, 116, 139, 0.5);
+    flex-shrink: 0;
+}
+
+.footerLink {
+    color: rgba(100, 116, 139, 0.78);
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 500;
+    transition: color 150ms ease;
+    font-family: 'Manrope', sans-serif;
+}
+
+.footerLink:hover {
+    color: rgba(148, 163, 184, 0.95);
 }
 
 /* ── Mobile branding (shown only on mobile) ─────────────────────────────── */
@@ -242,95 +447,46 @@
     display: none;
 }
 
-/* ── Responsive ─────────────────────────────────────────────────────────── */
+/* ── Divider ─────────────────────────────────────────────────────────────── */
 
-@media (max-width: 768px) {
-    .wrapper {
-        grid-template-columns: 1fr;
-        background:
-            radial-gradient(900px 460px at 12% 0%, rgba(59, 130, 246, 0.16), transparent 62%),
-            linear-gradient(180deg, #0f172a 0%, #111827 100%);
-    }
-
-    :global([data-mantine-color-scheme='light']) .wrapper {
-        background:
-            radial-gradient(840px 420px at 10% -2%, rgba(59, 130, 246, 0.14), transparent 64%),
-            linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
-    }
-
-    .hero {
-        display: flex;
-        padding: 2rem 1.25rem 1.1rem;
-        min-height: auto;
-        background: transparent;
-        justify-content: flex-end;
-    }
-
-    .hero::before {
-        display: none;
-    }
-
-    .heroContent {
-        max-width: 100%;
-    }
-
-    .featureList {
-        display: none;
-    }
-
-    .headline {
-        font-size: 1.42rem;
-    }
-
-    .subheadline {
-        margin: 0.6rem 0 0;
-        font-size: 0.96rem;
-    }
-
-    .formSide {
-        background: transparent;
-        padding: 1rem 1rem 2rem;
-        min-height: auto;
-        align-items: flex-start;
-    }
-
-    .mobileBranding {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        margin-bottom: 1rem;
-        padding-left: 0.1rem;
-    }
-
-    .mobileLogo {
-        font-size: 1.6rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        color: #60a5fa;
-        line-height: 1;
-        margin-bottom: 0.35rem;
-    }
-
-    .mobileTagline {
-        font-size: 0.85rem;
-        color: rgba(148, 163, 184, 0.9);
-    }
-
-    :global([data-mantine-color-scheme='light']) .mobileLogo {
-        color: #1d4ed8;
-    }
-
-    :global([data-mantine-color-scheme='light']) .mobileTagline {
-        color: rgba(71, 85, 105, 0.94);
-    }
+.orDivider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.1rem 0;
 }
 
-/* ── Fade-in animation ──────────────────────────────────────────────────── */
+.orDividerLine {
+    flex: 1;
+    height: 0.5px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.orDividerText {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(100, 116, 139, 0.7);
+    font-family: 'Manrope', sans-serif;
+    flex-shrink: 0;
+}
+
+/* ── Forced password change form ─────────────────────────────────────────── */
+
+.forceChangeCard {
+    background: #0d1526 !important;
+    border: 0.5px solid rgba(251, 146, 60, 0.28) !important;
+    border-radius: 16px !important;
+    box-shadow:
+        0 0 0 1px rgba(251, 146, 60, 0.12),
+        0 20px 48px rgba(2, 6, 23, 0.55) !important;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
 
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(12px);
     }
     to {
         opacity: 1;
@@ -339,9 +495,76 @@
 }
 
 .fadeIn {
-    animation: fadeInUp 0.4s ease-out;
+    animation: fadeInUp 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .fadeInDelay {
-    animation: fadeInUp 0.4s ease-out 0.1s both;
+    animation: fadeInUp 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.fadeInDelay2 {
+    animation: fadeInUp 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .wrapper {
+        grid-template-columns: 50% 50%;
+    }
+
+    .hero {
+        padding: 3rem 2.5rem;
+    }
+
+    .formSide {
+        padding: 2rem 1.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .wrapper {
+        grid-template-columns: 1fr;
+    }
+
+    .hero {
+        display: none;
+    }
+
+    .formSide {
+        background: #020617;
+        background-image:
+            linear-gradient(rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
+        background-size: 28px 28px;
+        padding: 2rem 1.25rem 2.5rem;
+        align-items: flex-start;
+    }
+
+    .mobileBranding {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 1.4rem;
+    }
+
+    .mobileLogo {
+        font-size: 1.55rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: #f8fafc;
+        line-height: 1;
+        margin-bottom: 0.35rem;
+        font-family: 'Manrope', sans-serif;
+    }
+
+    .mobileLogoAccent {
+        color: #2563eb;
+    }
+
+    .mobileTagline {
+        font-size: 0.82rem;
+        color: rgba(148, 163, 184, 0.8);
+        font-family: 'Manrope', sans-serif;
+    }
 }

@@ -1,376 +1,568 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   BlendPOS — POS Terminal — Digital Engineering Design System v2
+   ──────────────────────────────────────────────────────────────────────────
+   Dark palette:
+     Background:  #020617  (midnight blue)
+     Workspace:   #07101f  (frame)
+     Surface:     #0d1526  (panels)
+     Surface-2:   #0a1220  (deeper areas)
+     Primary:     #2563eb  (electric blue actions + accents)
+     Text-main:   #f8fafc
+     Text-sub:    rgba(148,163,184,0.85)
+     Border:      rgba(255,255,255,0.08)–0.14
+
+   Light palette:
+     Background:  #f0f4ff
+     Workspace:   #ffffff
+     Surface:     #f8fafc
+     Surface-2:   #eef2ff
+     Primary:     #2563eb
+     Text-main:   #0f172a
+     Text-sub:    rgba(51,65,85,0.72)
+     Border:      rgba(37,99,235,0.15)
+══════════════════════════════════════════════════════════════════════════ */
+
+/* ── CSS custom properties (dark defaults) ─────────────────────────────── */
+
 .posLayout {
-    --pos-accent: #38bdf8;
-    --pos-accent-soft: rgba(56, 189, 248, 0.18);
-    --pos-surface: rgba(255, 255, 255, 0.03);
+    --pos-primary:      #2563eb;
+    --pos-primary-rgb:  37, 99, 235;
+    --pos-bg:           #020617;
+    --pos-workspace:    #07101f;
+    --pos-surface:      #0d1526;
+    --pos-surface-2:    #0a1220;
+    --pos-border:       rgba(255, 255, 255, 0.09);
+    --pos-border-hi:    rgba(37, 99, 235, 0.28);
+    --pos-text:         #f8fafc;
+    --pos-text-sub:     rgba(148, 163, 184, 0.85);
+    --pos-grid-color:   rgba(37, 99, 235, 0.03);
+
     height: 100vh;
     width: 100vw;
     overflow: hidden;
-    background: linear-gradient(155deg, #11151a 0%, #1a2028 58%, #232c36 100%);
     position: relative;
+    background-color: var(--pos-bg);
+    background-image:
+        linear-gradient(var(--pos-grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--pos-grid-color) 1px, transparent 1px);
+    background-size: 32px 32px;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-.posLayout::before,
-.posLayout::after {
+/* Ambient glow — very restrained, no movement */
+.posLayout::before {
     content: '';
-    position: absolute;
-    border-radius: 999px;
+    position: fixed;
+    width: 500px;
+    height: 400px;
+    top: -100px;
+    right: 5%;
+    background: radial-gradient(circle at center, rgba(37, 99, 235, 0.09), transparent 70%);
     pointer-events: none;
-    filter: blur(18px);
-    opacity: 0.26;
     z-index: 0;
 }
 
-.posLayout::before {
-    width: 320px;
-    height: 320px;
-    top: -90px;
-    right: 8%;
-    background: radial-gradient(circle at center, rgba(56, 189, 248, 0.45), rgba(56, 189, 248, 0));
-    animation: ambientFloatA 16s ease-in-out infinite;
-}
-
-.posLayout::after {
-    width: 260px;
-    height: 260px;
-    bottom: -120px;
-    left: 10%;
-    background: radial-gradient(circle at center, rgba(14, 165, 233, 0.32), rgba(14, 165, 233, 0));
-    animation: ambientFloatB 18s ease-in-out infinite;
-}
-
-@keyframes ambientFloatA {
-    0%, 100% { transform: translate3d(0, 0, 0); }
-    50% { transform: translate3d(10px, 8px, 0); }
-}
-
-@keyframes ambientFloatB {
-    0%, 100% { transform: translate3d(0, 0, 0); }
-    50% { transform: translate3d(-8px, -10px, 0); }
-}
-
-@keyframes sectionReveal {
-    0% {
-        opacity: 0;
-        transform: translateY(8px) scale(0.995);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
+/* ── Light mode variables ──────────────────────────────────────────────── */
 
 :global([data-mantine-color-scheme='light']) .posLayout {
-    background: linear-gradient(155deg, #f6f8fb 0%, #eef2f7 58%, #e9eef4 100%);
+    --pos-bg:           #f0f4ff;
+    --pos-workspace:    #ffffff;
+    --pos-surface:      #f8fafc;
+    --pos-surface-2:    #eef2ff;
+    --pos-border:       rgba(37, 99, 235, 0.13);
+    --pos-border-hi:    rgba(37, 99, 235, 0.32);
+    --pos-text:         #0f172a;
+    --pos-text-sub:     rgba(51, 65, 85, 0.72);
+    --pos-grid-color:   rgba(37, 99, 235, 0.045);
 }
 
-:global([data-mantine-color-scheme='light']) .posLayout::before,
-:global([data-mantine-color-scheme='light']) .posLayout::after {
-    opacity: 0.2;
+:global([data-mantine-color-scheme='light']) .posLayout::before {
+    opacity: 0.5;
 }
+
+/* ── Workspace frame ────────────────────────────────────────────────────── */
 
 .workspaceFrame {
-    height: calc(100vh - 20px);
-    margin: clamp(6px, 0.8vw, 12px);
-    border-radius: 16px;
+    height: calc(100vh - 16px);
+    margin: 8px;
+    border-radius: 14px;
     overflow: hidden;
-    border: 1px solid rgba(148, 156, 166, 0.18);
+    border: 0.5px solid var(--pos-border);
     display: grid;
-    grid-template-rows: 88px 1fr 64px;
-    background: linear-gradient(180deg, rgba(18, 22, 27, 0.95), rgba(22, 27, 33, 0.95));
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.26);
-    transition: box-shadow 140ms ease;
+    grid-template-rows: 82px 1fr 48px;
+    background: var(--pos-workspace);
+    box-shadow:
+        0 0 0 0.5px rgba(var(--pos-primary-rgb), 0.12),
+        0 16px 48px rgba(2, 6, 23, 0.45);
     position: relative;
     z-index: 1;
-}
-
-.workspaceFrame::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    border: 1px solid rgba(56, 189, 248, 0.12);
-    pointer-events: none;
+    transition: box-shadow 150ms ease;
 }
 
 :global([data-mantine-color-scheme='light']) .workspaceFrame {
-    border-color: rgba(134, 142, 150, 0.2);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 253, 0.94));
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    box-shadow:
+        0 0 0 0.5px rgba(37, 99, 235, 0.12),
+        0 10px 32px rgba(37, 99, 235, 0.08);
 }
+
+/* ── Main content grid ──────────────────────────────────────────────────── */
 
 .mainContent {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(340px, 28vw, 420px);
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 400px);
     min-height: 0;
-    gap: clamp(10px, 1.2vw, 16px);
-    padding: clamp(10px, 1.2vw, 16px);
+    gap: clamp(8px, 1vw, 14px);
+    padding: clamp(10px, 1.1vw, 14px);
+    background: var(--pos-bg);
+    background-image:
+        linear-gradient(var(--pos-grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--pos-grid-color) 1px, transparent 1px);
+    background-size: 32px 32px;
 }
+
+/* ── Left: Sales section ────────────────────────────────────────────────── */
 
 .salesSection {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: clamp(10px, 1vw, 12px);
-    padding: clamp(12px, 1.15vw, 16px);
-    border: 0;
-    border-radius: 14px;
-    background: var(--pos-surface);
-    transition: background-color 120ms ease;
+    gap: 10px;
+    padding: 0;
+    border-radius: 10px;
+    /* No background — transparent over the grid */
+    animation: posReveal 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-:global([data-mantine-color-scheme='light']) .salesSection {
-    background: rgba(255, 255, 255, 0.7);
-    box-shadow: none;
-}
+/* ── Scanner dock ───────────────────────────────────────────────────────── */
 
 .scannerDock {
     position: relative;
-    border: 0;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.055);
-    padding: clamp(12px, 1.1vw, 16px);
+    border-radius: 10px;
+    background: var(--pos-surface);
+    border: 0.5px solid var(--pos-border);
+    padding: 12px 14px;
     overflow: hidden;
-    animation: sectionReveal 220ms ease-out both;
+    box-shadow: 0 2px 12px rgba(2, 6, 23, 0.25);
+    transition: border-color 150ms ease;
 }
 
+/* Electric blue top-line accent = precision tech */
 .scannerDock::before {
     content: '';
     position: absolute;
     left: 0;
     top: 0;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--pos-accent), transparent);
-    opacity: 0.8;
+    right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent 0%, rgba(37, 99, 235, 0.8) 40%, rgba(37, 99, 235, 0.8) 60%, transparent 100%);
+    pointer-events: none;
 }
 
-:global([data-mantine-color-scheme='light']) .scannerDock {
-    background: rgba(255, 255, 255, 0.86);
+.scannerDock:focus-within {
+    border-color: var(--pos-border-hi);
+    box-shadow: 0 2px 18px rgba(2, 6, 23, 0.3), 0 0 0 1px rgba(37, 99, 235, 0.12);
 }
+
+/* ── Section labels ─────────────────────────────────────────────────────── */
+
+.sectionLabel {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(37, 99, 235, 0.85);
+    margin-bottom: 8px;
+    padding-left: 1px;
+    font-family: 'Manrope', sans-serif;
+}
+
+:global([data-mantine-color-scheme='light']) .sectionLabel {
+    color: #2563eb;
+}
+
+/* ── Scanner input field ─────────────────────────────────────────────────── */
 
 .scannerInput {
     flex-shrink: 0;
 }
 
+.scannerInputField {
+    height: 52px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Manrope', sans-serif;
+    background: var(--pos-surface-2) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
+    color: var(--pos-text) !important;
+    border-radius: 8px !important;
+    letter-spacing: -0.01em;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.scannerInputField::placeholder {
+    color: var(--pos-text-sub);
+    font-weight: 400;
+    font-size: 0.86rem;
+}
+
+.scannerInputField:focus {
+    border-color: rgba(37, 99, 235, 0.72) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .scannerInputField {
+    background: #ffffff !important;
+    border-color: rgba(37, 99, 235, 0.18) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .scannerInputField:focus {
+    border-color: rgba(37, 99, 235, 0.6) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* ── Scanner feedback states ─────────────────────────────────────────────── */
+
+.scannerInputFieldSuccess {
+    border-color: rgba(34, 197, 94, 0.75) !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.14) !important;
+    animation: scannerSuccessPulse 200ms ease-out;
+}
+
+.scannerInputFieldError {
+    border-color: rgba(239, 68, 68, 0.85) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14) !important;
+    animation: scannerErrorShake 200ms ease-out;
+}
+
+@keyframes scannerSuccessPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.008); }
+    100% { transform: scale(1); }
+}
+
+@keyframes scannerErrorShake {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+    75% { transform: translateX(-2px); }
+    100% { transform: translateX(0); }
+}
+
+/* ── Quick stats pills ───────────────────────────────────────────────────── */
+
 .quickStatsRow {
-    margin-top: 10px;
+    margin-top: 8px;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
 }
 
 .quickPill {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    border-radius: 9px;
-    padding: 8px 10px;
-    background: rgba(2, 8, 14, 0.46);
-    border: 1px solid rgba(56, 189, 248, 0.16);
-    transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+    border-radius: 8px;
+    padding: 7px 10px;
+    background: var(--pos-surface-2);
+    border: 0.5px solid var(--pos-border);
+    transition: border-color 150ms ease, background 150ms ease;
+    cursor: default;
 }
 
 .quickPill:hover {
-    border-color: rgba(56, 189, 248, 0.36);
-    background: rgba(2, 8, 14, 0.62);
-    transform: translateY(-1px);
+    border-color: var(--pos-border-hi);
+    background: rgba(37, 99, 235, 0.07);
+}
+
+:global([data-mantine-color-scheme='light']) .quickPill {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.12);
+    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.05);
+}
+
+:global([data-mantine-color-scheme='light']) .quickPill:hover {
+    border-color: rgba(37, 99, 235, 0.28);
+    background: #f0f4ff;
 }
 
 .quickLabel {
-    font-size: 10px;
+    font-size: 0.62rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(148, 156, 166, 0.9);
+    letter-spacing: 0.09em;
+    color: var(--pos-text-sub);
+    font-family: 'Manrope', sans-serif;
 }
 
 .quickValue {
-    font-size: 0.86rem;
-    line-height: 1.1;
+    font-size: 0.92rem;
+    line-height: 1.2;
     font-weight: 700;
-    color: rgba(241, 243, 245, 0.96);
+    color: var(--pos-text);
     font-variant-numeric: tabular-nums;
+    font-family: 'Manrope', sans-serif;
+    letter-spacing: -0.02em;
 }
 
+/* ── Context hint bar ────────────────────────────────────────────────────── */
+
 .contextHint {
-    margin-top: 8px;
-    min-height: 20px;
-    border-radius: 8px;
+    margin-top: 6px;
+    min-height: 26px;
+    border-radius: 7px;
     padding: 5px 10px;
     font-size: 0.74rem;
-    color: rgba(148, 156, 166, 0.95);
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(148, 156, 166, 0.16);
+    font-weight: 500;
+    font-family: 'Manrope', sans-serif;
+    color: var(--pos-text-sub);
+    background: var(--pos-surface-2);
+    border: 0.5px solid var(--pos-border);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.contextHint::before {
+/* Bottom border tint = functional indicator */
+.contextHint::after {
     content: '';
     position: absolute;
     left: 0;
-    top: 0;
-    width: 100%;
+    bottom: 0;
+    right: 0;
     height: 1px;
-    background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.7), rgba(56, 189, 248, 0));
-    opacity: 0.65;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.4), transparent);
 }
 
-.scannerInputSuccess {
-    filter: saturate(112%);
+:global([data-mantine-color-scheme='light']) .contextHint {
+    background: #f0f4ff;
+    border-color: rgba(37, 99, 235, 0.12);
+    color: rgba(51, 65, 85, 0.75);
 }
 
-.scannerInputError {
-    filter: saturate(110%);
-}
-
-.sectionLabel {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: rgba(56, 189, 248, 0.88);
-    margin-bottom: 8px;
-    padding-left: 2px;
-    text-shadow: 0 0 14px rgba(56, 189, 248, 0.18);
-}
-
-:global([data-mantine-color-scheme='light']) .sectionLabel {
-    color: #0369a1;
-}
-
-.scannerInputField {
-    font-size: 16px;
-    height: 60px;
-    font-weight: 600;
-    background: rgba(9, 12, 16, 0.75);
-    border-color: rgba(148, 156, 166, 0.2);
-    transition: border-color 120ms ease, box-shadow 120ms ease, transform 90ms ease;
-}
-
-.scannerInputField::placeholder {
-    color: rgba(148, 156, 166, 0.78);
-}
-
-.scannerInputField:focus {
-    border-width: 2px;
-    border-color: var(--pos-accent);
-    box-shadow: 0 0 0 3px var(--pos-accent-soft);
-}
-
-.scannerInputFieldSuccess {
-    border-color: rgba(43, 138, 62, 0.9) !important;
-    box-shadow: 0 0 0 3px rgba(43, 138, 62, 0.22) !important;
-    animation: scannerPulseSuccess 180ms ease-out;
-}
-
-.scannerInputFieldError {
-    border-color: rgba(224, 49, 49, 0.95) !important;
-    box-shadow: 0 0 0 3px rgba(224, 49, 49, 0.2) !important;
-    animation: scannerPulseError 180ms ease-out;
-}
-
-@keyframes scannerPulseSuccess {
-    0% { transform: scale(1); }
-    35% { transform: scale(1.01); }
-    100% { transform: scale(1); }
-}
-
-@keyframes scannerPulseError {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-2px); }
-    50% { transform: translateX(2px); }
-    75% { transform: translateX(-1px); }
-    100% { transform: translateX(0); }
-}
+/* ── Table shell ────────────────────────────────────────────────────────── */
 
 .tableShell {
     min-height: 0;
     display: flex;
     flex-direction: column;
     flex: 1;
-    border: 0;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    padding: clamp(12px, 1.1vw, 16px);
-    animation: sectionReveal 260ms ease-out 40ms both;
+    border-radius: 10px;
+    background: var(--pos-surface);
+    border: 0.5px solid var(--pos-border);
+    padding: 12px 14px;
+    box-shadow: 0 2px 12px rgba(2, 6, 23, 0.22);
+    animation: posReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+    overflow: hidden;
 }
+
+:global([data-mantine-color-scheme='light']) .tableShell {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.12);
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.06);
+}
+
+/* ── Table area (scroll container) ─────────────────────────────────────── */
 
 .tableArea {
     min-height: 0;
     flex: 1;
-    border: 0;
-    border-radius: 12px;
     overflow: hidden;
-    background: rgba(11, 14, 18, 0.82);
-    transition: background-color 120ms ease;
+    border-radius: 8px;
+    background: var(--pos-surface-2);
+    border: 0.5px solid var(--pos-border);
+    /* Custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(37, 99, 235, 0.22) transparent;
 }
 
-.totalSectionWrap {
-    min-height: 0;
-    border: 0;
-    border-radius: 14px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
-    padding: clamp(12px, 1.1vw, 16px);
-    box-shadow: none;
-    animation: sectionReveal 300ms ease-out 80ms both;
-}
-
-:global([data-mantine-color-scheme='light']) .scannerDock,
-:global([data-mantine-color-scheme='light']) .tableShell,
-:global([data-mantine-color-scheme='light']) .totalSectionWrap {
-    background: rgba(255, 255, 255, 0.94);
-}
-
-:global([data-mantine-color-scheme='light']) .scannerInputField {
-    background: rgba(255, 255, 255, 0.98);
-    border-color: rgba(134, 142, 150, 0.25);
-}
-
-:global([data-mantine-color-scheme='light']) .quickPill {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(3, 105, 161, 0.2);
-}
-
-:global([data-mantine-color-scheme='light']) .quickLabel {
-    color: rgba(15, 23, 42, 0.6);
-}
-
-:global([data-mantine-color-scheme='light']) .quickValue {
-    color: #0f172a;
-}
-
-:global([data-mantine-color-scheme='light']) .contextHint {
-    color: rgba(15, 23, 42, 0.62);
-    background: rgba(255, 255, 255, 0.86);
-    border-color: rgba(134, 142, 150, 0.22);
+.tableArea::-webkit-scrollbar { width: 4px; }
+.tableArea::-webkit-scrollbar-track { background: transparent; }
+.tableArea::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.22);
+    border-radius: 2px;
 }
 
 :global([data-mantine-color-scheme='light']) .tableArea {
-    border-color: rgba(134, 142, 150, 0.3);
-    background: rgba(255, 255, 255, 0.96);
+    background: #f8fafc;
+    border-color: rgba(37, 99, 235, 0.1);
 }
+
+/* ── Mantine table overrides inside tableArea ─────────────────────────── */
+
+.tableArea :global(.mantine-Table-th) {
+    background: var(--pos-surface) !important;
+    color: var(--pos-text-sub) !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.69rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    border-bottom: 0.5px solid rgba(37, 99, 235, 0.18) !important;
+    padding: 8px 10px !important;
+}
+
+.tableArea :global(.mantine-Table-td) {
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.87rem !important;
+    border-bottom: 0.5px solid var(--pos-border) !important;
+    padding: 7px 10px !important;
+    color: var(--pos-text) !important;
+}
+
+.tableArea :global(.mantine-Table-tr:hover td) {
+    background: rgba(37, 99, 235, 0.06) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .tableArea :global(.mantine-Table-th) {
+    background: #f0f4ff !important;
+    color: rgba(51, 65, 85, 0.7) !important;
+    border-bottom-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .tableArea :global(.mantine-Table-td) {
+    color: #1e293b !important;
+    border-bottom-color: rgba(37, 99, 235, 0.08) !important;
+}
+
+/* ── Right: Total / payment section ─────────────────────────────────────── */
+
+.totalSectionWrap {
+    min-height: 0;
+    border-radius: 10px;
+    background: var(--pos-surface);
+    border: 0.5px solid var(--pos-border);
+    padding: 12px 14px;
+    box-shadow: 0 2px 12px rgba(2, 6, 23, 0.22);
+    animation: posReveal 360ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Highlight top-border to distinguish the payment panel */
+    position: relative;
+}
+
+.totalSectionWrap::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.7), transparent);
+}
+
+:global([data-mantine-color-scheme='light']) .totalSectionWrap {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.14);
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.07);
+}
+
+/* ── TotalPanel internal Mantine overrides ─────────────────────────────── */
+
+.totalSectionWrap :global(.mantine-Button-root[data-variant='filled']) {
+    background: #2563eb !important;
+    border: none !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.01em !important;
+    border-radius: 10px !important;
+    box-shadow: 0 3px 14px rgba(37, 99, 235, 0.3) !important;
+    transition: background 150ms ease, box-shadow 150ms ease, transform 120ms ease !important;
+}
+
+.totalSectionWrap :global(.mantine-Button-root[data-variant='filled']:hover):not(:disabled) {
+    background: #1d4ed8 !important;
+    box-shadow: 0 5px 22px rgba(37, 99, 235, 0.4) !important;
+    transform: translateY(-1px);
+}
+
+.totalSectionWrap :global(.mantine-Button-root[data-variant='filled']:active):not(:disabled) {
+    background: #1e40af !important;
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.22) !important;
+}
+
+.totalSectionWrap :global(.mantine-Button-root[data-variant='filled']:disabled),
+.totalSectionWrap :global(.mantine-Button-root[data-variant='filled'][data-disabled]) {
+    background: rgba(37, 99, 235, 0.3) !important;
+    color: rgba(248, 250, 252, 0.4) !important;
+    box-shadow: none !important;
+}
+
+.totalSectionWrap :global(.mantine-Button-root[data-variant='default']),
+.totalSectionWrap :global(.mantine-Button-root[data-variant='outline']) {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.14) !important;
+    color: rgba(226, 232, 240, 0.9) !important;
+    font-family: 'Manrope', sans-serif !important;
+    border-radius: 10px !important;
+    transition: background 150ms ease, border-color 150ms ease !important;
+}
+
+.totalSectionWrap :global(.mantine-Button-root[data-variant='default']:hover):not(:disabled),
+.totalSectionWrap :global(.mantine-Button-root[data-variant='outline']:hover):not(:disabled) {
+    background: rgba(255, 255, 255, 0.09) !important;
+    border-color: rgba(37, 99, 235, 0.32) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .totalSectionWrap :global(.mantine-Button-root[data-variant='default']),
+:global([data-mantine-color-scheme='light']) .totalSectionWrap :global(.mantine-Button-root[data-variant='outline']) {
+    background: #ffffff !important;
+    border-color: rgba(37, 99, 235, 0.2) !important;
+    color: #334155 !important;
+}
+
+/* ── Touch action bar ───────────────────────────────────────────────────── */
 
 .touchActionBar {
     display: none;
 }
 
+.touchActionBtn {
+    min-width: 48px;
+    min-height: 48px;
+    transition: transform 120ms ease;
+}
+
+.touchActionBtn:active {
+    transform: scale(0.96);
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes posReveal {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
 @media (max-width: 1180px) {
     .mainContent {
-        grid-template-columns: 1fr 360px;
+        grid-template-columns: 1fr clamp(300px, 30vw, 360px);
     }
 }
 
 @media (min-width: 1680px) {
     .workspaceFrame {
-        margin: 12px;
+        margin: 10px;
     }
 
     .mainContent {
-        grid-template-columns: minmax(0, 1fr) 430px;
-        gap: 18px;
-        padding: 18px;
+        grid-template-columns: minmax(0, 1fr) 420px;
+        gap: 16px;
+        padding: 16px;
     }
 }
 
@@ -378,8 +570,8 @@
     .workspaceFrame {
         height: calc(100vh - 8px);
         margin: 4px;
-        grid-template-rows: 88px 1fr auto;
-        border-radius: 12px;
+        border-radius: 10px;
+        grid-template-rows: 56px 1fr auto;
     }
 
     .mainContent {
@@ -389,17 +581,9 @@
         padding: 8px;
     }
 
-    .salesSection {
-        padding: 12px;
-    }
-
     .tableArea {
         overflow-x: auto;
         overflow-y: auto;
-    }
-
-    .totalSectionWrap {
-        padding: 12px;
     }
 
     .quickStatsRow {
@@ -408,9 +592,11 @@
 
     .contextHint {
         white-space: normal;
-        line-height: 1.25;
+        line-height: 1.3;
     }
 }
+
+/* ── Touch-device action bar ─────────────────────────────────────────────── */
 
 @media (pointer: coarse) {
     .touchActionBar {
@@ -424,45 +610,39 @@
         align-items: center;
         padding: 8px 16px;
         padding-bottom: max(8px, env(safe-area-inset-bottom));
-        background: color-mix(in srgb, var(--mantine-color-dark-8) 92%, transparent);
-        border-top: 1px solid var(--mantine-color-dark-4);
-        box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.28);
+        background: #080f1e;
+        border-top: 0.5px solid rgba(37, 99, 235, 0.2);
+        box-shadow: 0 -8px 24px rgba(2, 6, 23, 0.5);
         gap: 8px;
     }
 
     :global([data-mantine-color-scheme='light']) .touchActionBar {
-        background: var(--mantine-color-white);
-        border-top-color: var(--mantine-color-gray-3);
-    }
-
-    .touchActionBtn {
-        min-width: 48px;
-        min-height: 48px;
-        transition: transform 120ms ease;
-    }
-
-    .touchActionBtn:active {
-        transform: scale(0.97);
+        background: #ffffff;
+        border-top-color: rgba(37, 99, 235, 0.15);
+        box-shadow: 0 -6px 20px rgba(37, 99, 235, 0.08);
     }
 
     .workspaceFrame {
-        padding-bottom: 68px;
+        padding-bottom: 64px;
     }
 }
 
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+
 @media (prefers-reduced-motion: reduce) {
-    .posLayout::before,
-    .posLayout::after {
-        animation: none;
+    .posLayout::before {
+        display: none;
     }
 
-    .scannerDock,
+    .salesSection,
     .tableShell,
     .totalSectionWrap {
         animation: none;
     }
 
-    .quickPill {
+    .quickPill,
+    .scannerDock,
+    .scannerInputField {
         transition: none;
     }
 }

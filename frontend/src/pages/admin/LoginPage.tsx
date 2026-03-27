@@ -10,23 +10,53 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { changePasswordApi } from '../../services/api/auth';
 import classes from './LoginPage.module.css';
 
+// ── Manrope font — injected once ────────────────────────────────────────────
+const MANROPE_HREF = 'https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap';
+
+function ensureManrope() {
+    if (typeof document === 'undefined') return;
+    if (document.querySelector(`link[href="${MANROPE_HREF}"]`)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = MANROPE_HREF;
+    document.head.appendChild(link);
+}
+ensureManrope();
+
+// ── Feature list data ────────────────────────────────────────────────────────
+
 const FEATURES = [
     {
-        icon: <WifiOff size={20} />,
+        icon: <WifiOff size={18} />,
         label: 'Funciona offline',
-        description: 'Hasta 48hs sin conexión',
+        description: 'Seguí vendiendo incluso sin conexión. Hasta 48hs de autonomía.',
     },
     {
-        icon: <Building2 size={20} />,
+        icon: <Building2 size={18} />,
         label: 'Multi-sucursal',
-        description: 'Controlá todos tus locales desde un solo lugar',
+        description: 'Controlá todas tus sucursales desde un solo lugar, en tiempo real.',
     },
     {
-        icon: <FileCheck size={20} />,
+        icon: <FileCheck size={18} />,
         label: 'AFIP integrado',
-        description: 'Facturación electrónica automática',
+        description: 'Facturación electrónica automática, sin complicaciones.',
     },
 ];
+
+// ── Logo SVG icon ─────────────────────────────────────────────────────────────
+
+function BrandIcon() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="8" height="8" rx="2" fill="white" fillOpacity="0.9" />
+            <rect x="12" y="2" width="8" height="8" rx="2" fill="white" fillOpacity="0.55" />
+            <rect x="2" y="12" width="8" height="8" rx="2" fill="white" fillOpacity="0.55" />
+            <rect x="12" y="12" width="8" height="8" rx="2" fill="white" fillOpacity="0.3" />
+        </svg>
+    );
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export function LoginPage() {
     const navigate = useNavigate();
@@ -68,16 +98,12 @@ export function LoginPage() {
     });
 
     const handleSubmit = form.onSubmit(async ({ email, password }) => {
-        // Guard against duplicate submissions (React StrictMode double-mount,
-        // rapid double-clicks, etc.)
         if (loading) return;
         setError('');
         setLoading(true);
         try {
             const ok = await login(email, password);
             if (ok) {
-                // If must_change_password is set, the useEffect won't redirect —
-                // we stay on this page and show the password change form.
                 const needsChange = useAuthStore.getState().mustChangePassword;
                 if (!needsChange) {
                     const updatedUser = useAuthStore.getState().user;
@@ -111,7 +137,6 @@ export function LoginPage() {
         try {
             await changePasswordApi(newPassword);
             clearMustChangePassword();
-            // Now redirect normally
             const updatedUser = useAuthStore.getState().user;
             const isAdminRole = updatedUser?.rol === 'admin' || updatedUser?.rol === 'supervisor';
             navigate(isAdminRole ? '/admin/dashboard' : '/', { replace: true });
@@ -122,31 +147,79 @@ export function LoginPage() {
         }
     });
 
+    // ── Branding left panel ──────────────────────────────────────────────────
+    const HeroPanel = (
+        <div className={classes.hero}>
+            <div className={`${classes.heroContent} ${classes.fadeIn}`}>
+                {/* Logo */}
+                <div className={classes.logoMark}>
+                    <div className={classes.logoIcon}>
+                        <BrandIcon />
+                    </div>
+                    <span className={classes.logoText}>
+                        Blend<span className={classes.logoTextAccent}>POS</span>
+                    </span>
+                </div>
+
+                {/* Headlines */}
+                <h1 className={classes.headline}>
+                    Tu POS inteligente para el comercio argentino
+                </h1>
+                <p className={classes.subheadline}>
+                    Gestioná ventas, stock y facturación en un solo sistema
+                    simple, rápido y confiable.
+                </p>
+
+                {/* Features */}
+                <div className={classes.featureList}>
+                    {FEATURES.map((f) => (
+                        <div key={f.label} className={classes.featureItem}>
+                            <div className={classes.featureIconWrap}>
+                                {f.icon}
+                            </div>
+                            <div>
+                                <div className={classes.featureLabel}>{f.label}</div>
+                                <div className={classes.featureDesc}>{f.description}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Trust badge */}
+                <div className={classes.trustBadge}>
+                    <span className={classes.trustBadgeDot} />
+                    Diseñado para negocios reales. Optimizado para velocidad y estabilidad.
+                </div>
+            </div>
+        </div>
+    );
+
     // ── SEC-03: Forced password change form ──────────────────────────────────
     if (isAuthenticated && mustChangePassword) {
         return (
             <div className={classes.wrapper}>
-                <div className={classes.hero}>
-                    <div className={classes.heroContent}>
-                        <div className={classes.logo}>BlendPOS</div>
-                        <p className={classes.headline}>Gestioná tu negocio de forma simple y eficiente</p>
-                        <p className={classes.subheadline}>Un POS inteligente pensado para el comercio argentino</p>
-                    </div>
-                </div>
+                {HeroPanel}
 
                 <div className={classes.formSide}>
                     <div className={`${classes.formContainer} ${classes.fadeIn}`}>
                         {/* Mobile branding */}
                         <div className={classes.mobileBranding}>
-                            <div className={classes.mobileLogo}>BlendPOS</div>
+                            <div className={classes.mobileLogo}>
+                                Blend<span className={classes.mobileLogoAccent}>POS</span>
+                            </div>
                             <span className={classes.mobileTagline}>Cambio de contraseña obligatorio</span>
                         </div>
 
-                        <Paper p="xl" radius="md" withBorder className={classes.formCard}>
-                            <Title order={3} mb="lg">Cambiar contraseña</Title>
+                        <Paper p="xl" className={`${classes.formCard} ${classes.forceChangeCard}`}>
+                            <Title order={3} className={classes.formTitle} mb="xs">
+                                Cambiar contraseña
+                            </Title>
+                            <Text className={classes.formSubtitle}>
+                                Por seguridad, debés establecer una nueva contraseña antes de continuar.
+                            </Text>
 
                             <Alert icon={<ShieldAlert size={16} />} color="orange" mb="md" variant="light">
-                                Por seguridad, tenés que cambiar tu contraseña antes de continuar.
+                                Tu contraseña temporal debe ser cambiada antes de operar.
                             </Alert>
 
                             {error && (
@@ -168,7 +241,14 @@ export function LoginPage() {
                                         placeholder="Repetir contraseña"
                                         {...pwForm.getInputProps('confirmPassword')}
                                     />
-                                    <Button type="submit" fullWidth loading={loading} mt="sm" color="orange">
+                                    <Button
+                                        type="submit"
+                                        fullWidth
+                                        loading={loading}
+                                        mt="sm"
+                                        color="orange"
+                                        size="md"
+                                    >
                                         Cambiar contraseña
                                     </Button>
                                 </Stack>
@@ -183,43 +263,25 @@ export function LoginPage() {
     // ── Normal login form ────────────────────────────────────────────────────
     return (
         <div className={classes.wrapper}>
-            {/* Left column: Hero / Branding */}
-            <div className={classes.hero}>
-                <div className={`${classes.heroContent} ${classes.fadeIn}`}>
-                    <div className={classes.logo}>BlendPOS</div>
-                    <p className={classes.headline}>Gestioná tu negocio de forma simple y eficiente</p>
-                    <p className={classes.subheadline}>Un POS inteligente pensado para el comercio argentino</p>
+            {/* Left: Hero / Branding */}
+            {HeroPanel}
 
-                    <div className={classes.featureList}>
-                        {FEATURES.map((f) => (
-                            <div key={f.label} className={classes.featureItem}>
-                                <div className={classes.featureIcon}>
-                                    {f.icon}
-                                </div>
-                                <div>
-                                    <div className={classes.featureLabel}>{f.label}</div>
-                                    <div className={classes.featureText}>{f.description}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Right column: Form */}
+            {/* Right: Login form */}
             <div className={classes.formSide}>
                 <div className={`${classes.formContainer} ${classes.fadeInDelay}`}>
-                    {/* Mobile branding */}
+                    {/* Mobile branding — shown on small screens only */}
                     <div className={classes.mobileBranding}>
-                        <div className={classes.mobileLogo}>BlendPOS</div>
+                        <div className={classes.mobileLogo}>
+                            Blend<span className={classes.mobileLogoAccent}>POS</span>
+                        </div>
                         <span className={classes.mobileTagline}>POS moderno para negocios reales</span>
                     </div>
 
-                    <Paper p="xl" radius="xl" withBorder className={classes.formCard}>
-                        <Title order={3} mb="xs">Iniciar sesión</Title>
-                        <Text size="sm" c="dimmed" mb="lg">
-                            Ingresá tus credenciales para continuar
-                        </Text>
+                    <Paper p="xl" className={classes.formCard}>
+                        <h2 className={classes.formTitle}>Iniciar sesión</h2>
+                        <p className={classes.formSubtitle}>
+                            Accedé a tu sistema y comenzá a operar
+                        </p>
 
                         {error && (
                             <Alert icon={<AlertCircle size={16} />} color="red" mb="md" variant="light">
@@ -230,19 +292,24 @@ export function LoginPage() {
                         <form onSubmit={handleSubmit}>
                             <Stack gap="md">
                                 <TextInput
-                                    label="Usuario o Email"
-                                    placeholder="admin"
+                                    id="login-email"
+                                    label="Correo electrónico"
+                                    placeholder="ejemplo@negocio.com"
+                                    autoComplete="username"
                                     {...form.getInputProps('email')}
                                     data-autofocus
                                 />
                                 <PasswordInput
+                                    id="login-password"
                                     label="Contraseña"
-                                    placeholder="Tu contraseña"
+                                    placeholder="••••••••"
+                                    autoComplete="current-password"
                                     {...form.getInputProps('password')}
                                 />
 
                                 <Group justify="space-between" align="center" mt={2}>
                                     <Checkbox
+                                        id="login-remember"
                                         checked={rememberMe}
                                         onChange={(event) => setRememberMe(event.currentTarget.checked)}
                                         label="Recordarme"
@@ -250,8 +317,6 @@ export function LoginPage() {
                                     />
                                     <Anchor
                                         href="#"
-                                        size="sm"
-                                        fw={600}
                                         className={classes.forgotLink}
                                         onClick={(event) => event.preventDefault()}
                                     >
@@ -259,9 +324,24 @@ export function LoginPage() {
                                     </Anchor>
                                 </Group>
 
-                                <Button type="submit" fullWidth loading={loading} mt="sm" size="md">
-                                    Ingresar
+                                <Button
+                                    id="login-submit"
+                                    type="submit"
+                                    fullWidth
+                                    loading={loading}
+                                    disabled={loading}
+                                    mt="xs"
+                                    size="md"
+                                >
+                                    {loading ? 'Ingresando...' : 'Ingresar'}
                                 </Button>
+
+                                {/* Divider */}
+                                <div className={classes.orDivider}>
+                                    <div className={classes.orDividerLine} />
+                                    <span className={classes.orDividerText}>o continuá con</span>
+                                    <div className={classes.orDividerLine} />
+                                </div>
 
                                 <Button
                                     type="button"
@@ -269,19 +349,29 @@ export function LoginPage() {
                                     variant="default"
                                     size="md"
                                     leftSection={<Chrome size={16} />}
-                                    className={classes.googleButton}
                                 >
                                     Continuar con Google
                                 </Button>
                             </Stack>
                         </form>
 
-                        <Text size="sm" c="dimmed" ta="center" mt="lg">
-                            ¿No tenés cuenta?{' '}
-                            <Anchor component={Link} to="/register" size="sm" fw={600}>
-                                Creá tu negocio gratis
-                            </Anchor>
-                        </Text>
+                        {/* Footer */}
+                        <div className={classes.formFooter}>
+                            <Text size="xs" c="dimmed" ta="center" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                                ¿No tenés cuenta?{' '}
+                                <Anchor component={Link} to="/register" size="xs" fw={600} style={{ color: '#60a5fa' }}>
+                                    Creá tu negocio gratis
+                                </Anchor>
+                            </Text>
+
+                            <div className={classes.footerLinks}>
+                                <span>© 2026 BlendPOS</span>
+                                <div className={classes.footerDivider} />
+                                <a href="#" className={classes.footerLink}>Soporte técnico</a>
+                                <div className={classes.footerDivider} />
+                                <a href="#" className={classes.footerLink}>Términos y condiciones</a>
+                            </div>
+                        </div>
                     </Paper>
                 </div>
             </div>

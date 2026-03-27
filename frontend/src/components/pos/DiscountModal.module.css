@@ -1,21 +1,60 @@
+/* ── DiscountModal — Digital Engineering ─────────────────────────── */
+
 .summary {
-    background-color: var(--mantine-color-dark-6);
-    border-radius: var(--mantine-radius-md);
-    padding: var(--mantine-spacing-md);
+    background: rgba(2, 6, 23, 0.55);
+    border: 0.5px solid rgba(37, 99, 235, 0.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Manrope', sans-serif;
 }
+
+.summary::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.55), transparent);
+}
+
+:global([data-mantine-color-scheme='light']) .summary {
+    background: #f0f4ff;
+    border-color: rgba(37, 99, 235, 0.16);
+}
+
+/* ── Quick % badge pills ────────────────────────────────────────── */
 
 .quickBadge {
     cursor: pointer;
-    transition: all 100ms ease;
+    border: 0.5px solid rgba(37, 99, 235, 0.28) !important;
+    background: rgba(37, 99, 235, 0.1) !important;
+    color: #bfdbfe !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700 !important;
+    border-radius: 7px !important;
+    padding: 6px 12px !important;
+    transition: background 140ms ease, border-color 140ms ease, transform 110ms ease;
     user-select: none;
+    font-size: 0.82rem !important;
 }
 
 .quickBadge:hover {
-    transform: scale(1.05);
+    background: rgba(37, 99, 235, 0.22) !important;
+    border-color: rgba(37, 99, 235, 0.45) !important;
+    transform: translateY(-1px);
 }
 
-/* Light mode */
-:global([data-mantine-color-scheme='light']) .summary {
-    background-color: var(--mantine-color-gray-1);
-    border: 1px solid var(--mantine-color-gray-3);
+.quickBadge:active {
+    transform: scale(0.96);
+}
+
+:global([data-mantine-color-scheme='light']) .quickBadge {
+    background: #eef2ff !important;
+    border-color: rgba(37, 99, 235, 0.28) !important;
+    color: #1d4ed8 !important;
+}
+
+:global([data-mantine-color-scheme='light']) .quickBadge:hover {
+    background: #dbeafe !important;
 }

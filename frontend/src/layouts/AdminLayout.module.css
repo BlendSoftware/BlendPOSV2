@@ -1,43 +1,228 @@
-/* Layout flex propio para evitar offsets rotos del AppShell */
+/* ══════════════════════════════════════════════════════════════════════════
+   BlendPOS — Admin Layout — Digital Engineering Design System
+   Palette (unified with LoginPage):
+     Background:   #020617  (midnight blue)
+     Sidebar:      #080f1e  (solid dark panel)
+     Header:       #07101f  (slightly raised)
+     Content:      #020617  (same base)
+     Primary:      #2563eb  (electric blue)
+     Text-main:    #f8fafc
+     Text-sub:     rgba(148,163,184,0.85)
+     Border:       rgba(255,255,255,0.09)–0.14
+   Font: Manrope (inherited from login font injection)
+══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Shell ─────────────────────────────────────────────────────────────────── */
 
 .shell {
     height: 100vh;
     display: flex;
-    background: var(--mantine-color-dark-9);
+    background-color: #020617;
+    /* Micro-grid: same as login page for coherence */
+    background-image:
+        linear-gradient(rgba(37, 99, 235, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37, 99, 235, 0.035) 1px, transparent 1px);
+    background-size: 36px 36px;
     position: relative;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+/* Ambient top-left glow, restrained */
 .shell::before {
     content: '';
     position: fixed;
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(55% 38% at 10% -8%, rgba(14, 165, 233, 0.14), transparent 70%),
-        radial-gradient(48% 28% at 98% 6%, rgba(56, 189, 248, 0.12), transparent 72%);
+        radial-gradient(60% 35% at 0% 0%, rgba(37, 99, 235, 0.10), transparent 68%),
+        radial-gradient(40% 22% at 100% 5%, rgba(37, 99, 235, 0.06), transparent 72%);
     z-index: 0;
 }
+
+/* ── Overlay (mobile) ──────────────────────────────────────────────────────── */
 
 .overlay {
     display: none;
 }
 
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+
 .sidebar {
-    width: 230px;
-    flex: 0 0 230px;
-    background:
-        linear-gradient(180deg, rgba(12, 17, 24, 0.96), rgba(15, 23, 33, 0.92)),
-        var(--mantine-color-dark-8);
-    border-right: 1px solid rgba(56, 189, 248, 0.22);
-    padding: var(--mantine-spacing-sm) var(--mantine-spacing-xs);
+    width: 236px;
+    flex: 0 0 236px;
+    background: #080f1e;
+    border-right: 0.5px solid rgba(37, 99, 235, 0.2);
+    padding: 0 6px 12px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
     z-index: 2;
-    box-shadow: 8px 0 22px rgba(0, 0, 0, 0.22);
+    box-shadow: 4px 0 24px rgba(2, 6, 23, 0.45);
+    /* Custom slim scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(37, 99, 235, 0.25) transparent;
 }
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.25);
+    border-radius: 2px;
+}
+
+/* ── Sidebar header / brand ────────────────────────────────────────────────── */
+
+.navHeader {
+    padding: 18px 10px 14px;
+    margin-bottom: 2px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.brand {
+    font-size: 1.18rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
+    color: #f8fafc !important;
+    line-height: 1 !important;
+    font-family: 'Manrope', sans-serif !important;
+}
+
+/* Accent the "POS" portion via CSS — applied via a span if needed, or just keep as-is */
+.brandAccent {
+    color: #2563eb;
+}
+
+.brandSub {
+    font-size: 0.63rem !important;
+    font-weight: 600 !important;
+    color: rgba(100, 116, 139, 0.78) !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+    font-family: 'Manrope', sans-serif !important;
+    margin-top: 3px;
+}
+
+/* ── Section label ─────────────────────────────────────────────────────────── */
+
+.navSectionLabel {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(71, 85, 105, 0.85);
+    padding: 10px 10px 4px;
+    margin-top: 4px;
+    font-family: 'Manrope', sans-serif;
+}
+
+/* ── Nav link ──────────────────────────────────────────────────────────────── */
+
+.navLink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: rgba(148, 163, 184, 0.82);
+    font-size: 0.836rem;
+    font-weight: 500;
+    font-family: 'Manrope', sans-serif;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+    cursor: pointer;
+    border: 0.5px solid transparent;
+    background: none;
+    width: 100%;
+    text-align: left;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.navLink svg {
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: opacity 150ms ease, color 150ms ease;
+}
+
+.navLink:hover {
+    background: rgba(37, 99, 235, 0.1);
+    border-color: rgba(37, 99, 235, 0.2);
+    color: #e2e8f0;
+}
+
+.navLink:hover svg {
+    opacity: 1;
+    color: #60a5fa;
+}
+
+/* ── Active nav link ───────────────────────────────────────────────────────── */
+
+.navLinkActive {
+    background: rgba(37, 99, 235, 0.16);
+    color: #93c5fd;
+    border-color: rgba(37, 99, 235, 0.32);
+    box-shadow: inset 3px 0 0 #2563eb;
+    font-weight: 600;
+}
+
+.navLinkActive svg {
+    opacity: 1;
+    color: #60a5fa;
+}
+
+.navLinkActive:hover {
+    background: rgba(37, 99, 235, 0.22);
+    color: #bfdbfe;
+}
+
+/* ── Nav section (bottom of sidebar) ──────────────────────────────────────── */
+
+.navSection {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.07);
+}
+
+/* ── Danger nav link (logout) ──────────────────────────────────────────────── */
+
+.navLinkDanger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: rgba(248, 113, 113, 0.78);
+    font-size: 0.836rem;
+    font-weight: 500;
+    font-family: 'Manrope', sans-serif;
+    transition: background 150ms ease, color 150ms ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.navLinkDanger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+}
+
+/* ── Main content section ──────────────────────────────────────────────────── */
 
 .main {
     flex: 1;
@@ -48,93 +233,20 @@
     z-index: 1;
 }
 
-.navHeader {
-    padding: var(--mantine-spacing-sm) var(--mantine-spacing-xs);
-    margin-bottom: var(--mantine-spacing-xs);
-    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-}
-
-.brand {
-    font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: #7dd3fc;
-    text-shadow: 0 0 18px rgba(56, 189, 248, 0.28);
-}
-
-.brandSub {
-    font-size: 0.7rem;
-    color: var(--mantine-color-dimmed);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-.navLink {
-    display: flex;
-    align-items: center;
-    gap: var(--mantine-spacing-sm);
-    padding: 10px var(--mantine-spacing-sm);
-    border-radius: var(--mantine-radius-sm);
-    text-decoration: none;
-    color: var(--mantine-color-dark-1);
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
-    cursor: pointer;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-    border: 1px solid transparent;
-}
-
-.navLink:hover {
-    background: rgba(56, 189, 248, 0.14);
-    border-color: rgba(56, 189, 248, 0.28);
-    color: var(--mantine-color-white);
-    transform: translateX(2px);
-}
-
-.navLinkActive {
-    background: linear-gradient(90deg, rgba(2, 132, 199, 0.42), rgba(14, 165, 233, 0.22));
-    color: #bae6fd;
-    border-color: rgba(56, 189, 248, 0.44);
-    box-shadow: inset 0 1px 0 rgba(186, 230, 253, 0.26), 0 4px 10px rgba(2, 132, 199, 0.2);
-}
-
-.navLinkActive:hover {
-    background: linear-gradient(90deg, rgba(2, 132, 199, 0.52), rgba(14, 165, 233, 0.28));
-    color: #e0f2fe;
-}
-
-.navSection {
-    margin-top: var(--mantine-spacing-sm);
-    padding-top: var(--mantine-spacing-sm);
-    border-top: 1px solid rgba(56, 189, 248, 0.2);
-}
-
-.navSectionLabel {
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--mantine-color-dimmed);
-    padding: 0 var(--mantine-spacing-sm);
-    margin-bottom: 4px;
-}
+/* ── Top header bar ────────────────────────────────────────────────────────── */
 
 .header {
-    flex: 0 0 56px;
+    flex: 0 0 52px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 var(--mantine-spacing-md);
-    height: 100%;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.16);
-    background:
-        linear-gradient(180deg, rgba(16, 23, 31, 0.94), rgba(14, 20, 28, 0.9)),
-        var(--mantine-color-dark-8);
-    backdrop-filter: blur(3px);
+    padding: 0 20px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+    background: #07101f;
+    box-shadow: 0 2px 12px rgba(2, 6, 23, 0.35);
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
 }
 
 .headerTitleGroup {
@@ -142,94 +254,550 @@
 }
 
 .headerTitle {
-    letter-spacing: 0.015em;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    color: rgba(100, 116, 139, 0.85) !important;
+    letter-spacing: 0.01em !important;
+    font-family: 'Manrope', sans-serif !important;
+    white-space: nowrap;
 }
 
-.content {
-    flex: 1;
-    overflow: auto;
-    background: linear-gradient(180deg, rgba(6, 12, 18, 0.94), rgba(8, 13, 20, 0.98));
-    padding: var(--mantine-spacing-xl);
-}
+/* ── Header right: user controls ───────────────────────────────────────────── */
 
 .userMenu {
     display: flex;
     align-items: center;
-    gap: var(--mantine-spacing-sm);
+    gap: 10px;
 }
 
 .branchSelect :global(.mantine-Input-input) {
-    font-weight: 600;
+    background: rgba(2, 6, 23, 0.6) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 8px !important;
+    color: #e2e8f0 !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+}
+
+.branchSelect :global(.mantine-Input-input:focus) {
+    border-color: rgba(37, 99, 235, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12) !important;
 }
 
 .themeToggleWrap {
     display: inline-flex;
-    padding: 2px;
-    border-radius: 999px;
-    border: 1px solid rgba(56, 189, 248, 0.26);
-    background: rgba(56, 189, 248, 0.08);
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    border-radius: 8px;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    transition: border-color 150ms ease, background 150ms ease;
+}
+
+.themeToggleWrap:hover {
+    border-color: rgba(37, 99, 235, 0.3);
+    background: rgba(37, 99, 235, 0.07);
+}
+
+.rolBadge {
+    font-size: 0.62rem !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
 }
 
 .userTrigger {
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 999px;
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    background: rgba(56, 189, 248, 0.08);
-    transition: border-color 0.15s ease, background 0.15s ease;
+    padding: 4px 10px 4px 5px;
+    border-radius: 99px;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    transition: border-color 150ms ease, background 150ms ease;
 }
 
 .userTrigger:hover {
-    border-color: rgba(56, 189, 248, 0.38);
-    background: rgba(56, 189, 248, 0.14);
+    border-color: rgba(37, 99, 235, 0.35);
+    background: rgba(37, 99, 235, 0.08);
 }
 
 .userAvatar {
-    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.24);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3) !important;
 }
 
 .userChevron {
-    opacity: 0.8;
+    opacity: 0.6;
+    transition: opacity 150ms ease;
 }
 
-.rolBadge {
-    font-size: 0.65rem;
+.userTrigger:hover .userChevron {
+    opacity: 0.9;
 }
 
-.navLinkDanger {
-    display: flex;
-    align-items: center;
-    gap: var(--mantine-spacing-sm);
-    padding: 10px var(--mantine-spacing-sm);
-    border-radius: var(--mantine-radius-sm);
-    text-decoration: none;
-    color: var(--mantine-color-red-4);
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: background 0.15s, color 0.15s, transform 0.15s;
-    cursor: pointer;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
+/* ── Content area ──────────────────────────────────────────────────────────── */
+
+.content {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    background-color: #020617;
+    background-image:
+        linear-gradient(rgba(37, 99, 235, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37, 99, 235, 0.025) 1px, transparent 1px);
+    background-size: 36px 36px;
+    /* Slim scrollbar in content */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(37, 99, 235, 0.2) transparent;
 }
 
-.navLinkDanger:hover {
-    background: rgba(239, 68, 68, 0.12);
-    color: var(--mantine-color-red-3);
-    transform: translateX(2px);
+.content::-webkit-scrollbar { width: 5px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.22);
+    border-radius: 3px;
 }
 
-/* Mobile: sidebar overlay */
+/* ── Content: Mantine component defaults (dark) ────────────────────────────── */
+
+/* Paper / Card surfaces */
+.content :global(.mantine-Paper-root) {
+    background: #0d1526 !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    box-shadow: 0 4px 20px rgba(2, 6, 23, 0.4), 0 0 0 0.5px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Inputs */
+.content :global(.mantine-Input-input) {
+    background: rgba(2, 6, 23, 0.6) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f1f5f9 !important;
+    font-family: 'Manrope', sans-serif !important;
+    border-radius: 8px !important;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.content :global(.mantine-Input-input:focus),
+.content :global(.mantine-Input-input[data-focused]) {
+    border-color: rgba(37, 99, 235, 0.65) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.content :global(.mantine-Input-input::placeholder) {
+    color: rgba(71, 85, 105, 0.7) !important;
+}
+
+/* Table headers */
+.content :global(.mantine-Table-th) {
+    background: rgba(13, 21, 38, 0.9) !important;
+    color: rgba(148, 163, 184, 0.85) !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    border-bottom: 0.5px solid rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Table rows */
+.content :global(.mantine-Table-tr:hover td) {
+    background: rgba(37, 99, 235, 0.06) !important;
+}
+
+.content :global(.mantine-Table-td) {
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.05) !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.87rem !important;
+}
+
+/* Filled buttons */
+.content :global(.mantine-Button-root[data-variant='filled']) {
+    background: #2563eb !important;
+    border: none !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.24) !important;
+    transition: background 150ms ease, box-shadow 150ms ease, transform 130ms ease !important;
+}
+
+.content :global(.mantine-Button-root[data-variant='filled']:hover):not(:disabled) {
+    background: #1d4ed8 !important;
+    box-shadow: 0 4px 18px rgba(37, 99, 235, 0.36) !important;
+    transform: translateY(-1px);
+}
+
+.content :global(.mantine-Button-root[data-variant='filled']:active):not(:disabled) {
+    background: #1e40af !important;
+    transform: translateY(0);
+    box-shadow: 0 1px 5px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Default / outline buttons */
+.content :global(.mantine-Button-root[data-variant='default']),
+.content :global(.mantine-Button-root[data-variant='outline']) {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.14) !important;
+    color: #cbd5e1 !important;
+    font-family: 'Manrope', sans-serif !important;
+    border-radius: 8px !important;
+    transition: background 150ms ease, border-color 150ms ease !important;
+}
+
+.content :global(.mantine-Button-root[data-variant='default']:hover):not(:disabled),
+.content :global(.mantine-Button-root[data-variant='outline']:hover):not(:disabled) {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(37, 99, 235, 0.32) !important;
+    color: #e2e8f0 !important;
+}
+
+/* Light variant buttons */
+.content :global(.mantine-Button-root[data-variant='light']) {
+    font-family: 'Manrope', sans-serif !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+/* ActionIcon */
+.content :global(.mantine-ActionIcon-root) {
+    border-radius: 8px !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    transition: background 150ms ease, border-color 150ms ease !important;
+}
+
+.content :global(.mantine-ActionIcon-root:hover):not(:disabled) {
+    background: rgba(37, 99, 235, 0.12) !important;
+    border-color: rgba(37, 99, 235, 0.28) !important;
+}
+
+/* Badge */
+.content :global(.mantine-Badge-root) {
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    border-radius: 6px !important;
+}
+
+/* Select dropdown */
+.content :global(.mantine-Select-dropdown),
+.content :global(.mantine-Combobox-dropdown) {
+    background: #0d1526 !important;
+    border: 0.5px solid rgba(37, 99, 235, 0.25) !important;
+    box-shadow: 0 8px 32px rgba(2, 6, 23, 0.55) !important;
+    border-radius: 10px !important;
+}
+
+.content :global(.mantine-Combobox-option:hover),
+.content :global(.mantine-Combobox-option[data-combobox-selected]) {
+    background: rgba(37, 99, 235, 0.14) !important;
+}
+
+/* Modal overlays */
+:global(.mantine-Modal-content) {
+    background: #0d1526 !important;
+    border: 0.5px solid rgba(37, 99, 235, 0.2) !important;
+    box-shadow: 0 20px 60px rgba(2, 6, 23, 0.7) !important;
+}
+
+:global(.mantine-Modal-header) {
+    background: #0d1526 !important;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.08) !important;
+    font-family: 'Manrope', sans-serif !important;
+}
+
+/* Tooltips */
+:global(.mantine-Tooltip-tooltip) {
+    background: #111d33 !important;
+    border: 0.5px solid rgba(37, 99, 235, 0.25) !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.8rem !important;
+    border-radius: 7px !important;
+}
+
+/* Menu dropdown */
+:global(.mantine-Menu-dropdown) {
+    background: #0d1526 !important;
+    border: 0.5px solid rgba(37, 99, 235, 0.2) !important;
+    box-shadow: 0 10px 32px rgba(2, 6, 23, 0.6) !important;
+    border-radius: 10px !important;
+    font-family: 'Manrope', sans-serif !important;
+}
+
+:global(.mantine-Menu-item) {
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.865rem !important;
+    border-radius: 7px !important;
+}
+
+:global(.mantine-Menu-item:hover) {
+    background: rgba(37, 99, 235, 0.1) !important;
+}
+
+:global(.mantine-Menu-label) {
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.72rem !important;
+    color: rgba(100, 116, 139, 0.8) !important;
+}
+
+:global(.mantine-Menu-divider) {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Notification / Alert */
+.content :global(.mantine-Alert-root) {
+    border-radius: 10px !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 0.87rem !important;
+}
+
+/* Tabs */
+.content :global(.mantine-Tabs-tab) {
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 0.87rem !important;
+    border-radius: 8px 8px 0 0 !important;
+    transition: color 150ms ease, background 150ms ease !important;
+}
+
+.content :global(.mantine-Tabs-tab[data-active]) {
+    color: #60a5fa !important;
+    border-bottom-color: #2563eb !important;
+    font-weight: 600 !important;
+}
+
+/* Number inputs */
+.content :global(.mantine-NumberInput-input) {
+    background: rgba(2, 6, 23, 0.6) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f1f5f9 !important;
+    font-family: 'Manrope', sans-serif !important;
+    border-radius: 8px !important;
+}
+
+/* ── Light mode overrides ───────────────────────────────────────────────────── */
+
+:global([data-mantine-color-scheme='light']) .shell {
+    background-color: #f0f4ff;
+    background-image:
+        linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+}
+
+:global([data-mantine-color-scheme='light']) .shell::before {
+    background:
+        radial-gradient(60% 32% at 0% 0%, rgba(37, 99, 235, 0.10), transparent 70%),
+        radial-gradient(38% 20% at 100% 0%, rgba(37, 99, 235, 0.07), transparent 72%);
+}
+
+:global([data-mantine-color-scheme='light']) .sidebar {
+    background: #ffffff;
+    border-right-color: rgba(37, 99, 235, 0.18);
+    box-shadow: 4px 0 20px rgba(37, 99, 235, 0.08);
+}
+
+:global([data-mantine-color-scheme='light']) .navHeader {
+    border-bottom-color: rgba(37, 99, 235, 0.12);
+}
+
+:global([data-mantine-color-scheme='light']) .brand {
+    color: #0f172a !important;
+}
+
+:global([data-mantine-color-scheme='light']) .brandSub {
+    color: rgba(71, 85, 105, 0.8) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .navSectionLabel {
+    color: rgba(100, 116, 139, 0.8);
+}
+
+:global([data-mantine-color-scheme='light']) .navLink {
+    color: rgba(51, 65, 85, 0.88);
+}
+
+:global([data-mantine-color-scheme='light']) .navLink:hover {
+    background: rgba(37, 99, 235, 0.07);
+    border-color: rgba(37, 99, 235, 0.18);
+    color: #1d4ed8;
+}
+
+:global([data-mantine-color-scheme='light']) .navLink:hover svg {
+    color: #2563eb;
+}
+
+:global([data-mantine-color-scheme='light']) .navLinkActive {
+    background: rgba(37, 99, 235, 0.1);
+    color: #1d4ed8;
+    border-color: rgba(37, 99, 235, 0.28);
+    box-shadow: inset 3px 0 0 #2563eb;
+}
+
+:global([data-mantine-color-scheme='light']) .navLinkActive svg {
+    color: #2563eb;
+}
+
+:global([data-mantine-color-scheme='light']) .navLinkActive:hover {
+    background: rgba(37, 99, 235, 0.14);
+    color: #1e40af;
+}
+
+:global([data-mantine-color-scheme='light']) .navSection {
+    border-top-color: rgba(37, 99, 235, 0.12);
+}
+
+:global([data-mantine-color-scheme='light']) .navLinkDanger {
+    color: rgba(220, 38, 38, 0.82);
+}
+
+:global([data-mantine-color-scheme='light']) .navLinkDanger:hover {
+    background: rgba(239, 68, 68, 0.07);
+    color: #dc2626;
+}
+
+:global([data-mantine-color-scheme='light']) .header {
+    background: #ffffff;
+    border-bottom-color: rgba(37, 99, 235, 0.14);
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.07);
+}
+
+:global([data-mantine-color-scheme='light']) .headerTitle {
+    color: rgba(71, 85, 105, 0.85) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .themeToggleWrap {
+    border-color: rgba(37, 99, 235, 0.2);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+:global([data-mantine-color-scheme='light']) .userTrigger {
+    border-color: rgba(37, 99, 235, 0.18);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+:global([data-mantine-color-scheme='light']) .userTrigger:hover {
+    border-color: rgba(37, 99, 235, 0.32);
+    background: rgba(37, 99, 235, 0.06);
+}
+
+:global([data-mantine-color-scheme='light']) .userAvatar {
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content {
+    background-color: #f0f4ff;
+    background-image:
+        linear-gradient(rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+}
+
+/* Light mode: content components */
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Paper-root) {
+    background: #ffffff !important;
+    border-color: rgba(37, 99, 235, 0.14) !important;
+    box-shadow:
+        0 4px 18px rgba(37, 99, 235, 0.07),
+        0 0 0 0.5px rgba(37, 99, 235, 0.08) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Input-input) {
+    background: #ffffff !important;
+    border-color: rgba(203, 213, 225, 0.9) !important;
+    color: #0f172a !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Input-input:focus),
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Input-input[data-focused]) {
+    border-color: rgba(37, 99, 235, 0.6) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Table-th) {
+    background: rgba(240, 244, 255, 0.9) !important;
+    color: rgba(71, 85, 105, 0.9) !important;
+    border-bottom-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Table-tr:hover td) {
+    background: rgba(37, 99, 235, 0.04) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Table-td) {
+    border-bottom-color: rgba(226, 232, 240, 0.9) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Button-root[data-variant='default']),
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Button-root[data-variant='outline']) {
+    background: #ffffff !important;
+    border-color: rgba(203, 213, 225, 0.9) !important;
+    color: #334155 !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Button-root[data-variant='default']:hover):not(:disabled),
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Button-root[data-variant='outline']:hover):not(:disabled) {
+    background: #f8fafc !important;
+    border-color: rgba(37, 99, 235, 0.3) !important;
+    color: #1d4ed8 !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-ActionIcon-root) {
+    background: #ffffff !important;
+    border-color: rgba(203, 213, 225, 0.9) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-ActionIcon-root:hover):not(:disabled) {
+    background: rgba(37, 99, 235, 0.06) !important;
+    border-color: rgba(37, 99, 235, 0.25) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Select-dropdown),
+:global([data-mantine-color-scheme='light']) .content :global(.mantine-Combobox-dropdown) {
+    background: #ffffff !important;
+    border-color: rgba(37, 99, 235, 0.18) !important;
+    box-shadow: 0 8px 28px rgba(37, 99, 235, 0.1) !important;
+}
+
+:global([data-mantine-color-scheme='light']) :global(.mantine-Modal-content) {
+    background: #ffffff !important;
+    border-color: rgba(37, 99, 235, 0.15) !important;
+    box-shadow: 0 20px 60px rgba(37, 99, 235, 0.12) !important;
+}
+
+:global([data-mantine-color-scheme='light']) :global(.mantine-Modal-header) {
+    background: #ffffff !important;
+    border-bottom-color: rgba(226, 232, 240, 0.9) !important;
+}
+
+:global([data-mantine-color-scheme='light']) :global(.mantine-Menu-dropdown) {
+    background: #ffffff !important;
+    border-color: rgba(37, 99, 235, 0.15) !important;
+    box-shadow: 0 10px 28px rgba(37, 99, 235, 0.1) !important;
+}
+
+:global([data-mantine-color-scheme='light']) :global(.mantine-Menu-item:hover) {
+    background: rgba(37, 99, 235, 0.06) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .branchSelect :global(.mantine-Input-input) {
+    background: #ffffff !important;
+    border-color: rgba(203, 213, 225, 0.9) !important;
+    color: #0f172a !important;
+}
+
+/* ── Mobile sidebar overlay ────────────────────────────────────────────────── */
+
 @media (max-width: 48em) {
     .overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.55);
+        background: rgba(2, 6, 23, 0.65);
         display: block;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.15s ease;
+        transition: opacity 150ms ease;
         z-index: 99;
     }
 
@@ -244,172 +812,19 @@
         bottom: 0;
         left: 0;
         transform: translateX(-100%);
-        transition: transform 0.15s ease;
+        transition: transform 150ms ease;
         z-index: 100;
     }
 
     .sidebarOpen {
         transform: translateX(0);
     }
-}
 
-/* ═══════════════════════════════════════════════════
-   MODO CLARO — Light mode overrides
-   ═══════════════════════════════════════════════════ */
-
-:global([data-mantine-color-scheme='light']) .shell {
-    background: #ecf8ff;
-}
-
-:global([data-mantine-color-scheme='light']) .shell::before {
-    background:
-        radial-gradient(58% 36% at 6% -8%, rgba(14, 165, 233, 0.22), transparent 72%),
-        radial-gradient(48% 30% at 102% 8%, rgba(125, 211, 252, 0.24), transparent 70%),
-        linear-gradient(180deg, rgba(236, 253, 255, 0.5), rgba(224, 242, 254, 0.22));
-}
-
-:global([data-mantine-color-scheme='light']) .sidebar {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.96));
-    border-right-color: rgba(56, 189, 248, 0.28);
-    box-shadow: 8px 0 24px rgba(2, 132, 199, 0.12);
-}
-
-:global([data-mantine-color-scheme='light']) .navHeader {
-    border-bottom-color: rgba(56, 189, 248, 0.24);
-}
-
-:global([data-mantine-color-scheme='light']) .brand {
-    color: #0369a1;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 12px rgba(125, 211, 252, 0.32);
-}
-
-:global([data-mantine-color-scheme='light']) .navLink {
-    color: #0f172a;
-}
-
-:global([data-mantine-color-scheme='light']) .navLink:hover {
-    background: linear-gradient(90deg, rgba(224, 242, 254, 0.92), rgba(240, 249, 255, 0.92));
-    color: #0c4a6e;
-    border-color: rgba(56, 189, 248, 0.32);
-}
-
-:global([data-mantine-color-scheme='light']) .navLinkActive {
-    background: linear-gradient(90deg, rgba(186, 230, 253, 0.92), rgba(224, 242, 254, 0.98));
-    color: #075985;
-    border-color: rgba(14, 165, 233, 0.44);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 3px 10px rgba(14, 165, 233, 0.14);
-}
-
-:global([data-mantine-color-scheme='light']) .navLinkActive:hover {
-    background: linear-gradient(90deg, rgba(125, 211, 252, 0.35), rgba(224, 242, 254, 0.98));
-    color: #0c4a6e;
-}
-
-:global([data-mantine-color-scheme='light']) .navSectionLabel {
-    color: rgba(3, 105, 161, 0.76);
-}
-
-:global([data-mantine-color-scheme='light']) .navSection {
-    border-top-color: rgba(56, 189, 248, 0.24);
-}
-
-:global([data-mantine-color-scheme='light']) .navLinkDanger {
-    color: var(--mantine-color-red-6);
-}
-
-:global([data-mantine-color-scheme='light']) .navLinkDanger:hover {
-    background: var(--mantine-color-red-0);
-    color: var(--mantine-color-red-8);
-}
-
-:global([data-mantine-color-scheme='light']) .header {
-    background:
-        radial-gradient(85% 150% at 8% -50%, rgba(56, 189, 248, 0.26), rgba(56, 189, 248, 0)),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(240, 249, 255, 0.95));
-    border-bottom-color: rgba(56, 189, 248, 0.26);
-    box-shadow: 0 8px 18px rgba(14, 165, 233, 0.11);
-}
-
-:global([data-mantine-color-scheme='light']) .headerTitle {
-    color: #075985;
-    font-weight: 800;
-}
-
-:global([data-mantine-color-scheme='light']) .content {
-    background:
-        radial-gradient(120% 80% at 12% -20%, rgba(186, 230, 253, 0.36), rgba(186, 230, 253, 0)),
-        linear-gradient(180deg, rgba(240, 249, 255, 0.96), rgba(236, 253, 255, 0.92));
-}
-
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Paper-root) {
-    border-color: rgba(56, 189, 248, 0.24);
-    box-shadow: 0 8px 20px rgba(2, 132, 199, 0.08);
-}
-
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Button-root) {
-    border-color: rgba(56, 189, 248, 0.3);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
-}
-
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-ActionIcon-root) {
-    border: 1px solid rgba(56, 189, 248, 0.28);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(240, 249, 255, 0.9));
-}
-
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Badge-root) {
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(224, 242, 254, 0.9));
-    color: #0c4a6e;
-}
-
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Table-th) {
-    background: rgba(224, 242, 254, 0.68);
-    color: #075985;
-}
-
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Table-tr:hover td) {
-    background: rgba(224, 242, 254, 0.36);
-}
-
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Input-input),
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Select-input),
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-NumberInput-input) {
-    border-color: rgba(56, 189, 248, 0.3);
-    background: rgba(255, 255, 255, 0.92);
-}
-
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Input-input:focus),
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-Select-input:focus),
-:global([data-mantine-color-scheme='light']) .content :global(.mantine-NumberInput-input:focus) {
-    border-color: rgba(14, 165, 233, 0.62);
-    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
-}
-
-:global([data-mantine-color-scheme='light']) .themeToggleWrap {
-    border-color: rgba(56, 189, 248, 0.34);
-    background: rgba(224, 242, 254, 0.8);
-}
-
-:global([data-mantine-color-scheme='light']) .userTrigger {
-    border-color: rgba(56, 189, 248, 0.3);
-    background: rgba(255, 255, 255, 0.76);
-}
-
-:global([data-mantine-color-scheme='light']) .userAvatar {
-    box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.44);
-}
-
-/* ── Tablet: reduce padding, allow horizontal scroll on tables ─────── */
-@media (max-width: 48em) {
     .content {
-        padding: var(--mantine-spacing-sm);
+        padding: 14px;
     }
 
-    .navLink {
-        min-height: 44px;
-    }
-
+    .navLink,
     .navLinkDanger {
         min-height: 44px;
     }

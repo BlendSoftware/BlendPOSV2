@@ -1,58 +1,54 @@
+/* ── TotalPanel — Digital Engineering ────────────────────────────── */
+
 .panel {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: var(--mantine-spacing-md);
-    background:
-        linear-gradient(180deg, rgba(39, 43, 49, 0.96), rgba(33, 37, 43, 0.92)),
-        var(--mantine-color-dark-7);
-    border: 0;
-    border-radius: 12px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--mantine-color-dark-4) transparent;
-    box-shadow: none;
-    position: relative;
-    gap: 4px;
+    scrollbar-color: rgba(37, 99, 235, 0.2) transparent;
+    gap: 6px;
+    font-family: 'Manrope', -apple-system, sans-serif;
 }
 
-.panel::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 24%);
+.panel::-webkit-scrollbar { width: 3px; }
+.panel::-webkit-scrollbar-track { background: transparent; }
+.panel::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.2);
+    border-radius: 2px;
 }
 
-/* Light mode */
-:global([data-mantine-color-scheme='light']) .panel {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.9)),
-        var(--mantine-color-white);
-    border-color: transparent;
-    scrollbar-color: var(--mantine-color-gray-4) transparent;
-}
-
-.scanSection {
-    flex-shrink: 0;
-}
+/* ── Block title ─────────────────────────────────────────────────── */
 
 .blockTitle {
-    letter-spacing: 0.08em;
-    font-size: 10px;
-    color: rgba(56, 189, 248, 0.9);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(37, 99, 235, 0.8);
+    font-family: 'Manrope', sans-serif;
 }
 
+:global([data-mantine-color-scheme='light']) .blockTitle {
+    color: #2563eb;
+}
+
+/* ── Metrics row ─────────────────────────────────────────────────── */
+
 .metricsRow {
-    margin: 2px 0 6px;
+    margin: 2px 0 4px;
 }
 
 .metricCard {
     border-radius: 8px;
-    border: 0;
-    background: rgba(255, 255, 255, 0.07);
-    padding: 12px;
-    transition: transform 120ms ease, background-color 120ms ease;
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    background: rgba(2, 6, 23, 0.5);
+    padding: 10px 12px;
+    transition: transform 130ms ease, border-color 130ms ease;
     position: relative;
     overflow: hidden;
 }
@@ -62,16 +58,27 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 100%;
+    right: 0;
     height: 1px;
-    background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.55), rgba(56, 189, 248, 0));
-    opacity: 0.8;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.45), transparent);
 }
 
 .metricCard:hover {
     transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(37, 99, 235, 0.2);
 }
+
+:global([data-mantine-color-scheme='light']) .metricCard {
+    background: #f0f4ff;
+    border-color: rgba(37, 99, 235, 0.12);
+}
+
+:global([data-mantine-color-scheme='light']) .metricCard:hover {
+    border-color: rgba(37, 99, 235, 0.25);
+    background: #eef2ff;
+}
+
+/* ── Total amount ────────────────────────────────────────────────── */
 
 .totalSection {
     flex: 1;
@@ -81,86 +88,107 @@
     min-height: 0;
     text-align: center;
     border-radius: 10px;
-    background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.08), rgba(56, 189, 248, 0) 62%);
+    /* Subtle radial glow to draw attention to the number */
+    background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.07), transparent 65%);
 }
 
-.originalPrice {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+:global([data-mantine-color-scheme='light']) .totalSection {
+    background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.06), transparent 65%);
 }
 
 .totalAmount {
-    font-size: clamp(48px, 5.2vw, 78px);
+    font-size: clamp(42px, 4.8vw, 72px);
     line-height: 1;
     font-variant-numeric: tabular-nums;
-    font-family: 'Inter', monospace;
-    letter-spacing: -1.4px;
+    font-family: 'Manrope', -apple-system, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.04em;
     text-wrap: balance;
-    transition: color 180ms ease, transform 140ms ease, text-shadow 140ms ease;
+    transition: color 180ms ease, transform 140ms ease;
 }
 
-/* Precio sin descuento: blanco en oscuro, oscuro en claro */
+/* White/near-white when no discount */
 .totalNormal {
-    color: #ffffff;
-    text-shadow: 0 8px 20px rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
 }
+
 :global([data-mantine-color-scheme='light']) .totalNormal {
-    color: var(--mantine-color-dark-8);
+    color: #0f172a;
 }
 
-/* Precio con descuento: verde en ambos modos */
+/* Green when discount applied */
 .totalDiscount {
-    color: var(--mantine-color-green-5);
-    text-shadow: 0 6px 16px rgba(43, 138, 62, 0.28);
+    color: #4ade80;
+    text-shadow: 0 4px 16px rgba(74, 222, 128, 0.2);
 }
+
 :global([data-mantine-color-scheme='light']) .totalDiscount {
-    color: var(--mantine-color-green-7);
+    color: #16a34a;
+    text-shadow: 0 4px 12px rgba(22, 163, 74, 0.12);
 }
 
-/* Etiquetas de atajo de teclado (F10, F8, ESC) — heredan color del botón */
+/* Strikethrough original price */
+.originalPrice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* ── Shortcut labels ─────────────────────────────────────────────── */
+
 .shortcutLabel {
-    opacity: 0.65;
+    opacity: 0.55;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.7rem;
 }
 
-/* En modo claro los botones son más pálidos, bajamos la opacidad menos */
 :global([data-mantine-color-scheme='light']) .shortcutLabel {
     opacity: 1;
-    color: rgba(0, 0, 0, 0.45);
+    color: rgba(0, 0, 0, 0.4);
 }
+
+/* ── Action buttons area ─────────────────────────────────────────── */
 
 .actions {
     flex-shrink: 0;
     display: grid;
-    gap: 10px;
-    border-top: 0;
-    padding-top: 12px;
+    gap: 8px;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.07);
+    padding-top: 10px;
 }
 
+:global([data-mantine-color-scheme='light']) .actions {
+    border-top-color: rgba(37, 99, 235, 0.1);
+}
+
+/* ── Individual button wrappers ──────────────────────────────────── */
+
 .actionButton {
-    height: 58px;
-    transition: transform 100ms ease, box-shadow 120ms ease, filter 120ms ease;
+    height: 54px;
+    transition: transform 100ms ease, box-shadow 120ms ease;
     border-width: 0;
     position: relative;
     overflow: hidden;
 }
 
+/* Shimmer on hover */
 .actionButton::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(110deg, rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0) 65%);
-    transform: translateX(-140%);
-    transition: transform 420ms ease;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.12) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 380ms ease;
     pointer-events: none;
 }
 
 .actionButton:hover {
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 .actionButton:hover::before {
-    transform: translateX(140%);
+    transform: translateX(120%);
 }
 
 .actionButton:active {
@@ -168,108 +196,103 @@
 }
 
 .payButton {
-    height: 76px;
+    height: 72px;
 }
 
 .discountButton {
-    height: 54px;
+    height: 50px;
 }
 
 .cancelButton {
-    height: 54px;
+    height: 50px;
 }
 
-.payButton :global(.mantine-Button-root) {
-    box-shadow: 0 14px 24px rgba(43, 138, 62, 0.35);
-}
-
-.discountButton :global(.mantine-Button-root) {
-    border: 1px solid rgba(56, 189, 248, 0.35);
-}
-
-.actionButton:global(.mantine-Button-root:focus-visible),
-.actionButton :global(.mantine-Button-root:focus-visible) {
-    outline: 0;
-    box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.34);
-}
-
-.actionButton:global(.mantine-Button-root[data-disabled]),
-.actionButton :global(.mantine-Button-root[data-disabled]) {
-    opacity: 0.45;
-    filter: grayscale(0.1);
-}
-
+/* Pay button — green premium */
 .actions > :first-child :global(.mantine-Button-root) {
-    background: linear-gradient(135deg, #2b8a3e, #237032);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 12px 24px rgba(43, 138, 62, 0.34);
+    background: linear-gradient(135deg, #16a34a, #15803d) !important;
+    border: none !important;
+    box-shadow: 0 8px 22px rgba(22, 163, 74, 0.32) !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    border-radius: 10px !important;
+    transition: background 150ms ease, box-shadow 150ms ease, transform 110ms ease !important;
 }
 
-.actions > :first-child :global(.mantine-Button-root:hover) {
-    filter: brightness(1.04);
+.actions > :first-child :global(.mantine-Button-root:hover):not(:disabled) {
+    background: linear-gradient(135deg, #15803d, #166534) !important;
+    box-shadow: 0 10px 28px rgba(22, 163, 74, 0.42) !important;
+    transform: translateY(-1px);
 }
 
+.actions > :first-child :global(.mantine-Button-root:active):not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22) !important;
+}
+
+/* Last button (clear/cancel) */
 .actions > :last-child :global(.mantine-Button-root) {
-    border-width: 1px;
+    border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    font-family: 'Manrope', sans-serif !important;
+    border-radius: 10px !important;
 }
 
-:global([data-mantine-color-scheme='light']) .metricCard {
-    background: rgba(255, 255, 255, 0.88);
+:global([data-mantine-color-scheme='light']) .actions > :last-child :global(.mantine-Button-root) {
+    border-color: rgba(37, 99, 235, 0.18) !important;
+    background: #f8faff !important;
+    color: #334155 !important;
 }
 
-:global([data-mantine-color-scheme='light']) .totalSection {
-    background: radial-gradient(ellipse at center, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0) 64%);
+/* Disabled state */
+.actionButton :global(.mantine-Button-root[data-disabled]),
+.actionButton:global(.mantine-Button-root[data-disabled]) {
+    opacity: 0.4;
+    filter: grayscale(0.15);
 }
 
-:global([data-mantine-color-scheme='light']) .blockTitle {
-    color: #0369a1;
-}
+/* ── Tablet: horizontal layout ───────────────────────────────────── */
 
-/* ── Tablet: TotalPanel becomes horizontal bottom strip ───────────── */
 @media (max-width: 1024px) {
     .panel {
-        border-left: none;
-        border-top: 1px solid var(--mantine-color-dark-4);
         height: auto;
-        max-height: 40vh;
+        max-height: 38vh;
         overflow-y: auto;
     }
 
-    :global([data-mantine-color-scheme='light']) .panel {
-        border-left: none;
-        border-top-color: var(--mantine-color-gray-3);
-    }
-
     .totalAmount {
-        font-size: clamp(32px, 6vw, 48px);
+        font-size: clamp(28px, 5.5vw, 46px);
     }
 
     .actions {
         flex-direction: row;
         flex-wrap: wrap;
-        gap: var(--mantine-spacing-sm);
+        gap: 8px;
     }
 
     .actions > * {
         flex: 1;
-        min-width: 140px;
+        min-width: 130px;
     }
 
     .actionButton {
-        height: 56px;
+        height: 52px;
     }
 
     .payButton {
-        height: 64px;
+        height: 60px;
     }
 }
 
-/* ── Touch: larger tap targets ────────────────────────────────────── */
+/* ── Touch targets ───────────────────────────────────────────────── */
+
 @media (pointer: coarse) {
     .actionButton {
         min-height: 48px;
     }
 }
+
+/* ── Reduced motion ──────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
     .metricCard,

@@ -1,37 +1,75 @@
+/* ── SalesTable — Digital Engineering ────────────────────────────── */
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+
 .emptyState {
-    opacity: 1;
-    user-select: none;
     margin: 16px;
-    border-radius: 12px;
-    border: 1px dashed rgba(148, 156, 166, 0.26);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+    border-radius: 10px;
+    border: 0.5px dashed rgba(37, 99, 235, 0.25);
+    background: rgba(13, 21, 38, 0.5);
     text-align: center;
-    padding: 24px 16px;
+    padding: 28px 16px;
+    user-select: none;
+}
+
+:global([data-mantine-color-scheme='light']) .emptyState {
+    border-color: rgba(37, 99, 235, 0.2);
+    background: rgba(240, 244, 255, 0.7);
 }
 
 .emptyStateIcon {
-    color: rgba(56, 189, 248, 0.82);
+    color: rgba(37, 99, 235, 0.6);
+}
+
+:global([data-mantine-color-scheme='light']) .emptyStateIcon {
+    color: rgba(37, 99, 235, 0.55);
 }
 
 .emptyStateTitle {
-    font-size: 1.02rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    color: rgba(241, 243, 245, 0.96);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: rgba(241, 245, 249, 0.9);
+    font-family: 'Manrope', sans-serif;
+}
+
+:global([data-mantine-color-scheme='light']) .emptyStateTitle {
+    color: #0f172a;
 }
 
 .emptyStateSubtitle {
     font-size: 0.78rem;
-    color: rgba(148, 156, 166, 0.96);
+    font-weight: 400;
+    color: rgba(100, 116, 139, 0.85);
+    font-family: 'Manrope', sans-serif;
 }
+
+:global([data-mantine-color-scheme='light']) .emptyStateSubtitle {
+    color: rgba(51, 65, 85, 0.7);
+}
+
+/* ── Table wrapper ───────────────────────────────────────────────── */
 
 .tableWrapper {
     overflow-y: auto;
     height: 100%;
     scrollbar-width: thin;
-    scrollbar-color: var(--mantine-color-dark-4) transparent;
-    border-radius: 8px;
+    scrollbar-color: rgba(37, 99, 235, 0.2) transparent;
+    border-radius: 6px;
 }
+
+.tableWrapper::-webkit-scrollbar { width: 4px; }
+.tableWrapper::-webkit-scrollbar-track { background: transparent; }
+.tableWrapper::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.2);
+    border-radius: 2px;
+}
+
+:global([data-mantine-color-scheme='light']) .tableWrapper {
+    scrollbar-color: rgba(37, 99, 235, 0.18) transparent;
+}
+
+/* ── Table ───────────────────────────────────────────────────────── */
 
 .table {
     table-layout: fixed;
@@ -39,171 +77,166 @@
     border-collapse: separate;
     border-spacing: 0;
     font-size: 13px;
+    font-family: 'Manrope', sans-serif;
 }
+
+/* ── Header row ──────────────────────────────────────────────────── */
 
 .headerRow {
     position: sticky;
     top: 0;
-    background: rgba(14, 16, 20, 0.98);
+    background: #0a1220;
     z-index: 1;
-    box-shadow: none;
 }
 
 .headerRow :global(th) {
-    letter-spacing: 0.04em;
-    font-size: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
-    color: rgba(56, 189, 248, 0.8);
+    letter-spacing: 0.08em;
+    font-size: 0.62rem;
+    font-weight: 700;
+    font-family: 'Manrope', sans-serif;
+    text-transform: uppercase;
+    padding: 9px 10px;
+    color: rgba(37, 99, 235, 0.75);
+    border-bottom: 0.5px solid rgba(37, 99, 235, 0.18);
 }
 
+:global([data-mantine-color-scheme='light']) .headerRow {
+    background: #f0f4ff;
+}
+
+:global([data-mantine-color-scheme='light']) .headerRow :global(th) {
+    color: rgba(37, 99, 235, 0.7);
+    border-bottom-color: rgba(37, 99, 235, 0.14);
+}
+
+/* ── Data rows ───────────────────────────────────────────────────── */
+
 .row {
-    height: 56px;
-    transition: background-color 110ms ease;
+    height: 52px;
+    transition: background-color 100ms ease;
     cursor: pointer;
-    border-bottom: 1px solid rgba(148, 156, 166, 0.08);
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
     position: relative;
 }
 
 .row :global(td) {
     vertical-align: middle;
+    padding: 6px 10px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.86rem;
+    color: rgba(241, 245, 249, 0.9);
 }
 
 .row:hover {
-    background-color: rgba(77, 171, 247, 0.1);
+    background-color: rgba(37, 99, 235, 0.07);
 }
 
-.row::after {
-    content: '';
-    position: absolute;
-    left: 8px;
-    right: 8px;
-    bottom: 0;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.16), rgba(56, 189, 248, 0));
-    pointer-events: none;
+:global([data-mantine-color-scheme='light']) .row {
+    border-bottom-color: rgba(37, 99, 235, 0.07);
 }
+
+:global([data-mantine-color-scheme='light']) .row :global(td) {
+    color: #1e293b;
+}
+
+:global([data-mantine-color-scheme='light']) .row:hover {
+    background-color: rgba(37, 99, 235, 0.04);
+}
+
+/* ── Add flash animation on new row ─────────────────────────────── */
 
 .rowHighlight {
-    animation: highlightFlash 520ms ease-out;
+    animation: highlightFlash 480ms ease-out;
 }
+
+@keyframes highlightFlash {
+    0%   { background-color: rgba(34, 197, 94, 0.3); }
+    100% { background-color: transparent; }
+}
+
+/* ── Selected row ────────────────────────────────────────────────── */
 
 .rowSelected {
-    background-color: rgba(76, 110, 245, 0.16) !important;
-    box-shadow: inset 3px 0 0 0 #4c6ef5;
-}
-
-.rowSelected::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, rgba(56, 189, 248, 0.08), rgba(56, 189, 248, 0));
-    pointer-events: none;
+    background-color: rgba(37, 99, 235, 0.13) !important;
+    box-shadow: inset 3px 0 0 0 #2563eb;
 }
 
 .rowSelected :global(td) {
     font-weight: 600;
+    color: #e2e8f0;
 }
 
-@keyframes highlightFlash {
-    0%   { background-color: rgba(43, 138, 62, 0.42); }
-    100% { background-color: transparent; }
+:global([data-mantine-color-scheme='light']) .rowSelected {
+    background-color: rgba(37, 99, 235, 0.08) !important;
 }
+
+:global([data-mantine-color-scheme='light']) .rowSelected :global(td) {
+    color: #1e293b;
+}
+
+/* ── Quantity control ────────────────────────────────────────────── */
 
 .quantityControl {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .quantityBadge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(148, 156, 166, 0.16);
-    border-radius: 8px;
-    min-width: 42px;
-    padding: 4px 10px;
+    background-color: rgba(37, 99, 235, 0.12);
+    border: 0.5px solid rgba(37, 99, 235, 0.22);
+    border-radius: 6px;
+    min-width: 40px;
+    padding: 3px 8px;
     cursor: pointer;
-    transition: background-color 100ms, transform 100ms ease;
+    font-weight: 700;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.84rem;
+    color: #bfdbfe;
+    transition: background-color 100ms ease, transform 100ms ease;
 }
 
 .quantityBadge:hover {
-    background-color: rgba(148, 156, 166, 0.28);
+    background-color: rgba(37, 99, 235, 0.22);
     transform: translateY(-1px);
 }
 
 .quantityBadge:focus-visible {
     outline: 0;
-    box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.32);
-}
-
-/* Light mode */
-:global([data-mantine-color-scheme='light']) .headerRow {
-    background: rgba(241, 243, 245, 0.98);
-}
-
-:global([data-mantine-color-scheme='light']) .emptyState {
-    border-color: rgba(134, 142, 150, 0.28);
-    background: linear-gradient(180deg, rgba(241, 245, 249, 0.94), rgba(248, 250, 252, 0.92));
-}
-
-:global([data-mantine-color-scheme='light']) .emptyStateIcon {
-    color: #0284c7;
-}
-
-:global([data-mantine-color-scheme='light']) .emptyStateTitle {
-    color: #0f172a;
-}
-
-:global([data-mantine-color-scheme='light']) .emptyStateSubtitle {
-    color: rgba(15, 23, 42, 0.62);
-}
-
-:global([data-mantine-color-scheme='light']) .headerRow :global(th) {
-    color: #075985;
-}
-
-:global([data-mantine-color-scheme='light']) .row {
-    border-bottom-color: rgba(0, 0, 0, 0.035);
-}
-
-:global([data-mantine-color-scheme='light']) .rowSelected {
-    background-color: rgba(54, 79, 199, 0.1) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
 }
 
 :global([data-mantine-color-scheme='light']) .quantityBadge {
-    background-color: var(--mantine-color-gray-2);
-    color: var(--mantine-color-dark-7);
+    background-color: #eef2ff;
+    border-color: rgba(37, 99, 235, 0.2);
+    color: #1d4ed8;
 }
 
 :global([data-mantine-color-scheme='light']) .quantityBadge:hover {
-    background-color: var(--mantine-color-gray-3);
+    background-color: #dbeafe;
 }
 
-:global([data-mantine-color-scheme='light']) .tableWrapper {
-    scrollbar-color: var(--mantine-color-gray-4) transparent;
-}
+/* ── Delete button ────────────────────────────────────────────────── */
 
 .deleteBtn {
     opacity: 0;
-    transition: opacity 120ms ease, transform 120ms ease, filter 120ms ease;
+    transition: opacity 120ms ease, transform 120ms ease;
 }
 
 .row:hover .deleteBtn {
     opacity: 1;
-    transform: scale(1.06);
-    filter: drop-shadow(0 0 8px rgba(248, 113, 113, 0.25));
+    transform: scale(1.08);
 }
 
 .rowSelected .deleteBtn {
     opacity: 1;
 }
 
-/* ── Tablet: horizontal scroll for wide table ─────────────────────── */
+/* ── Responsive ──────────────────────────────────────────────────── */
+
 @media (max-width: 1024px) {
     .tableWrapper {
         overflow-x: auto;
@@ -211,11 +244,10 @@
     }
 
     .table {
-        min-width: 600px;
+        min-width: 580px;
     }
 }
 
-/* ── Touch: always show delete button (no hover on touch) ─────────── */
 @media (pointer: coarse) {
     .deleteBtn {
         opacity: 1;
@@ -234,6 +266,6 @@
     }
 
     .row {
-        height: 60px;
+        height: 58px;
     }
 }
