@@ -1,31 +1,33 @@
 import type { ReactNode } from 'react';
 import { Card, Text, Button, Stack, Center, Loader, ThemeIcon } from '@mantine/core';
-import { Lock } from 'lucide-react';
-import { useFeature } from '../hooks/useFeature';
+import { Lock, Sparkles } from 'lucide-react';
+import { useFeatureGate } from '../hooks/useFeatureGate';
+import type { Feature } from '../config/plans';
 
 interface FeatureGateProps {
     /** Feature flag key — must match the backend plan features JSONB keys */
-    feature: string;
+    feature: Feature;
     /** Content to render when the feature is enabled */
     children: ReactNode;
     /** Optional custom fallback — defaults to an upgrade banner */
     fallback?: ReactNode;
 }
 
-function DefaultUpgradeBanner({ feature }: { feature: string }) {
+function DefaultUpgradeBanner({ feature, planRequired }: { feature: Feature; planRequired: string }) {
+    const featureLabel = feature.replace(/_/g, ' ');
     return (
         <Center py="xl">
             <Card shadow="sm" padding="lg" radius="md" withBorder maw={420} w="100%">
                 <Stack align="center" gap="md">
-                    <ThemeIcon size="xl" radius="xl" variant="light" color="gray">
+                    <ThemeIcon size="xl" radius="xl" variant="light" color="blue">
                         <Lock size={24} />
                     </ThemeIcon>
                     <Text fw={600} size="lg" ta="center">
-                        Funcionalidad no disponible
+                        Disponible en plan {planRequired}
                     </Text>
                     <Text c="dimmed" size="sm" ta="center">
-                        Tu plan actual no incluye esta funcionalidad ({feature.replace(/_/g, ' ')}).
-                        Actualiza tu plan para desbloquearla.
+                        La funcionalidad de {featureLabel} no esta incluida en tu plan actual.
+                        Mejora a <Text span fw={600} c="blue">{planRequired}</Text> para desbloquearla.
                     </Text>
                     <Button
                         component="a"
@@ -33,8 +35,9 @@ function DefaultUpgradeBanner({ feature }: { feature: string }) {
                         variant="filled"
                         color="blue"
                         radius="md"
+                        leftSection={<Sparkles size={16} />}
                     >
-                        Ver planes disponibles
+                        Ver planes
                     </Button>
                 </Stack>
             </Card>
@@ -49,19 +52,19 @@ function DefaultUpgradeBanner({ feature }: { feature: string }) {
  * NOT hidden — this drives upsell awareness.
  *
  * @example
- * <FeatureGate feature="analytics_avanzados">
- *     <AdvancedAnalytics />
+ * <FeatureGate feature="ai_assistant">
+ *     <AIAssistant />
  * </FeatureGate>
  */
 export function FeatureGate({ feature, children, fallback }: FeatureGateProps) {
-    const { enabled, loading } = useFeature(feature);
+    const { allowed, loading, planRequired } = useFeatureGate(feature);
 
     if (loading) {
         return <Center py="xl"><Loader size="sm" /></Center>;
     }
 
-    if (!enabled) {
-        return <>{fallback ?? <DefaultUpgradeBanner feature={feature} />}</>;
+    if (!allowed) {
+        return <>{fallback ?? <DefaultUpgradeBanner feature={feature} planRequired={planRequired} />}</>;
     }
 
     return <>{children}</>;

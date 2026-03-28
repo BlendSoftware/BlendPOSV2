@@ -7,6 +7,8 @@ export interface PlanResponse {
     nombre: string;
     max_terminales: number;
     max_productos: number;
+    max_sucursales: number;
+    max_usuarios: number;
     precio_mensual: string;
     features: Record<string, boolean>;
 }

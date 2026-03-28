@@ -27,6 +27,7 @@ import { useSaleStore } from '../store/useSaleStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useCajaStore } from '../store/useCajaStore';
 import { usePromocionesStore } from '../store/usePromocionesStore';
+import { usePosThemeStore } from '../store/usePosThemeStore';
 import { usePosFocus } from '../hooks/usePosFocus';
 import { findCatalogProductByBarcode, searchCatalogProducts, seedCatalogFromMocksIfEmpty, forceRefreshCatalog } from '../offline/catalog';
 import { getPrecioPorBarcode } from '../services/api/products';
@@ -100,6 +101,7 @@ export function PosTerminal() {
     const { user } = useAuthStore();
     const { sesionId, restaurar } = useCajaStore();
     const { fetchActivePromociones, promociones, computePromoDescuentos } = usePromocionesStore();
+    const activeTheme = usePosThemeStore((s) => s.activeTheme);
     const [isInitializing, setIsInitializing] = useState(true);
 
     // Al montar, sincronizar sesión de caja con el backend (limpia localStorage obsoleto)
@@ -421,7 +423,7 @@ export function PosTerminal() {
     }
 
     return (
-        <div className={styles.posLayout}>
+        <div className={styles.posLayout} data-pos-theme={activeTheme.id}>
             <div className={styles.workspaceFrame}>
                 <PosHeader />
 

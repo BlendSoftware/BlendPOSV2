@@ -33,6 +33,8 @@ type PlanResponse struct {
 	Nombre        string            `json:"nombre"`
 	MaxTerminales int               `json:"max_terminales"`
 	MaxProductos  int               `json:"max_productos"`
+	MaxSucursales int               `json:"max_sucursales"`
+	MaxUsuarios   int               `json:"max_usuarios"`
 	PrecioMensual decimal.Decimal   `json:"precio_mensual"`
 	Features      map[string]bool   `json:"features"`
 }

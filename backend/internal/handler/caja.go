@@ -154,12 +154,8 @@ func (h *CajaHandler) Historial(c *gin.Context) {
 		limit = 20
 	}
 
-	var sucursalID *uuid.UUID
-	if raw := c.Query("sucursal_id"); raw != "" {
-		if sid, err := uuid.Parse(raw); err == nil {
-			sucursalID = &sid
-		}
-	}
+	// Resolve sucursal: explicit query param > header (SucursalMiddleware).
+	sucursalID := parseSucursalID(c)
 
 	resp, err := h.svc.Historial(c.Request.Context(), page, limit, sucursalID)
 	if err != nil {

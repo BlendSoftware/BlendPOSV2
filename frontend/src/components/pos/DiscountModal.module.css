@@ -1,13 +1,13 @@
-/* ── DiscountModal — Digital Engineering ─────────────────────────── */
+/* ── DiscountModal — Themeable POS ────────────────────────────────── */
 
 .summary {
     background: rgba(2, 6, 23, 0.55);
-    border: 0.5px solid rgba(37, 99, 235, 0.2);
-    border-radius: 10px;
+    border: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2);
+    border-radius: var(--pos-radius, 10px);
     padding: 14px 16px;
     position: relative;
     overflow: hidden;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
 }
 
 .summary::before {
@@ -15,22 +15,22 @@
     position: absolute;
     left: 0; top: 0; right: 0;
     height: 1.5px;
-    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.55), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.55), transparent);
 }
 
 :global([data-mantine-color-scheme='light']) .summary {
     background: #f0f4ff;
-    border-color: rgba(37, 99, 235, 0.16);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.16);
 }
 
 /* ── Quick % badge pills ────────────────────────────────────────── */
 
 .quickBadge {
     cursor: pointer;
-    border: 0.5px solid rgba(37, 99, 235, 0.28) !important;
-    background: rgba(37, 99, 235, 0.1) !important;
+    border: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.28) !important;
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.1) !important;
     color: #bfdbfe !important;
-    font-family: 'Manrope', sans-serif !important;
+    font-family: var(--pos-font, 'Manrope', sans-serif) !important;
     font-weight: 700 !important;
     border-radius: 7px !important;
     padding: 6px 12px !important;
@@ -40,8 +40,8 @@
 }
 
 .quickBadge:hover {
-    background: rgba(37, 99, 235, 0.22) !important;
-    border-color: rgba(37, 99, 235, 0.45) !important;
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.22) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.45) !important;
     transform: translateY(-1px);
 }
 
@@ -51,7 +51,7 @@
 
 :global([data-mantine-color-scheme='light']) .quickBadge {
     background: #eef2ff !important;
-    border-color: rgba(37, 99, 235, 0.28) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.28) !important;
     color: #1d4ed8 !important;
 }
 

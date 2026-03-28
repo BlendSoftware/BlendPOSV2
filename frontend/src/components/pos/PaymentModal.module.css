@@ -1,19 +1,16 @@
-/* ── PaymentModal — Digital Engineering ──────────────────────────── */
-
-/* All Modal root/content overrides go through the global Mantine override
-   in AdminLayout.module.css. Here we only style the internal layout. */
+/* ── PaymentModal — Themeable POS ────────────────────────────────── */
 
 .content {
     padding-top: 4px;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
 }
 
 /* ── Cart summary box ────────────────────────────────────────────── */
 
 .summary {
     background: rgba(2, 6, 23, 0.55);
-    border: 0.5px solid rgba(37, 99, 235, 0.2);
-    border-radius: 10px;
+    border: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2);
+    border-radius: var(--pos-radius, 10px);
     padding: 14px 16px;
     position: relative;
     overflow: hidden;
@@ -25,20 +22,20 @@
     position: absolute;
     left: 0; top: 0; right: 0;
     height: 1.5px;
-    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.6), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.6), transparent);
 }
 
 :global([data-mantine-color-scheme='light']) .summary {
     background: #f0f4ff;
-    border-color: rgba(37, 99, 235, 0.16);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.16);
 }
 
 /* ── Total amount ────────────────────────────────────────────────── */
 
 .modalTotal {
-    color: #4ade80;
+    color: var(--pos-success, #4ade80);
     font-variant-numeric: tabular-nums;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     font-weight: 800;
     letter-spacing: -0.03em;
 }
@@ -51,15 +48,15 @@
 
 .comprobanteBox {
     background: rgba(13, 21, 38, 0.7);
-    border-radius: 10px;
+    border-radius: var(--pos-radius, 10px);
     padding: 14px 16px;
-    border: 0.5px solid rgba(37, 99, 235, 0.18);
+    border: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18);
 }
 
 :global([data-mantine-color-scheme='light']) .comprobanteBox {
     background: #ffffff;
-    border-color: rgba(37, 99, 235, 0.16);
-    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.05);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.16);
+    box-shadow: 0 2px 10px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.05);
 }
 
 /* ── Vuelto (change) box ─────────────────────────────────────────── */
@@ -67,7 +64,7 @@
 .vueltoBox {
     background: rgba(74, 222, 128, 0.08);
     border: 0.5px solid rgba(74, 222, 128, 0.3);
-    border-radius: 10px;
+    border-radius: var(--pos-radius, 10px);
     padding: 14px 16px;
     animation: modalReveal 160ms ease-out;
 }
@@ -77,7 +74,7 @@
     border-color: rgba(22, 163, 74, 0.25);
 }
 
-/* ── Payment method tiles (if any) ──────────────────────────────── */
+/* ── Payment method tiles ────────────────────────────────────────── */
 
 .methodTile {
     border-radius: 9px;
@@ -86,30 +83,30 @@
     padding: 10px 14px;
     cursor: pointer;
     transition: border-color 140ms ease, background 140ms ease, transform 120ms ease;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     font-weight: 600;
 }
 
 .methodTile:hover {
-    border-color: rgba(37, 99, 235, 0.35);
-    background: rgba(37, 99, 235, 0.1);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.35);
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.1);
     transform: translateY(-1px);
 }
 
 .methodTileActive {
-    border-color: #2563eb !important;
-    background: rgba(37, 99, 235, 0.15) !important;
-    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+    border-color: var(--pos-primary, #2563eb) !important;
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.15) !important;
+    box-shadow: 0 0 0 1px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.3);
 }
 
 :global([data-mantine-color-scheme='light']) .methodTile {
     background: #ffffff;
-    border-color: rgba(37, 99, 235, 0.14);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14);
 }
 
 :global([data-mantine-color-scheme='light']) .methodTile:hover {
     background: #eef2ff;
-    border-color: rgba(37, 99, 235, 0.3);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.3);
 }
 
 /* ── Animations ──────────────────────────────────────────────────── */

@@ -163,7 +163,7 @@ func New(d Deps) *gin.Engine {
 		return middleware.ValidateResourceOwnership(d.DB, table, param)
 	}
 
-	v1 := r.Group("/v1", jwtMW, middleware.TenantMiddleware(d.DB))
+	v1 := r.Group("/v1", jwtMW, middleware.TenantMiddleware(d.DB), middleware.SucursalMiddleware())
 	v1.Use(middleware.RateLimitPerTenant(d.TenantRepo, d.RDB))
 	v1.Use(middleware.TenantAuditMiddleware())
 	v1.Use(middleware.AuditMiddleware(d.AuditSvc))
@@ -202,14 +202,14 @@ func New(d Deps) *gin.Engine {
 			inv.GET("/movimientos", inventarioH.ListarMovimientos)
 		}
 
-		// Lotes de producto y alertas de vencimiento
-		lotes := v1.Group("/lotes", middleware.RequireRole("administrador", "supervisor"))
+		// Lotes de producto y alertas de vencimiento (requires vencimientos feature)
+		lotes := v1.Group("/lotes", middleware.RequireRole("administrador", "supervisor"), middleware.RequireFeature("vencimientos", d.TenantRepo, d.RDB))
 		{
 			lotes.POST("", vencimientosH.CrearLote)
 			lotes.GET("", vencimientosH.ListarLotes)
 			lotes.DELETE("/:id", idor("lotes_producto", "id"), vencimientosH.EliminarLote)
 		}
-		v1.GET("/vencimientos/alertas", middleware.RequireRole("administrador", "supervisor"), vencimientosH.ObtenerAlertasVencimiento)
+		v1.GET("/vencimientos/alertas", middleware.RequireRole("administrador", "supervisor"), middleware.RequireFeature("vencimientos", d.TenantRepo, d.RDB), vencimientosH.ObtenerAlertasVencimiento)
 
 		caja := v1.Group("/caja")
 		{
@@ -229,8 +229,8 @@ func New(d Deps) *gin.Engine {
 			factR.GET("/html/:id", idor("comprobantes", "id"), facturacionH.ObtenerHTML)
 			factR.POST("/:id/enviar-email", idor("comprobantes", "id"), facturacionH.EnviarEmailComprobante)
 		}
-		// Write operations: admin/supervisor only
-		factW := v1.Group("/facturacion", middleware.RequireRole("administrador", "supervisor"))
+		// Write operations: admin/supervisor only (requires facturacion_afip feature)
+		factW := v1.Group("/facturacion", middleware.RequireRole("administrador", "supervisor"), middleware.RequireFeature("facturacion_afip", d.TenantRepo, d.RDB))
 		{
 			factW.DELETE("/:id", idor("comprobantes", "id"), facturacionH.AnularComprobante)
 			factW.POST("/:id/reintentar", idor("comprobantes", "id"), facturacionH.ReintentarComprobante)
@@ -238,7 +238,7 @@ func New(d Deps) *gin.Engine {
 			factW.POST("/cancelar-pendientes", middleware.RequireRole("administrador"), facturacionH.CancelarPendientes)
 		}
 
-		prov := v1.Group("/proveedores", middleware.RequireRole("administrador"))
+		prov := v1.Group("/proveedores", middleware.RequireRole("administrador"), middleware.RequireFeature("proveedores", d.TenantRepo, d.RDB))
 		{
 			prov.POST("", proveedoresH.Crear)
 			prov.GET("", proveedoresH.Listar)
@@ -252,7 +252,7 @@ func New(d Deps) *gin.Engine {
 
 		usuarios := v1.Group("/usuarios", middleware.RequireRole("administrador"))
 		{
-			usuarios.POST("", usuariosH.Crear)
+			usuarios.POST("", middleware.EnforcePlanLimitUsuarios(d.TenantRepo, d.RDB), usuariosH.Crear)
 			usuarios.GET("", usuariosH.Listar)
 			usuarios.PUT("/:id", idor("usuarios", "id"), usuariosH.Actualizar)
 			usuarios.DELETE("/:id", idor("usuarios", "id"), usuariosH.Desactivar)
@@ -265,7 +265,7 @@ func New(d Deps) *gin.Engine {
 		v1.GET("/clientes", middleware.RequireRole("cajero", "supervisor", "administrador"), clientesH.Listar)
 		v1.GET("/clientes/:id", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("clientes", "id"), clientesH.ObtenerPorID)
 		v1.GET("/clientes/:id/movimientos", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("clientes", "id"), clientesH.ListarMovimientos)
-		clientesW := v1.Group("/clientes", middleware.RequireRole("supervisor", "administrador"))
+		clientesW := v1.Group("/clientes", middleware.RequireRole("supervisor", "administrador"), middleware.RequireFeature("clientes_management", d.TenantRepo, d.RDB))
 		{
 			clientesW.POST("", clientesH.Crear)
 			clientesW.PUT("/:id", idor("clientes", "id"), clientesH.Actualizar)
@@ -309,10 +309,10 @@ func New(d Deps) *gin.Engine {
 			configFiscal.PUT("", configFiscalH.Actualizar)
 		}
 
-		// Compras — administrador can write, supervisor can read
-		v1.GET("/compras", middleware.RequireRole("supervisor", "administrador"), comprasH.Listar)
-		v1.GET("/compras/:id", middleware.RequireRole("supervisor", "administrador"), idor("compras", "id"), comprasH.ObtenerPorID)
-		compras := v1.Group("/compras", middleware.RequireRole("administrador"))
+		// Compras — administrador can write, supervisor can read (requires compras feature)
+		v1.GET("/compras", middleware.RequireRole("supervisor", "administrador"), middleware.RequireFeature("compras", d.TenantRepo, d.RDB), comprasH.Listar)
+		v1.GET("/compras/:id", middleware.RequireRole("supervisor", "administrador"), middleware.RequireFeature("compras", d.TenantRepo, d.RDB), idor("compras", "id"), comprasH.ObtenerPorID)
+		compras := v1.Group("/compras", middleware.RequireRole("administrador"), middleware.RequireFeature("compras", d.TenantRepo, d.RDB))
 		{
 			compras.POST("", comprasH.Crear)
 			compras.PATCH(":id/estado", idor("compras", "id"), comprasH.ActualizarEstado)
@@ -334,13 +334,13 @@ func New(d Deps) *gin.Engine {
 		v1.GET("/sucursales/:id", middleware.RequireRole("cajero", "supervisor", "administrador"), idor("sucursales", "id"), sucursalesH.ObtenerPorID)
 		sucursales := v1.Group("/sucursales", middleware.RequireRole("administrador"))
 		{
-			sucursales.POST("", sucursalesH.Crear)
+			sucursales.POST("", middleware.EnforcePlanLimitSucursales(d.TenantRepo, d.RDB), sucursalesH.Crear)
 			sucursales.PUT("/:id", idor("sucursales", "id"), sucursalesH.Actualizar)
 			sucursales.DELETE("/:id", idor("sucursales", "id"), sucursalesH.Desactivar)
 		}
 
-		// Transferencias de stock entre sucursales — admin/supervisor
-		transferencias := v1.Group("/transferencias", middleware.RequireRole("administrador", "supervisor"))
+		// Transferencias de stock entre sucursales — admin/supervisor (requires transferencias feature)
+		transferencias := v1.Group("/transferencias", middleware.RequireRole("administrador", "supervisor"), middleware.RequireFeature("transferencias", d.TenantRepo, d.RDB))
 		{
 			transferencias.POST("", transferenciasH.Crear)
 			transferencias.GET("", transferenciasH.Listar)
@@ -350,8 +350,8 @@ func New(d Deps) *gin.Engine {
 			transferencias.POST("/:id/cancelar", idor("transferencias_stock", "id"), transferenciasH.Cancelar)
 		}
 
-		// Stock por sucursal — admin/supervisor
-		stockSuc := v1.Group("/stock-sucursal", middleware.RequireRole("administrador", "supervisor"))
+		// Stock por sucursal — admin/supervisor (requires stock_sucursal feature)
+		stockSuc := v1.Group("/stock-sucursal", middleware.RequireRole("administrador", "supervisor"), middleware.RequireFeature("stock_sucursal", d.TenantRepo, d.RDB))
 		{
 			stockSuc.GET("", transferenciasH.ListarStockSucursal)
 			stockSuc.GET("/alertas", transferenciasH.GetAlertasBySucursal)
@@ -365,9 +365,9 @@ func New(d Deps) *gin.Engine {
 			billing.GET("/status", billingH.GetStatus)
 		}
 
-		// AI Analytics — only registered when MISTRAL_API_KEY is configured
+		// AI Analytics — only registered when MISTRAL_API_KEY is configured (requires ai_assistant feature)
 		if aiH != nil {
-			ai := v1.Group("/ai", middleware.RequireRole("administrador"))
+			ai := v1.Group("/ai", middleware.RequireRole("administrador"), middleware.RequireFeature("ai_assistant", d.TenantRepo, d.RDB))
 			{
 				ai.POST("/chat", aiH.Chat)
 				ai.GET("/metricas", aiH.GetMetricas)

@@ -124,16 +124,13 @@ func (h *TransferenciasHandler) Cancelar(c *gin.Context) {
 
 // ListarStockSucursal GET /v1/stock-sucursal?sucursal_id=
 func (h *TransferenciasHandler) ListarStockSucursal(c *gin.Context) {
-	sucursalIDStr := c.Query("sucursal_id")
-	if sucursalIDStr == "" {
+	// Resolve sucursal: explicit query param > header (SucursalMiddleware).
+	sucursalPtr := parseSucursalID(c)
+	if sucursalPtr == nil {
 		c.JSON(http.StatusBadRequest, apierror.New("sucursal_id es requerido"))
 		return
 	}
-	sucursalID, err := uuid.Parse(sucursalIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, apierror.New("sucursal_id inválido"))
-		return
-	}
+	sucursalID := *sucursalPtr
 	resp, err := h.svc.ListarStockSucursal(c.Request.Context(), sucursalID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, apierror.New("Error al listar stock por sucursal"))
@@ -157,16 +154,13 @@ func (h *TransferenciasHandler) AjustarStockSucursal(c *gin.Context) {
 
 // GetAlertasBySucursal GET /v1/stock-sucursal/alertas?sucursal_id=
 func (h *TransferenciasHandler) GetAlertasBySucursal(c *gin.Context) {
-	sucursalIDStr := c.Query("sucursal_id")
-	if sucursalIDStr == "" {
+	// Resolve sucursal: explicit query param > header (SucursalMiddleware).
+	sucursalPtr := parseSucursalID(c)
+	if sucursalPtr == nil {
 		c.JSON(http.StatusBadRequest, apierror.New("sucursal_id es requerido"))
 		return
 	}
-	sucursalID, err := uuid.Parse(sucursalIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, apierror.New("sucursal_id inválido"))
-		return
-	}
+	sucursalID := *sucursalPtr
 	resp, err := h.svc.GetAlertasBySucursal(c.Request.Context(), sucursalID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, apierror.New("Error al obtener alertas de stock"))

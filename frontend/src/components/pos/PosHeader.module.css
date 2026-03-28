@@ -1,13 +1,13 @@
-/* ── PosHeader — Digital Engineering — aligned to #2563eb ─────────── */
+/* ── PosHeader — Themeable POS ─────────────────────────────────────── */
 
 .header {
-    background: #07101f;
-    border-bottom: 0.5px solid rgba(37, 99, 235, 0.18);
-    height: 82px;          /* 52px main row + 30px status row */
+    background: var(--pos-workspace, #07101f);
+    border-bottom: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18);
+    height: 82px;
     flex-shrink: 0;
     box-shadow: 0 2px 14px rgba(2, 6, 23, 0.4);
     position: relative;
-    font-family: 'Manrope', -apple-system, sans-serif;
+    font-family: var(--pos-font, 'Manrope', -apple-system, sans-serif);
 }
 
 /* ── Layout: 2-row grid ─────────────────────────────────────────── */
@@ -40,7 +40,7 @@
     overflow: hidden;
 }
 
-/* Bottom blue accent line under the whole header */
+/* Bottom accent line under the whole header */
 .header::after {
     content: '';
     position: absolute;
@@ -48,7 +48,7 @@
     right: 14px;
     bottom: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.45), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.45), transparent);
     pointer-events: none;
 }
 
@@ -70,17 +70,17 @@
     width: 3px;
     height: 20px;
     border-radius: 2px;
-    background: #2563eb;
-    box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+    background: var(--pos-primary, #2563eb);
+    box-shadow: 0 0 8px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.4);
 }
 
 .brand {
     font-size: 1rem;
     font-weight: 800;
     letter-spacing: -0.035em;
-    color: #f8fafc;
+    color: var(--pos-text, #f8fafc);
     line-height: 1;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font-heading, 'Manrope', sans-serif);
 }
 
 .brandSub {
@@ -88,9 +88,9 @@
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(100, 116, 139, 0.8);
+    color: var(--pos-text-sub, rgba(100, 116, 139, 0.8));
     margin-top: 2px;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font-heading, 'Manrope', sans-serif);
 }
 
 /* ── Operator block ──────────────────────────────────────────────── */
@@ -102,13 +102,13 @@
     min-width: 0;
     padding: 6px 12px;
     border-radius: 8px;
-    border: 0.5px solid rgba(255, 255, 255, 0.09);
+    border: 0.5px solid var(--pos-border, rgba(255, 255, 255, 0.09));
     background: rgba(255, 255, 255, 0.04);
 }
 
 .operatorBlock :global(.mantine-Text-root) {
     white-space: nowrap;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
 }
 
 /* ── Actions block ───────────────────────────────────────────────── */
@@ -127,7 +127,7 @@
     background: rgba(255, 255, 255, 0.04);
     color: rgba(241, 243, 245, 0.92);
     overflow: visible;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     font-size: 0.72rem !important;
     height: 22px;
     padding: 0 8px;
@@ -147,7 +147,7 @@
 .statusText {
     font-weight: 700;
     letter-spacing: 0.01em;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     font-size: 0.72rem;
 }
 
@@ -186,14 +186,14 @@
 
 /* Online / connected */
 .statusOnline {
-    border-color: rgba(37, 99, 235, 0.3) !important;
-    background: rgba(37, 99, 235, 0.1) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.3) !important;
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.1) !important;
     color: #bfdbfe !important;
 }
 
 .statusDotOnline {
-    background: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    background: var(--pos-primary, #2563eb);
+    box-shadow: 0 0 0 2px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2);
 }
 
 @keyframes statusPulse {
@@ -221,7 +221,7 @@
     color: rgba(255, 255, 255, 0.9) !important;
     line-height: 1 !important;
     font-variant-numeric: tabular-nums;
-    font-family: 'Manrope', monospace !important;
+    font-family: var(--pos-font-mono, 'Manrope', monospace) !important;
     letter-spacing: 0.03em;
 }
 
@@ -229,17 +229,17 @@
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: #2563eb;
+    background: var(--pos-primary, #2563eb);
     flex-shrink: 0;
 }
 
 .clockDate {
     font-size: 0.65rem !important;
     font-weight: 500 !important;
-    color: rgba(100, 116, 139, 0.85) !important;
+    color: var(--pos-text-sub, rgba(100, 116, 139, 0.85)) !important;
     text-transform: capitalize;
     line-height: 1 !important;
-    font-family: 'Manrope', sans-serif !important;
+    font-family: var(--pos-font, 'Manrope', sans-serif) !important;
     white-space: nowrap;
 }
 
@@ -253,8 +253,8 @@
 }
 
 .header :global(.mantine-ActionIcon-root:hover):not(:disabled) {
-    background: rgba(37, 99, 235, 0.12);
-    border-color: rgba(37, 99, 235, 0.3);
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.12);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.3);
     transform: translateY(-1px);
 }
 
@@ -272,12 +272,12 @@
 
 :global([data-mantine-color-scheme='light']) .header {
     background: #ffffff;
-    border-bottom-color: rgba(37, 99, 235, 0.14);
-    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.07);
+    border-bottom-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14);
+    box-shadow: 0 2px 12px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.07);
 }
 
 :global([data-mantine-color-scheme='light']) .header::after {
-    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.3), transparent);
 }
 
 :global([data-mantine-color-scheme='light']) .brand {
@@ -290,18 +290,18 @@
 
 :global([data-mantine-color-scheme='light']) .operatorBlock {
     background: #f8faff;
-    border-color: rgba(37, 99, 235, 0.15);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.15);
 }
 
 :global([data-mantine-color-scheme='light']) .statusRow {
     background: rgba(240, 244, 255, 0.55);
-    border-top-color: rgba(37, 99, 235, 0.1);
+    border-top-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.1);
 }
 
 :global([data-mantine-color-scheme='light']) .statusBadge {
     background: #f0f4ff !important;
     color: #1e293b !important;
-    border-color: rgba(37, 99, 235, 0.2) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2) !important;
 }
 
 :global([data-mantine-color-scheme='light']) .statusOffline {
@@ -318,17 +318,17 @@
 
 :global([data-mantine-color-scheme='light']) .statusOnline {
     background: #eef2ff !important;
-    border-color: rgba(37, 99, 235, 0.28) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.28) !important;
     color: #1e40af !important;
 }
 
 :global([data-mantine-color-scheme='light']) .statusDotOnline {
-    background: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    background: var(--pos-primary, #2563eb);
+    box-shadow: 0 0 0 2px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2);
 }
 
 :global([data-mantine-color-scheme='light']) .clock {
-    border-color: rgba(37, 99, 235, 0.18);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18);
     background: #f0f4ff;
 }
 
@@ -342,13 +342,13 @@
 
 :global([data-mantine-color-scheme='light']) .header :global(.mantine-ActionIcon-root) {
     background: #ffffff;
-    border-color: rgba(37, 99, 235, 0.16);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.16);
     color: #1e40af;
 }
 
 :global([data-mantine-color-scheme='light']) .header :global(.mantine-ActionIcon-root:hover):not(:disabled) {
     background: #eef2ff;
-    border-color: rgba(37, 99, 235, 0.3);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.3);
 }
 
 /* ── Responsive ──────────────────────────────────────────────────── */

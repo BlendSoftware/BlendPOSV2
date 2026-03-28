@@ -150,6 +150,106 @@ func EnforcePlanLimitTerminales(tenantRepo repository.TenantRepository, rdb *red
 	}
 }
 
+// EnforcePlanLimitSucursales blocks sucursal creation when the tenant's plan
+// cap (max_sucursales > 0) has been reached.
+// Applied to: POST /v1/sucursales
+func EnforcePlanLimitSucursales(tenantRepo repository.TenantRepository, rdb *redis.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tid, err := tenantctx.FromContext(c.Request.Context())
+		if err != nil {
+			c.Next()
+			return
+		}
+
+		plan, err := fetchPlan(c.Request.Context(), tenantRepo, rdb, tid)
+		if err != nil || plan == nil {
+			if err != nil {
+				log.Warn().Err(err).Str("tenant_id", tid.String()).
+					Msg("plan enforcement: could not load plan, allowing request")
+			}
+			c.Next()
+			return
+		}
+
+		limit := plan.MaxSucursales
+		if limit == 0 {
+			c.Next() // 0 = unlimited
+			return
+		}
+
+		count, err := countActiveSucursales(c.Request.Context(), tenantRepo.DB(), tid)
+		if err != nil {
+			log.Warn().Err(err).Str("tenant_id", tid.String()).
+				Msg("plan enforcement: could not count sucursales, allowing request")
+			c.Next()
+			return
+		}
+
+		if count >= int64(limit) {
+			c.AbortWithStatusJSON(http.StatusForbidden, PlanLimitError{
+				Error:      "plan_limit_exceeded",
+				Message:    fmt.Sprintf("Tu plan %s permite hasta %d sucursal(es). Actualizá tu plan para agregar más.", plan.Nombre, limit),
+				Limit:      "max_sucursales",
+				Current:    count,
+				Max:        limit,
+				UpgradeURL: "/billing/upgrade",
+			})
+			return
+		}
+		c.Next()
+	}
+}
+
+// EnforcePlanLimitUsuarios blocks user creation when the tenant's plan
+// cap (max_usuarios > 0) has been reached.
+// Applied to: POST /v1/usuarios
+func EnforcePlanLimitUsuarios(tenantRepo repository.TenantRepository, rdb *redis.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tid, err := tenantctx.FromContext(c.Request.Context())
+		if err != nil {
+			c.Next()
+			return
+		}
+
+		plan, err := fetchPlan(c.Request.Context(), tenantRepo, rdb, tid)
+		if err != nil || plan == nil {
+			if err != nil {
+				log.Warn().Err(err).Str("tenant_id", tid.String()).
+					Msg("plan enforcement: could not load plan, allowing request")
+			}
+			c.Next()
+			return
+		}
+
+		limit := plan.MaxUsuarios
+		if limit == 0 {
+			c.Next() // 0 = unlimited
+			return
+		}
+
+		count, err := tenantRepo.CountUsuariosByTenant(c.Request.Context(), tid)
+		if err != nil {
+			log.Warn().Err(err).Str("tenant_id", tid.String()).
+				Msg("plan enforcement: could not count usuarios, allowing request")
+			c.Next()
+			return
+		}
+
+		if count >= int64(limit) {
+			c.AbortWithStatusJSON(http.StatusForbidden, PlanLimitError{
+				Error:      "plan_limit_exceeded",
+				Message:    fmt.Sprintf("Tu plan %s permite hasta %d usuario(s). Actualizá tu plan para agregar más.", plan.Nombre, limit),
+				Limit:      "max_usuarios",
+				Current:    count,
+				Max:        limit,
+				UpgradeURL: "/billing/upgrade",
+			})
+			return
+		}
+		c.Next()
+	}
+}
+
 // RequireSuperAdmin aborts requests whose JWT role is not "superadmin".
 func RequireSuperAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -275,6 +375,16 @@ func countOpenSessions(ctx context.Context, db *gorm.DB, tenantID uuid.UUID) (in
 	err := db.WithContext(ctx).
 		Table("sesion_cajas").
 		Where("tenant_id = ? AND estado = 'abierta'", tenantID).
+		Count(&count).Error
+	return count, err
+}
+
+// countActiveSucursales counts active sucursales for the tenant.
+func countActiveSucursales(ctx context.Context, db *gorm.DB, tenantID uuid.UUID) (int64, error) {
+	var count int64
+	err := db.WithContext(ctx).
+		Table("sucursales").
+		Where("tenant_id = ? AND activa = true", tenantID).
 		Count(&count).Error
 	return count, err
 }

@@ -1,4 +1,4 @@
-/* ── TotalPanel — Digital Engineering ────────────────────────────── */
+/* ── TotalPanel — Themeable POS ──────────────────────────────────── */
 
 .panel {
     display: flex;
@@ -10,15 +10,15 @@
     border-radius: 0;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: rgba(37, 99, 235, 0.2) transparent;
+    scrollbar-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2) transparent;
     gap: 6px;
-    font-family: 'Manrope', -apple-system, sans-serif;
+    font-family: var(--pos-font, 'Manrope', -apple-system, sans-serif);
 }
 
 .panel::-webkit-scrollbar { width: 3px; }
 .panel::-webkit-scrollbar-track { background: transparent; }
 .panel::-webkit-scrollbar-thumb {
-    background: rgba(37, 99, 235, 0.2);
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2);
     border-radius: 2px;
 }
 
@@ -29,12 +29,12 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(37, 99, 235, 0.8);
-    font-family: 'Manrope', sans-serif;
+    color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.8);
+    font-family: var(--pos-font-heading, 'Manrope', sans-serif);
 }
 
 :global([data-mantine-color-scheme='light']) .blockTitle {
-    color: #2563eb;
+    color: var(--pos-primary, #2563eb);
 }
 
 /* ── Metrics row ─────────────────────────────────────────────────── */
@@ -45,7 +45,7 @@
 
 .metricCard {
     border-radius: 8px;
-    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border: 0.5px solid var(--pos-border, rgba(255, 255, 255, 0.08));
     background: rgba(2, 6, 23, 0.5);
     padding: 10px 12px;
     transition: transform 130ms ease, border-color 130ms ease;
@@ -60,21 +60,21 @@
     top: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.45), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.45), transparent);
 }
 
 .metricCard:hover {
     transform: translateY(-1px);
-    border-color: rgba(37, 99, 235, 0.2);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2);
 }
 
 :global([data-mantine-color-scheme='light']) .metricCard {
     background: #f0f4ff;
-    border-color: rgba(37, 99, 235, 0.12);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.12);
 }
 
 :global([data-mantine-color-scheme='light']) .metricCard:hover {
-    border-color: rgba(37, 99, 235, 0.25);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.25);
     background: #eef2ff;
 }
 
@@ -87,20 +87,19 @@
     align-items: center;
     min-height: 0;
     text-align: center;
-    border-radius: 10px;
-    /* Subtle radial glow to draw attention to the number */
-    background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.07), transparent 65%);
+    border-radius: var(--pos-radius, 10px);
+    background: radial-gradient(ellipse at center, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.07), transparent 65%);
 }
 
 :global([data-mantine-color-scheme='light']) .totalSection {
-    background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.06), transparent 65%);
+    background: radial-gradient(ellipse at center, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.06), transparent 65%);
 }
 
 .totalAmount {
     font-size: clamp(42px, 4.8vw, 72px);
     line-height: 1;
     font-variant-numeric: tabular-nums;
-    font-family: 'Manrope', -apple-system, sans-serif;
+    font-family: var(--pos-font, 'Manrope', -apple-system, sans-serif);
     font-weight: 800;
     letter-spacing: -0.04em;
     text-wrap: balance;
@@ -109,7 +108,7 @@
 
 /* White/near-white when no discount */
 .totalNormal {
-    color: #f8fafc;
+    color: var(--pos-text, #f8fafc);
 }
 
 :global([data-mantine-color-scheme='light']) .totalNormal {
@@ -118,7 +117,7 @@
 
 /* Green when discount applied */
 .totalDiscount {
-    color: #4ade80;
+    color: var(--pos-success, #4ade80);
     text-shadow: 0 4px 16px rgba(74, 222, 128, 0.2);
 }
 
@@ -139,7 +138,7 @@
 
 .shortcutLabel {
     opacity: 0.55;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     font-size: 0.7rem;
 }
 
@@ -154,12 +153,12 @@
     flex-shrink: 0;
     display: grid;
     gap: 8px;
-    border-top: 0.5px solid rgba(255, 255, 255, 0.07);
+    border-top: 0.5px solid var(--pos-border, rgba(255, 255, 255, 0.07));
     padding-top: 10px;
 }
 
 :global([data-mantine-color-scheme='light']) .actions {
-    border-top-color: rgba(37, 99, 235, 0.1);
+    border-top-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.1);
 }
 
 /* ── Individual button wrappers ──────────────────────────────────── */
@@ -212,10 +211,10 @@
     background: linear-gradient(135deg, #16a34a, #15803d) !important;
     border: none !important;
     box-shadow: 0 8px 22px rgba(22, 163, 74, 0.32) !important;
-    font-family: 'Manrope', sans-serif !important;
+    font-family: var(--pos-font-heading, 'Manrope', sans-serif) !important;
     font-weight: 700 !important;
     font-size: 1rem !important;
-    border-radius: 10px !important;
+    border-radius: var(--pos-radius, 10px) !important;
     transition: background 150ms ease, box-shadow 150ms ease, transform 110ms ease !important;
 }
 
@@ -234,12 +233,12 @@
 .actions > :last-child :global(.mantine-Button-root) {
     border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
     background: rgba(255, 255, 255, 0.05) !important;
-    font-family: 'Manrope', sans-serif !important;
-    border-radius: 10px !important;
+    font-family: var(--pos-font-heading, 'Manrope', sans-serif) !important;
+    border-radius: var(--pos-radius, 10px) !important;
 }
 
 :global([data-mantine-color-scheme='light']) .actions > :last-child :global(.mantine-Button-root) {
-    border-color: rgba(37, 99, 235, 0.18) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18) !important;
     background: #f8faff !important;
     color: #334155 !important;
 }

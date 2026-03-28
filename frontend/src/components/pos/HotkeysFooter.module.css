@@ -1,15 +1,15 @@
-/* ── HotkeysFooter — Digital Engineering ─────────────────────────── */
+/* ── HotkeysFooter — Themeable POS ────────────────────────────────── */
 
 .footer {
-    background: #07101f;
-    border-top: 0.5px solid rgba(37, 99, 235, 0.18);
+    background: var(--pos-workspace, #07101f);
+    border-top: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18);
     height: 48px;
     flex-shrink: 0;
     user-select: none;
     box-shadow: 0 -2px 12px rgba(2, 6, 23, 0.35);
     position: relative;
     overflow: hidden;
-    font-family: 'Manrope', -apple-system, sans-serif;
+    font-family: var(--pos-font, 'Manrope', -apple-system, sans-serif);
 }
 
 /* Top accent line */
@@ -20,7 +20,7 @@
     right: 0;
     top: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.5), transparent);
     pointer-events: none;
 }
 
@@ -50,10 +50,10 @@
     border-radius: 6px;
     border: 0.5px solid rgba(255, 255, 255, 0.09);
     background: rgba(255, 255, 255, 0.03);
-    color: rgba(100, 116, 139, 0.85);
+    color: var(--pos-text-sub, rgba(100, 116, 139, 0.85));
     white-space: nowrap;
     font-weight: 500;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     font-size: 0.72rem;
 }
 
@@ -78,8 +78,8 @@
 
 .hotkeyItem:hover {
     transform: translateY(-1px);
-    background: rgba(37, 99, 235, 0.08);
-    border-color: rgba(37, 99, 235, 0.2);
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.08);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2);
 }
 
 /* ── Kbd ─────────────────────────────────────────────────────────── */
@@ -95,18 +95,18 @@
     border: 0.5px solid rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.88);
-    font-family: 'Manrope', monospace;
+    font-family: var(--pos-font-mono, 'Manrope', monospace);
     letter-spacing: 0.02em;
 }
 
 /* ── Label ───────────────────────────────────────────────────────── */
 
 .hotkeyLabel {
-    color: rgba(100, 116, 139, 0.85);
+    color: var(--pos-text-sub, rgba(100, 116, 139, 0.85));
     font-size: 0.68rem;
     letter-spacing: 0.02em;
     font-weight: 600;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -120,8 +120,8 @@
 
 .hotkeyItem:first-child .kbd,
 .hotkeyItem:nth-child(6) .kbd {
-    border-color: rgba(37, 99, 235, 0.4);
-    background: rgba(37, 99, 235, 0.18);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.4);
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18);
     color: #bfdbfe;
 }
 
@@ -163,25 +163,25 @@
 
 :global([data-mantine-color-scheme='light']) .footer {
     background: #ffffff;
-    border-top-color: rgba(37, 99, 235, 0.14);
-    box-shadow: 0 -2px 10px rgba(37, 99, 235, 0.07);
+    border-top-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14);
+    box-shadow: 0 -2px 10px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.07);
 }
 
 :global([data-mantine-color-scheme='light']) .hotkeyItem {
     background: #f8faff;
-    border-color: rgba(37, 99, 235, 0.1);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.1);
 }
 
 :global([data-mantine-color-scheme='light']) .hotkeyItem:hover {
     background: #eef2ff;
-    border-color: rgba(37, 99, 235, 0.22);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.22);
 }
 
 :global([data-mantine-color-scheme='light']) .kbd {
-    border-color: rgba(37, 99, 235, 0.18);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18);
     background: #ffffff;
     color: #334155;
-    box-shadow: inset 0 -1px 0 rgba(37, 99, 235, 0.12), 0 1px 3px rgba(37, 99, 235, 0.08);
+    box-shadow: inset 0 -1px 0 rgba(var(--pos-primary-rgb, 37, 99, 235), 0.12), 0 1px 3px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.08);
 }
 
 :global([data-mantine-color-scheme='light']) .hotkeyLabel {
@@ -195,14 +195,14 @@
 
 :global([data-mantine-color-scheme='light']) .hotkeyItem:first-child .kbd,
 :global([data-mantine-color-scheme='light']) .hotkeyItem:nth-child(6) .kbd {
-    border-color: rgba(37, 99, 235, 0.3);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.3);
     background: #eef2ff;
     color: #1d4ed8;
 }
 
 :global([data-mantine-color-scheme='light']) .opsHint {
     background: #f0f4ff;
-    border-color: rgba(37, 99, 235, 0.14);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14);
     color: rgba(51, 65, 85, 0.72);
 }
 

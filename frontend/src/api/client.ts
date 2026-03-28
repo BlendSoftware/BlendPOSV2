@@ -119,6 +119,21 @@ function getToken(): string | null {
     return tokenStore.getAccessToken();
 }
 
+// Read selected sucursal ID from localStorage (persisted by useSucursalStore's
+// Zustand persist middleware). Returns null when "Todas las sucursales" is
+// selected. Avoids importing useSucursalStore directly to prevent a circular
+// dependency chain: client → useSucursalStore → sucursales API → client.
+function getSucursalId(): string | null {
+    try {
+        const raw = localStorage.getItem('blendpos-sucursal');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed?.state?.sucursalId ?? null;
+    } catch {
+        return null;
+    }
+}
+
 type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
 async function request<T>(
@@ -144,6 +159,14 @@ async function request<T>(
         ...(init.headers as Record<string, string> | undefined ?? {}),
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    // ── Sucursal context injection ──────────────────────────────────────
+    // Automatically sends the selected sucursal so backend endpoints can
+    // filter by branch without each page having to pass it explicitly.
+    // Read from localStorage (persisted by useSucursalStore) to avoid a
+    // circular import: client → useSucursalStore → sucursales API → client.
+    const sucursalId = getSucursalId();
+    if (sucursalId) headers['X-Sucursal-Id'] = sucursalId;
 
     // ── Offline-resilient fetch ──────────────────────────────────────────
     let response: Response;

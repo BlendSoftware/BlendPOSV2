@@ -14,6 +14,8 @@ type Plan struct {
 	Nombre          string          `gorm:"type:varchar(100);not null"`
 	MaxTerminales   int             `gorm:"not null;default:1"`
 	MaxProductos    int             `gorm:"not null;default:0"` // 0 = sin límite
+	MaxSucursales   int             `gorm:"not null;default:1"` // 0 = sin límite
+	MaxUsuarios     int             `gorm:"not null;default:1"` // 0 = sin límite
 	PrecioMensual   decimal.Decimal `gorm:"type:decimal(10,2);not null;default:0"`
 	Features        json.RawMessage `gorm:"type:jsonb;not null;default:'{}'"`
 	Activo          bool            `gorm:"not null;default:true"`

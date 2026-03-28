@@ -22,8 +22,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// starterPlanID is the fixed UUID of the Starter plan seeded in migration 000027.
-const starterPlanID = "00000000-0000-0000-0000-000000000002"
+// basicoPlanID is the fixed UUID of the Basico (free) plan seeded in migration 000027/000040.
+const basicoPlanID = "00000000-0000-0000-0000-000000000001"
 
 // TenantService manages tenant lifecycle and self-service operations.
 type TenantService interface {
@@ -117,7 +117,7 @@ func (s *tenantService) Registrar(ctx context.Context, req dto.RegisterTenantReq
 		return nil, err
 	}
 
-	planID := uuid.MustParse(starterPlanID)
+	planID := uuid.MustParse(basicoPlanID)
 
 	tipoNegocio := req.TipoNegocio
 	if tipoNegocio == "" {
@@ -440,6 +440,8 @@ func toPlanResponse(p *model.Plan) dto.PlanResponse {
 		Nombre:        p.Nombre,
 		MaxTerminales: p.MaxTerminales,
 		MaxProductos:  p.MaxProductos,
+		MaxSucursales: p.MaxSucursales,
+		MaxUsuarios:   p.MaxUsuarios,
 		PrecioMensual: p.PrecioMensual,
 		Features:      features,
 	}

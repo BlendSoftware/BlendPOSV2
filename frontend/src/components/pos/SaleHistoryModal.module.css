@@ -1,4 +1,4 @@
-/* ── SaleHistoryModal — Digital Engineering ──────────────────────── */
+/* ── SaleHistoryModal — Themeable POS ────────────────────────────── */
 
 /* ── Stats row cards ─────────────────────────────────────────────── */
 
@@ -8,12 +8,12 @@
 
 .statCard {
     background: rgba(2, 6, 23, 0.55);
-    border-radius: 10px;
+    border-radius: var(--pos-radius, 10px);
     padding: 12px 16px;
-    border: 0.5px solid rgba(37, 99, 235, 0.18);
+    border: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18);
     position: relative;
     overflow: hidden;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     transition: border-color 150ms ease;
 }
 
@@ -22,38 +22,38 @@
     position: absolute;
     left: 0; top: 0; right: 0;
     height: 1.5px;
-    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.5), transparent);
 }
 
 .statCard:hover {
-    border-color: rgba(37, 99, 235, 0.3);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.3);
 }
 
 :global([data-mantine-color-scheme='light']) .statCard {
     background: #f0f4ff;
-    border-color: rgba(37, 99, 235, 0.14);
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14);
+    box-shadow: 0 2px 8px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.05);
 }
 
 /* ── Sale cards ──────────────────────────────────────────────────── */
 
 .saleCard {
     background: rgba(13, 21, 38, 0.7);
-    border-radius: 10px;
-    border: 0.5px solid rgba(37, 99, 235, 0.15);
+    border-radius: var(--pos-radius, 10px);
+    border: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.15);
     overflow: hidden;
     transition: border-color 150ms ease;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
 }
 
 .saleCard:hover {
-    border-color: rgba(37, 99, 235, 0.28);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.28);
 }
 
 :global([data-mantine-color-scheme='light']) .saleCard {
     background: #ffffff;
-    border-color: rgba(37, 99, 235, 0.12);
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.12);
+    box-shadow: 0 2px 8px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.05);
 }
 
 /* ── Sale header (clickable to expand) ──────────────────────────── */
@@ -66,7 +66,7 @@
 }
 
 .saleHeader:hover {
-    background: rgba(37, 99, 235, 0.08);
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.08);
 }
 
 :global([data-mantine-color-scheme='light']) .saleHeader:hover {
@@ -78,11 +78,11 @@
 .saleDetail {
     padding: 8px 14px 12px;
     background: rgba(2, 6, 23, 0.4);
-    border-top: 0.5px solid rgba(37, 99, 235, 0.14);
-    font-family: 'Manrope', sans-serif;
+    border-top: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14);
+    font-family: var(--pos-font, 'Manrope', sans-serif);
 }
 
 :global([data-mantine-color-scheme='light']) .saleDetail {
     background: #f8faff;
-    border-top-color: rgba(37, 99, 235, 0.1);
+    border-top-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.1);
 }

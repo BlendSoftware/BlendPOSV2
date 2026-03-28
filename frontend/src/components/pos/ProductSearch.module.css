@@ -1,4 +1,4 @@
-/* ── ProductSearch — Digital Engineering ─────────────────────────── */
+/* ── ProductSearch — Themeable POS ────────────────────────────────── */
 
 /* Backdrop overlay */
 .overlay {
@@ -33,33 +33,32 @@
 
 /* Main search panel */
 .searchBox {
-    background: #0d1526 !important;
-    border: 0.5px solid rgba(37, 99, 235, 0.28) !important;
+    background: var(--pos-surface, #0d1526) !important;
+    border: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.28) !important;
     border-radius: 14px !important;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     max-height: 70vh;
     box-shadow:
-        0 0 0 0.5px rgba(37, 99, 235, 0.14),
+        0 0 0 0.5px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14),
         0 24px 56px rgba(2, 6, 23, 0.65) !important;
 }
 
 :global([data-mantine-color-scheme='light']) .searchBox {
     background: #ffffff !important;
-    border-color: rgba(37, 99, 235, 0.2) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2) !important;
     box-shadow:
-        0 0 0 0.5px rgba(37, 99, 235, 0.1),
-        0 16px 40px rgba(37, 99, 235, 0.12) !important;
+        0 0 0 0.5px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.1),
+        0 16px 40px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.12) !important;
 }
 
 /* Search input header */
 .header {
     padding: 14px 16px;
-    border-bottom: 0.5px solid rgba(37, 99, 235, 0.18);
+    border-bottom: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18);
     flex-shrink: 0;
     background: rgba(2, 6, 23, 0.3);
-    /* Electric blue top accent */
     position: relative;
 }
 
@@ -68,11 +67,11 @@
     position: absolute;
     left: 0; top: 0; right: 0;
     height: 1.5px;
-    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.7), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--pos-primary-rgb, 37, 99, 235), 0.7), transparent);
 }
 
 :global([data-mantine-color-scheme='light']) .header {
-    border-bottom-color: rgba(37, 99, 235, 0.14);
+    border-bottom-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14);
     background: #f0f4ff;
 }
 
@@ -83,22 +82,22 @@
 
 .searchInput :global(.mantine-TextInput-input) {
     background: rgba(7, 16, 31, 0.8) !important;
-    border: 0.5px solid rgba(37, 99, 235, 0.28) !important;
-    color: #f8fafc !important;
-    font-family: 'Manrope', sans-serif !important;
+    border: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.28) !important;
+    color: var(--pos-text, #f8fafc) !important;
+    font-family: var(--pos-font, 'Manrope', sans-serif) !important;
     font-size: 0.95rem !important;
     border-radius: 9px !important;
     height: 46px !important;
 }
 
 .searchInput :global(.mantine-TextInput-input:focus) {
-    border-color: rgba(37, 99, 235, 0.65) !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.65) !important;
+    box-shadow: 0 0 0 3px rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14) !important;
 }
 
 :global([data-mantine-color-scheme='light']) .searchInput :global(.mantine-TextInput-input) {
     background: #ffffff !important;
-    border-color: rgba(37, 99, 235, 0.22) !important;
+    border-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.22) !important;
     color: #0f172a !important;
 }
 
@@ -107,7 +106,7 @@
 .resultsList {
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: rgba(37, 99, 235, 0.2) transparent;
+    scrollbar-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2) transparent;
     max-height: 50vh;
     flex: 1;
 }
@@ -115,12 +114,12 @@
 .resultsList::-webkit-scrollbar { width: 4px; }
 .resultsList::-webkit-scrollbar-track { background: transparent; }
 .resultsList::-webkit-scrollbar-thumb {
-    background: rgba(37, 99, 235, 0.2);
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.2);
     border-radius: 2px;
 }
 
 :global([data-mantine-color-scheme='light']) .resultsList {
-    scrollbar-color: rgba(37, 99, 235, 0.18) transparent;
+    scrollbar-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.18) transparent;
 }
 
 /* ── Result row ──────────────────────────────────────────────────── */
@@ -130,7 +129,7 @@
     cursor: pointer;
     border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
     transition: background 80ms ease;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     position: relative;
 }
 
@@ -139,11 +138,11 @@
 }
 
 .resultItem:hover {
-    background: rgba(37, 99, 235, 0.08);
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.08);
 }
 
 :global([data-mantine-color-scheme='light']) .resultItem {
-    border-bottom-color: rgba(37, 99, 235, 0.07);
+    border-bottom-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.07);
 }
 
 :global([data-mantine-color-scheme='light']) .resultItem:hover {
@@ -152,8 +151,8 @@
 
 /* Active / keyboard-selected row */
 .resultItemActive {
-    background: rgba(37, 99, 235, 0.12) !important;
-    box-shadow: inset 3px 0 0 #2563eb;
+    background: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.12) !important;
+    box-shadow: inset 3px 0 0 var(--pos-primary, #2563eb);
 }
 
 :global([data-mantine-color-scheme='light']) .resultItemActive {
@@ -165,9 +164,9 @@
 .priceBadge {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     font-weight: 700;
-    color: #4ade80;
+    color: var(--pos-success, #4ade80);
     font-size: 0.88rem;
 }
 
@@ -179,16 +178,16 @@
 
 .footer {
     padding: 7px 16px;
-    border-top: 0.5px solid rgba(37, 99, 235, 0.16);
+    border-top: 0.5px solid rgba(var(--pos-primary-rgb, 37, 99, 235), 0.16);
     background: rgba(2, 6, 23, 0.4);
     flex-shrink: 0;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--pos-font, 'Manrope', sans-serif);
     font-size: 0.72rem;
-    color: rgba(100, 116, 139, 0.85);
+    color: var(--pos-text-sub, rgba(100, 116, 139, 0.85));
 }
 
 :global([data-mantine-color-scheme='light']) .footer {
-    border-top-color: rgba(37, 99, 235, 0.14);
+    border-top-color: rgba(var(--pos-primary-rgb, 37, 99, 235), 0.14);
     background: #f0f4ff;
     color: rgba(51, 65, 85, 0.7);
 }
@@ -199,12 +198,12 @@
     cursor: pointer;
     opacity: 0.55;
     transition: opacity 100ms;
-    color: rgba(148, 163, 184, 0.85);
+    color: var(--pos-text-sub, rgba(148, 163, 184, 0.85));
 }
 
 .closeBtn:hover {
     opacity: 1;
-    color: #f8fafc;
+    color: var(--pos-text, #f8fafc);
 }
 
 :global([data-mantine-color-scheme='light']) .closeBtn {

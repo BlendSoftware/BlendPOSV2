@@ -46,6 +46,20 @@ function extractTenantIdFromToken(token: string): string | null {
     }
 }
 
+/**
+ * Fetches the tenant's current plan name from /v1/tenant/plan.
+ * Best-effort: returns 'basico' if the request fails.
+ */
+async function fetchPlanName(): Promise<string> {
+    try {
+        const { obtenerPlanActual } = await import('../services/api/tenant');
+        const plan = await obtenerPlanActual();
+        return plan.nombre ?? 'Basico';
+    } catch {
+        return 'Basico';
+    }
+}
+
 // El backend usa 'administrador', el frontend usa 'admin'
 function mapRol(backendRol: string): Rol {
     if (backendRol === 'administrador') return 'admin';
@@ -59,6 +73,8 @@ interface AuthState {
     isAuthenticated: boolean;
     /** Multi-tenant: UUID of the tenant this session belongs to */
     tenantId: string | null;
+    /** Current subscription plan name (e.g. "Basico", "Profesional", "Enterprise") */
+    plan: string | null;
     /** SEC-03: true when the backend requires a password change on first login */
     mustChangePassword: boolean;
     _hasHydrated: boolean;
@@ -79,6 +95,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             tenantId: null,
+            plan: null,
             mustChangePassword: false,
             _hasHydrated: false,
 
@@ -105,6 +122,8 @@ export const useAuthStore = create<AuthState>()(
                         // Extract tenant_id from JWT payload (claim "tid")
                         const tenantId = extractTenantIdFromToken(resp.access_token);
                         set({ user, isAuthenticated: true, tenantId, mustChangePassword: resp.must_change_password ?? false });
+                        // Fetch plan name in background (best-effort)
+                        fetchPlanName().then((planName) => set({ plan: planName }));
                         return true;
                     } catch (err) {
                         // Re-throw network/server errors so the UI can show appropriate messages.
@@ -146,7 +165,7 @@ export const useAuthStore = create<AuthState>()(
                 tokenStore.clearTokens();
                 // Clear sucursal selection to prevent multi-tenant data leak
                 useSucursalStore.getState().setSucursal(null, null);
-                set({ user: null, isAuthenticated: false, tenantId: null, mustChangePassword: false });
+                set({ user: null, isAuthenticated: false, tenantId: null, plan: null, mustChangePassword: false });
             },
 
             refresh: async () => {
@@ -175,11 +194,13 @@ export const useAuthStore = create<AuthState>()(
                         // No user in response — keep existing user, just update tenantId
                         set({ isAuthenticated: true, tenantId });
                     }
+                    // Fetch plan name in background (best-effort)
+                    fetchPlanName().then((planName) => set({ plan: planName }));
                     return true;
                 } catch {
                     cancelProactiveRefresh();
                     tokenStore.clearTokens();
-                    set({ user: null, isAuthenticated: false, tenantId: null });
+                    set({ user: null, isAuthenticated: false, tenantId: null, plan: null });
                     return false;
                 }
             },
@@ -198,7 +219,7 @@ export const useAuthStore = create<AuthState>()(
                         // Couldn't restore token (no refresh token in memory or API error).
                         // Clear local auth state so ProtectedRoute redirects to login.
                         tokenStore.clearTokens();
-                        set({ user: null, isAuthenticated: false, tenantId: null });
+                        set({ user: null, isAuthenticated: false, tenantId: null, plan: null });
                     }
                 }
             },
@@ -216,6 +237,7 @@ export const useAuthStore = create<AuthState>()(
                 user: state.user,
                 isAuthenticated: state.isAuthenticated,
                 tenantId: state.tenantId,
+                plan: state.plan,
             }),
             onRehydrateStorage: () => (_state, error) => {
                 if (error) {

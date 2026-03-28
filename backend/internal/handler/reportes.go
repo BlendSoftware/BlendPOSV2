@@ -18,18 +18,20 @@ import (
 	"github.com/google/uuid"
 )
 
-// parseSucursalID reads the optional "sucursal_id" query param.
-// Returns nil when absent or empty (consolidated view).
+// parseSucursalID resolves the active sucursal filter. Priority:
+//  1. Explicit "sucursal_id" query param (page-level override)
+//  2. X-Sucursal-Id header injected by SucursalMiddleware (global selector)
+//
+// Returns nil when neither is set (consolidated / all branches view).
 func parseSucursalID(c *gin.Context) *uuid.UUID {
-	raw := c.Query("sucursal_id")
-	if raw == "" {
-		return nil
+	// 1. Explicit query param takes priority.
+	if raw := c.Query("sucursal_id"); raw != "" {
+		if id, err := uuid.Parse(raw); err == nil {
+			return &id
+		}
 	}
-	id, err := uuid.Parse(raw)
-	if err != nil {
-		return nil
-	}
-	return &id
+	// 2. Fall back to header-based context from SucursalMiddleware.
+	return middleware.SucursalIDFromContext(c.Request.Context())
 }
 
 // ReportesHandler exposes analytics endpoints.

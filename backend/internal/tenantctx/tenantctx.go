@@ -24,6 +24,11 @@ const Key contextKey = "tenant_id"
 // (already filtered by tenant_id) is stored. Set by TenantMiddleware.
 const ScopedDBKey contextKey = "scoped_db"
 
+// SucursalKey is the context key under which the optional sucursal UUID is
+// stored. Set by SucursalMiddleware from the X-Sucursal-Id header.
+// nil/absent = consolidated view (all branches).
+const SucursalKey contextKey = "sucursal_id"
+
 // FromContext retrieves the tenant UUID injected by TenantMiddleware.
 // Returns an error if the context was not enriched (e.g. unauthenticated path).
 func FromContext(ctx context.Context) (uuid.UUID, error) {
@@ -54,4 +59,14 @@ func MustScopedDB(ctx context.Context) *gorm.DB {
 		panic(err)
 	}
 	return db
+}
+
+// SucursalFromContext retrieves the optional sucursal UUID injected by
+// SucursalMiddleware. Returns nil when not set (consolidated / all branches).
+func SucursalFromContext(ctx context.Context) *uuid.UUID {
+	sid, ok := ctx.Value(SucursalKey).(uuid.UUID)
+	if !ok || sid == uuid.Nil {
+		return nil
+	}
+	return &sid
 }

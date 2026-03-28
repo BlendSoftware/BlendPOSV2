@@ -94,17 +94,8 @@ func (h *InventarioHandler) DesarmeManual(c *gin.Context) {
 }
 
 func (h *InventarioHandler) ObtenerAlertas(c *gin.Context) {
-	// Optional sucursal_id filter — when present, return alerts for that branch only.
-	sucursalIDStr := c.Query("sucursal_id")
-	var sucursalID *uuid.UUID
-	if sucursalIDStr != "" {
-		id, err := uuid.Parse(sucursalIDStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, apierror.New("sucursal_id inválido"))
-			return
-		}
-		sucursalID = &id
-	}
+	// Resolve sucursal: explicit query param > header (SucursalMiddleware).
+	sucursalID := parseSucursalID(c)
 
 	resp, err := h.svc.ObtenerAlertas(c.Request.Context(), sucursalID)
 	if err != nil {

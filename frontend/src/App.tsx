@@ -5,6 +5,7 @@ import { Center, Loader } from '@mantine/core';
 // Error boundary
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
+import { FeatureGate } from './components/FeatureGate';
 
 // Auth
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -50,6 +51,7 @@ const SucursalesPage = lazy(() => import('./pages/admin/SucursalesPage').then(m 
 const TransferenciasPage = lazy(() => import('./pages/admin/TransferenciasPage').then(m => ({ default: m.TransferenciasPage })));
 const StockSucursalPage = lazy(() => import('./pages/admin/StockSucursalPage').then(m => ({ default: m.StockSucursalPage })));
 const AIPage = lazy(() => import('./pages/admin/AIPage').then(m => ({ default: m.AIPage })));
+const AparienciaPage = lazy(() => import('./pages/admin/AparienciaPage').then(m => ({ default: m.AparienciaPage })));
 
 function LoadingSpinner() {
     return <Center h="100vh"><Loader size="xl" /></Center>;
@@ -138,7 +140,9 @@ function App() {
                         <Route path="proveedores" element={
                             <RouteErrorBoundary>
                                 <Suspense fallback={<LoadingSpinner />}>
-                                    <ProveedoresPage />
+                                    <FeatureGate feature="proveedores">
+                                        <ProveedoresPage />
+                                    </FeatureGate>
                                 </Suspense>
                             </RouteErrorBoundary>
                         } />
@@ -152,7 +156,9 @@ function App() {
                         <Route path="compras" element={
                             <RouteErrorBoundary>
                                 <Suspense fallback={<LoadingSpinner />}>
-                                    <ComprasPage />
+                                    <FeatureGate feature="compras">
+                                        <ComprasPage />
+                                    </FeatureGate>
                                 </Suspense>
                             </RouteErrorBoundary>
                         } />
@@ -173,7 +179,9 @@ function App() {
                         <Route path="facturacion" element={
                             <RouteErrorBoundary>
                                 <Suspense fallback={<LoadingSpinner />}>
-                                    <FacturacionPage />
+                                    <FeatureGate feature="facturacion_afip">
+                                        <FacturacionPage />
+                                    </FeatureGate>
                                 </Suspense>
                             </RouteErrorBoundary>
                         } />
@@ -201,14 +209,18 @@ function App() {
                         <Route path="vencimientos" element={
                             <RouteErrorBoundary>
                                 <Suspense fallback={<LoadingSpinner />}>
-                                    <VencimientosPage />
+                                    <FeatureGate feature="vencimientos">
+                                        <VencimientosPage />
+                                    </FeatureGate>
                                 </Suspense>
                             </RouteErrorBoundary>
                         } />
                         <Route path="clientes" element={
                             <RouteErrorBoundary>
                                 <Suspense fallback={<LoadingSpinner />}>
-                                    <ClientesPage />
+                                    <FeatureGate feature="clientes_management">
+                                        <ClientesPage />
+                                    </FeatureGate>
                                 </Suspense>
                             </RouteErrorBoundary>
                         } />
@@ -216,6 +228,15 @@ function App() {
                             <RouteErrorBoundary>
                                 <Suspense fallback={<LoadingSpinner />}>
                                     <ConfiguracionFiscalPage />
+                                </Suspense>
+                            </RouteErrorBoundary>
+                        } />
+                        <Route path="apariencia" element={
+                            <RouteErrorBoundary>
+                                <Suspense fallback={<LoadingSpinner />}>
+                                    <FeatureGate feature="apariencia">
+                                        <AparienciaPage />
+                                    </FeatureGate>
                                 </Suspense>
                             </RouteErrorBoundary>
                         } />
@@ -255,7 +276,9 @@ function App() {
                                 <ProtectedRoute roles={['admin', 'supervisor']}>
                                     <RouteErrorBoundary>
                                         <Suspense fallback={<LoadingSpinner />}>
-                                            <TransferenciasPage />
+                                            <FeatureGate feature="transferencias">
+                                                <TransferenciasPage />
+                                            </FeatureGate>
                                         </Suspense>
                                     </RouteErrorBoundary>
                                 </ProtectedRoute>
@@ -267,7 +290,9 @@ function App() {
                                 <ProtectedRoute roles={['admin', 'supervisor']}>
                                     <RouteErrorBoundary>
                                         <Suspense fallback={<LoadingSpinner />}>
-                                            <StockSucursalPage />
+                                            <FeatureGate feature="stock_sucursal">
+                                                <StockSucursalPage />
+                                            </FeatureGate>
                                         </Suspense>
                                     </RouteErrorBoundary>
                                 </ProtectedRoute>
@@ -281,7 +306,9 @@ function App() {
                                 <ProtectedRoute roles={['admin']}>
                                     <RouteErrorBoundary>
                                         <Suspense fallback={<LoadingSpinner />}>
-                                            <AIPage />
+                                            <FeatureGate feature="ai_assistant">
+                                                <AIPage />
+                                            </FeatureGate>
                                         </Suspense>
                                     </RouteErrorBoundary>
                                 </ProtectedRoute>
