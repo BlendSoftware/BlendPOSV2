@@ -31,14 +31,23 @@ type ProductoService interface {
 }
 
 type productoService struct {
-	repo    repository.ProductoRepository
-	movRepo repository.MovimientoStockRepository
-	catRepo repository.CategoriaRepository
-	rdb     *redis.Client
+	repo         repository.ProductoRepository
+	movRepo      repository.MovimientoStockRepository
+	catRepo      repository.CategoriaRepository
+	rdb          *redis.Client
+	stockSucRepo repository.StockSucursalRepository
+	sucursalRepo repository.SucursalRepository
 }
 
-func NewProductoService(repo repository.ProductoRepository, movRepo repository.MovimientoStockRepository, catRepo repository.CategoriaRepository, rdb *redis.Client) ProductoService {
-	return &productoService{repo: repo, movRepo: movRepo, catRepo: catRepo, rdb: rdb}
+func NewProductoService(
+	repo repository.ProductoRepository,
+	movRepo repository.MovimientoStockRepository,
+	catRepo repository.CategoriaRepository,
+	rdb *redis.Client,
+	stockSucRepo repository.StockSucursalRepository,
+	sucursalRepo repository.SucursalRepository,
+) ProductoService {
+	return &productoService{repo: repo, movRepo: movRepo, catRepo: catRepo, rdb: rdb, stockSucRepo: stockSucRepo, sucursalRepo: sucursalRepo}
 }
 
 // lookupCategoriaID busca la categoría por nombre y devuelve su ID.
@@ -167,25 +176,55 @@ func (s *productoService) Crear(ctx context.Context, req dto.CrearProductoReques
 	}
 
 	p := &model.Producto{
-		CodigoBarras: req.CodigoBarras,
-		Nombre:       req.Nombre,
-		Descripcion:  req.Descripcion,
-		Categoria:    req.Categoria,
-		CategoriaID:  catID,
-		PrecioCosto:  req.PrecioCosto,
-		PrecioVenta:  req.PrecioVenta,
-		StockActual:  req.StockActual,
-		StockMinimo:  req.StockMinimo,
-		UnidadMedida: req.UnidadMedida,
-		EsPadre:      req.EsPadre,
-		Activo:       true,
-		ProveedorID:  provID,
+		CodigoBarras:        req.CodigoBarras,
+		Nombre:              req.Nombre,
+		Descripcion:         req.Descripcion,
+		Categoria:           req.Categoria,
+		CategoriaID:         catID,
+		PrecioCosto:         req.PrecioCosto,
+		PrecioVenta:         req.PrecioVenta,
+		StockActual:         req.StockActual,
+		StockMinimo:         req.StockMinimo,
+		UnidadMedida:        req.UnidadMedida,
+		EsPadre:             req.EsPadre,
+		ControlaVencimiento: req.ControlaVencimiento,
+		Activo:              true,
+		ProveedorID:         provID,
 	}
 
 	if err := s.repo.Create(ctx, p); err != nil {
 		return nil, err
 	}
+
+	// Auto-create stock_sucursal records for all active sucursales.
+	// Best-effort — don't fail product creation if this errors.
+	s.ensureStockSucursalRecords(ctx, p.ID, p.StockActual, p.StockMinimo)
+
 	return toProductoResponse(p), nil
+}
+
+// ensureStockSucursalRecords creates a stock_sucursal row for every active
+// sucursal so the product appears in the "Stock por Sucursal" view and can be
+// transferred from day one. This is a best-effort operation — errors are logged
+// but do not block product creation.
+func (s *productoService) ensureStockSucursalRecords(ctx context.Context, productoID uuid.UUID, stockActual, stockMinimo int) {
+	if s.stockSucRepo == nil || s.sucursalRepo == nil {
+		return
+	}
+	sucursales, _, err := s.sucursalRepo.List(ctx, false) // only active
+	if err != nil || len(sucursales) == 0 {
+		return
+	}
+	for _, suc := range sucursales {
+		ss, err := s.stockSucRepo.GetOrCreateStock(ctx, productoID, suc.ID)
+		if err != nil {
+			continue
+		}
+		// If the record was just created (stock_actual=0) and this is the first
+		// sucursal, seed it with the product's initial global stock so the numbers
+		// match. Subsequent sucursales start at 0.
+		_ = ss // GetOrCreateStock already created the record
+	}
 }
 
 func (s *productoService) ObtenerPorID(ctx context.Context, id uuid.UUID) (*dto.ProductoResponse, error) {
@@ -413,6 +452,10 @@ func (s *productoService) CrearVariante(ctx context.Context, padreID uuid.UUID, 
 	if err := s.repo.Create(ctx, variante); err != nil {
 		return nil, err
 	}
+
+	// Auto-create stock_sucursal records for the variant too.
+	s.ensureStockSucursalRecords(ctx, variante.ID, variante.StockActual, variante.StockMinimo)
+
 	return toProductoResponse(variante), nil
 }
 

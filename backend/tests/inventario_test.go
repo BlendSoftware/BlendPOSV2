@@ -237,7 +237,7 @@ func seedProducto(repo *stubProductoRepo, nombre, barcode string, stock, stockMi
 
 func TestCrearProducto(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewProductoService(repo, nil, nil, nil)
+	svc := service.NewProductoService(repo, nil, nil, nil, nil, nil)
 
 	resp, err := svc.Crear(context.Background(), dto.CrearProductoRequest{
 		CodigoBarras: "7790001111111",
@@ -258,7 +258,7 @@ func TestCrearProducto(t *testing.T) {
 
 func TestBusquedaPorBarcode(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewProductoService(repo, nil, nil, nil)
+	svc := service.NewProductoService(repo, nil, nil, nil, nil, nil)
 	seedProducto(repo, "Agua Mineral 500ml", "7790002222222", 100, 10)
 
 	resp, err := svc.ObtenerPorBarcode(context.Background(), "7790002222222")
@@ -269,7 +269,7 @@ func TestBusquedaPorBarcode(t *testing.T) {
 
 func TestBusquedaPorBarcodeNoExiste(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewProductoService(repo, nil, nil, nil)
+	svc := service.NewProductoService(repo, nil, nil, nil, nil, nil)
 
 	_, err := svc.ObtenerPorBarcode(context.Background(), "9999999999999")
 	assert.Error(t, err)
@@ -277,7 +277,7 @@ func TestBusquedaPorBarcodeNoExiste(t *testing.T) {
 
 func TestSoftDeleteProducto(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewProductoService(repo, nil, nil, nil)
+	svc := service.NewProductoService(repo, nil, nil, nil, nil, nil)
 	p := seedProducto(repo, "Fideos 500g", "7790003333333", 30, 5)
 
 	err := svc.Desactivar(context.Background(), p.ID)
@@ -290,7 +290,7 @@ func TestSoftDeleteProducto(t *testing.T) {
 
 func TestActualizarPrecioInvalidaCache(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewProductoService(repo, nil, nil, nil) // nil Redis â€” invalidation is best-effort
+	svc := service.NewProductoService(repo, nil, nil, nil, nil, nil) // nil Redis â€” invalidation is best-effort
 	p := seedProducto(repo, "Leche 1L", "7790004444444", 20, 3)
 
 	nuevoPrecio := decimal.NewFromFloat(95)
@@ -303,7 +303,7 @@ func TestActualizarPrecioInvalidaCache(t *testing.T) {
 
 func TestCrearVinculo(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewInventarioService(repo, nil)
+	svc := service.NewInventarioService(repo, nil, nil)
 
 	padre := seedProducto(repo, "Pack 6 latas", "7790005555555", 10, 2)
 	hijo := seedProducto(repo, "Lata Cerveza 350ml", "7790006666666", 0, 5)
@@ -322,7 +322,7 @@ func TestCrearVinculo(t *testing.T) {
 
 func TestCrearVinculoMismoPadreHijo(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewInventarioService(repo, nil)
+	svc := service.NewInventarioService(repo, nil, nil)
 	p := seedProducto(repo, "Producto X", "7790007777777", 10, 1)
 
 	_, err := svc.CrearVinculo(context.Background(), dto.CrearVinculoRequest{
@@ -335,20 +335,20 @@ func TestCrearVinculoMismoPadreHijo(t *testing.T) {
 
 func TestObtenerAlertasStock(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewInventarioService(repo, nil)
+	svc := service.NewInventarioService(repo, nil, nil)
 
 	seedProducto(repo, "Producto OK", "1111111111111", 50, 5)      // stock > minimo
 	seedProducto(repo, "Producto Bajo", "2222222222222", 3, 5)     // stock <= minimo
 	seedProducto(repo, "Producto Critico", "3333333333333", 0, 10) // stock <= minimo
 
-	alertas, err := svc.ObtenerAlertas(context.Background())
+	alertas, err := svc.ObtenerAlertas(context.Background(), nil)
 	require.NoError(t, err)
 	assert.Len(t, alertas, 2)
 }
 
 func TestListarVinculos(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewInventarioService(repo, nil)
+	svc := service.NewInventarioService(repo, nil, nil)
 
 	padre := seedProducto(repo, "Caja 12", "4444444444444", 5, 1)
 	hijo := seedProducto(repo, "Unidad", "5555555555555", 0, 6)
@@ -369,7 +369,7 @@ func TestListarVinculos(t *testing.T) {
 
 func TestDesarmePadreInsuficiente(t *testing.T) {
 	repo := newStubProductoRepo()
-	svc := service.NewInventarioService(repo, nil)
+	svc := service.NewInventarioService(repo, nil, nil)
 
 	padre := seedProducto(repo, "Caja 6 botellas", "6666666666666", 2, 0) // only 2 units
 	hijo := seedProducto(repo, "Botella 1L", "7777777777777", 0, 0)

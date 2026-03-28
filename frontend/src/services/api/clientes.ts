@@ -87,6 +87,42 @@ export interface RegistrarPagoRequest {
     descripcion?: string;
 }
 
+// ── Decimal coercion helpers ──────────────────────────────────────────────────
+// shopspring/decimal may serialize as quoted strings ("1500.00") or numbers
+// depending on backend config. These helpers ensure the frontend always has
+// proper numeric types regardless of backend serialization format.
+
+function toNum(v: unknown): number {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') return parseFloat(v) || 0;
+    return 0;
+}
+
+function coerceCliente(raw: ClienteResponse): ClienteResponse {
+    return {
+        ...raw,
+        limite_credito: toNum(raw.limite_credito),
+        saldo_deudor: toNum(raw.saldo_deudor),
+        credito_disponible: toNum(raw.credito_disponible),
+    };
+}
+
+function coerceMovimiento(raw: MovimientoCuentaResponse): MovimientoCuentaResponse {
+    return {
+        ...raw,
+        monto: toNum(raw.monto),
+        saldo_posterior: toNum(raw.saldo_posterior),
+    };
+}
+
+function coerceDeudor(raw: DeudorResponse): DeudorResponse {
+    return {
+        ...raw,
+        saldo_deudor: toNum(raw.saldo_deudor),
+        limite_credito: toNum(raw.limite_credito),
+    };
+}
+
 // ── API Calls ─────────────────────────────────────────────────────────────────
 
 /**
@@ -94,7 +130,8 @@ export interface RegistrarPagoRequest {
  * Crea un nuevo cliente con cuenta corriente.
  */
 export async function crearCliente(data: CrearClienteRequest): Promise<ClienteResponse> {
-    return apiClient.post<ClienteResponse>('/v1/clientes', data);
+    const raw = await apiClient.post<ClienteResponse>('/v1/clientes', data);
+    return coerceCliente(raw);
 }
 
 /**
@@ -106,11 +143,12 @@ export async function listarClientes(params?: {
     page?: number;
     limit?: number;
 }): Promise<ClienteListResponse> {
-    return apiClient.get<ClienteListResponse>('/v1/clientes', {
+    const raw = await apiClient.get<ClienteListResponse>('/v1/clientes', {
         search: params?.search,
         page: params?.page ?? 1,
         limit: params?.limit ?? 50,
     });
+    return { ...raw, data: raw.data.map(coerceCliente) };
 }
 
 /**
@@ -118,7 +156,8 @@ export async function listarClientes(params?: {
  * Detalle del cliente con saldo actual.
  */
 export async function obtenerCliente(id: string): Promise<ClienteResponse> {
-    return apiClient.get<ClienteResponse>(`/v1/clientes/${id}`);
+    const raw = await apiClient.get<ClienteResponse>(`/v1/clientes/${id}`);
+    return coerceCliente(raw);
 }
 
 /**
@@ -126,7 +165,8 @@ export async function obtenerCliente(id: string): Promise<ClienteResponse> {
  * Actualiza datos del cliente.
  */
 export async function actualizarCliente(id: string, data: UpdateClienteRequest): Promise<ClienteResponse> {
-    return apiClient.put<ClienteResponse>(`/v1/clientes/${id}`, data);
+    const raw = await apiClient.put<ClienteResponse>(`/v1/clientes/${id}`, data);
+    return coerceCliente(raw);
 }
 
 /**
@@ -134,7 +174,8 @@ export async function actualizarCliente(id: string, data: UpdateClienteRequest):
  * Registra un pago que reduce el saldo deudor.
  */
 export async function registrarPago(id: string, data: RegistrarPagoRequest): Promise<MovimientoCuentaResponse> {
-    return apiClient.post<MovimientoCuentaResponse>(`/v1/clientes/${id}/pago`, data);
+    const raw = await apiClient.post<MovimientoCuentaResponse>(`/v1/clientes/${id}/pago`, data);
+    return coerceMovimiento(raw);
 }
 
 /**
@@ -145,10 +186,11 @@ export async function listarMovimientos(
     id: string,
     params?: { page?: number; limit?: number },
 ): Promise<MovimientosListResponse> {
-    return apiClient.get<MovimientosListResponse>(`/v1/clientes/${id}/movimientos`, {
+    const raw = await apiClient.get<MovimientosListResponse>(`/v1/clientes/${id}/movimientos`, {
         page: params?.page ?? 1,
         limit: params?.limit ?? 50,
     });
+    return { ...raw, data: raw.data.map(coerceMovimiento) };
 }
 
 /**
@@ -156,5 +198,6 @@ export async function listarMovimientos(
  * Lista todos los clientes con saldo > 0, ordenados por deuda descendente.
  */
 export async function listarDeudores(): Promise<ListDeudoresResponse> {
-    return apiClient.get<ListDeudoresResponse>('/v1/clientes/deudores');
+    const raw = await apiClient.get<ListDeudoresResponse>('/v1/clientes/deudores');
+    return { ...raw, data: raw.data.map(coerceDeudor) };
 }

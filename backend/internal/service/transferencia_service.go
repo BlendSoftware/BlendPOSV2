@@ -69,15 +69,17 @@ func (s *transferenciaService) CrearTransferencia(ctx context.Context, usuarioID
 		return nil, fmt.Errorf("sucursal destino no encontrada: %w", err)
 	}
 
-	// Validate stock available at origin for each item
+	// Validate stock available at origin for each item.
+	// Use GetOrCreateStock so that products without an explicit stock_sucursal
+	// record get one auto-created (with stock_actual=0) instead of failing.
 	for _, item := range req.Items {
 		productoID, err := uuid.Parse(item.ProductoID)
 		if err != nil {
 			return nil, fmt.Errorf("producto_id inválido: %w", err)
 		}
-		stock, err := s.stockRepo.GetStock(ctx, productoID, origenID)
+		stock, err := s.stockRepo.GetOrCreateStock(ctx, productoID, origenID)
 		if err != nil {
-			return nil, fmt.Errorf("sin stock registrado para producto %s en sucursal origen", item.ProductoID)
+			return nil, fmt.Errorf("error verificando stock para producto %s en sucursal origen: %w", item.ProductoID, err)
 		}
 		if stock.StockActual < item.Cantidad {
 			return nil, fmt.Errorf("stock insuficiente en origen para producto %s: disponible %d, solicitado %d",

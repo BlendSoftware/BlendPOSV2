@@ -16,6 +16,7 @@ const METODO_LABEL: Record<string, string> = {
     qr: '📱 QR',
     mixto: '🧾 Mixto',
     transferencia: '📱 Transferencia',
+    fiado: '📒 Fiado',
 };
 
 const BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
@@ -130,7 +131,7 @@ export function PostSaleModal() {
 
         const METODO_PRINT: Record<string, string> = {
             efectivo: 'Efectivo', debito: 'Débito', credito: 'Crédito',
-            qr: 'QR', transferencia: 'Transferencia', mixto: 'Mixto',
+            qr: 'QR', transferencia: 'Transferencia', mixto: 'Mixto', fiado: 'Fiado',
         };
 
         const storeName = printerConfig.storeName || 'BLEND POS';
@@ -214,6 +215,7 @@ export function PostSaleModal() {
     <div class="divider"></div>
     <div class="section">
         <div class="row"><span class="label">Método de pago</span><span class="value">${METODO_PRINT[record.metodoPago] ?? record.metodoPago}</span></div>
+        ${record.metodoPago === 'fiado' && record.clienteNombre ? `<div class="row"><span class="label">Cliente</span><span class="value">${record.clienteNombre}</span></div>` : ''}
         ${record.metodoPago === 'mixto' && record.pagos ? `<div class="pagos-mixtos">${record.pagos.map(p => `<div class="row"><span class="label">• ${METODO_PRINT[p.metodo] ?? p.metodo}</span><span class="value">${ars(p.monto)}</span></div>`).join('')}</div>` : ''}
         ${record.efectivoRecibido && record.efectivoRecibido > 0 ? `
         <div class="row"><span class="label">Efectivo recibido</span><span class="value">${ars(record.efectivoRecibido)}</span></div>
@@ -392,6 +394,12 @@ export function PostSaleModal() {
                             {METODO_LABEL[record.metodoPago] ?? record.metodoPago}
                         </Badge>
                     </Group>
+                    {record.metodoPago === 'fiado' && record.clienteNombre && (
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">Cliente (fiado)</Text>
+                            <Text size="sm" fw={600}>{record.clienteNombre}</Text>
+                        </Group>
+                    )}
                     {vuelto > 0 && (
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">Vuelto</Text>

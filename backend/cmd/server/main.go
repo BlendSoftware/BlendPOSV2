@@ -36,7 +36,17 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/shopspring/decimal"
 )
+
+func init() {
+	// Serialize decimal.Decimal as JSON numbers (e.g. 1500.00) instead of
+	// quoted strings ("1500.00"). Safe for POS amounts which are well within
+	// float64 precision (~15 significant digits). The frontend TypeScript
+	// types expect numeric values — without this, comparisons like
+	// saldo_deudor > 0 rely on implicit JS coercion which is fragile.
+	decimal.MarshalJSONWithoutQuotes = true
+}
 
 func main() {
 	// ── H-03: Configure logger based on environment ─────────────────────
@@ -124,8 +134,8 @@ func main() {
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := service.NewAuthService(usuarioRepo, cfg, rdb)
 	tenantSvc := service.NewTenantService(tenantRepo, usuarioRepo, cfg, rdb)
-	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb)
-	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo)
+	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb, stockSucursalRepo, sucursalRepo)
+	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo, stockSucursalRepo)
 	cajaSvc := service.NewCajaService(cajaRepo, usuarioRepo)
 	ventaSvc := service.NewVentaService(ventaRepo, inventarioSvc, cajaSvc, cajaRepo, productoRepo, dispatcher, comprobanteRepo, configFiscalRepo)
 	facturacionSvc := service.NewFacturacionService(comprobanteRepo, dispatcher)

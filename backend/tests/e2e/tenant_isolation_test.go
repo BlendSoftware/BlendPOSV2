@@ -161,8 +161,8 @@ func setupIsolationEnv(t *testing.T) *isolationTestEnv {
 	// Build services
 	authSvc := service.NewAuthService(usuarioRepo, cfg, rdb)
 	tenantSvc := service.NewTenantService(tenantRepo, usuarioRepo, cfg, rdb)
-	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb)
-	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo)
+	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb, nil, nil)
+	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo, nil)
 	cajaSvc := service.NewCajaService(cajaRepo, usuarioRepo)
 	ventaSvc := service.NewVentaService(ventaRepo, inventarioSvc, cajaSvc, cajaRepo, productoRepo, dispatcher, comprobanteRepo, configFiscalRepo)
 	facturacionSvc := service.NewFacturacionService(comprobanteRepo, dispatcher)

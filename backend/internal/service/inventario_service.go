@@ -18,7 +18,7 @@ type InventarioService interface {
 	CrearVinculo(ctx context.Context, req dto.CrearVinculoRequest) (*dto.VinculoResponse, error)
 	ListarVinculos(ctx context.Context) ([]dto.VinculoResponse, error)
 	DesarmeManual(ctx context.Context, req dto.DesarmeManualRequest) (*dto.DesarmeManualResponse, error)
-	ObtenerAlertas(ctx context.Context) ([]dto.AlertaStockResponse, error)
+	ObtenerAlertas(ctx context.Context, sucursalID *uuid.UUID) ([]dto.AlertaStockResponse, error)
 	// DescontarStockTx is called within a sale transaction — requires a live *gorm.DB tx.
 	// Using *gorm.DB directly (not interface{}) catches type errors at compile time (P2-003).
 	DescontarStockTx(ctx context.Context, productoID uuid.UUID, cantidad int, tx *gorm.DB) error
@@ -33,12 +33,13 @@ type InventarioService interface {
 }
 
 type inventarioService struct {
-	repo    repository.ProductoRepository
-	movRepo repository.MovimientoStockRepository
+	repo         repository.ProductoRepository
+	movRepo      repository.MovimientoStockRepository
+	stockSucRepo repository.StockSucursalRepository
 }
 
-func NewInventarioService(repo repository.ProductoRepository, movRepo repository.MovimientoStockRepository) InventarioService {
-	return &inventarioService{repo: repo, movRepo: movRepo}
+func NewInventarioService(repo repository.ProductoRepository, movRepo repository.MovimientoStockRepository, stockSucRepo repository.StockSucursalRepository) InventarioService {
+	return &inventarioService{repo: repo, movRepo: movRepo, stockSucRepo: stockSucRepo}
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -155,9 +156,30 @@ func (s *inventarioService) DesarmeManual(ctx context.Context, req dto.DesarmeMa
 	}, nil
 }
 
-func (s *inventarioService) ObtenerAlertas(ctx context.Context) ([]dto.AlertaStockResponse, error) {
-	// Use List with a high Limit and filter in-memory.
-	// A dedicated DB query will replace this in Phase 4 when the read model is ready.
+func (s *inventarioService) ObtenerAlertas(ctx context.Context, sucursalID *uuid.UUID) ([]dto.AlertaStockResponse, error) {
+	// When a sucursal_id is provided, use the per-branch stock_sucursal table.
+	if sucursalID != nil && s.stockSucRepo != nil {
+		items, err := s.stockSucRepo.GetAlertasBySucursal(ctx, *sucursalID)
+		if err != nil {
+			return nil, err
+		}
+		alertas := make([]dto.AlertaStockResponse, 0, len(items))
+		for _, ss := range items {
+			nombre := ""
+			if ss.Producto != nil {
+				nombre = ss.Producto.Nombre
+			}
+			alertas = append(alertas, dto.AlertaStockResponse{
+				ProductoID:  ss.ProductoID.String(),
+				Nombre:      nombre,
+				StockActual: ss.StockActual,
+				StockMinimo: ss.StockMinimo,
+			})
+		}
+		return alertas, nil
+	}
+
+	// Fallback: global stock from productos table.
 	filter := dto.ProductoFilter{Page: 1, Limit: 1000}
 	productos, _, err := s.repo.List(ctx, filter)
 	if err != nil {

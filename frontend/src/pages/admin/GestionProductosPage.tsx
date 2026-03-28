@@ -901,7 +901,7 @@ export function GestionProductosPage() {
 
                         <Group grow>
                             <NumberInput
-                                label="Precio de costo"
+                                label={form.values.unidadMedida === 'kg' ? 'Precio de costo por kg' : form.values.unidadMedida === 'gramo' ? 'Precio de costo por gramo' : 'Precio de costo'}
                                 prefix="$"
                                 decimalScale={2}
                                 thousandSeparator="."
@@ -910,7 +910,7 @@ export function GestionProductosPage() {
                                 {...form.getInputProps('precioCosto')}
                             />
                             <NumberInput
-                                label="Precio de venta"
+                                label={form.values.unidadMedida === 'kg' ? 'Precio de venta por kg' : form.values.unidadMedida === 'gramo' ? 'Precio de venta por gramo' : 'Precio de venta'}
                                 prefix="$"
                                 decimalScale={2}
                                 thousandSeparator="."
@@ -935,6 +935,12 @@ export function GestionProductosPage() {
                             allowDeselect={false}
                             {...form.getInputProps('unidadMedida')}
                         />
+
+                        {(form.values.unidadMedida === 'kg' || form.values.unidadMedida === 'gramo') && (
+                            <Alert color="blue" variant="light" icon={<AlertCircle size={14} />}>
+                                Producto por peso: en el POS se pedirá ingresar el peso al agregarlo al carrito.
+                            </Alert>
+                        )}
 
                         <Divider label="Stock" labelPosition="left" />
 
@@ -965,15 +971,21 @@ export function GestionProductosPage() {
                             onChange={(e) => form.setFieldValue('controlaVencimiento', e.currentTarget.checked)}
                         />
 
-                        {editTarget && form.values.controlaVencimiento && (
-                            <Button
-                                variant="light"
-                                color="orange"
-                                leftSection={<CalendarClock size={14} />}
-                                onClick={() => { setModalOpen(false); openLotesModal(editTarget); }}
-                            >
-                                Gestionar lotes
-                            </Button>
+                        {form.values.controlaVencimiento && (
+                            editTarget ? (
+                                <Button
+                                    variant="light"
+                                    color="orange"
+                                    leftSection={<CalendarClock size={14} />}
+                                    onClick={() => { setModalOpen(false); openLotesModal(editTarget); }}
+                                >
+                                    Gestionar lotes
+                                </Button>
+                            ) : (
+                                <Alert color="orange" variant="light" icon={<CalendarClock size={14} />}>
+                                    Las fechas de vencimiento se gestionan por lote. Una vez creado el producto, podrás cargar lotes desde la tabla.
+                                </Alert>
+                            )
                         )}
 
                         <Divider label="Variantes" labelPosition="left" />

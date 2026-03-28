@@ -12,17 +12,24 @@ import {
     type StockSucursalResponse,
 } from '../../services/api/transferencias';
 import { listarSucursales, type SucursalResponse } from '../../services/api/sucursales';
+import { useSucursalStore } from '../../store/useSucursalStore';
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function StockSucursalPage() {
     // ── State ───────────────────────────────────────────────────────────────
+    const { sucursalId: globalSucursalId } = useSucursalStore();
     const [sucursales, setSucursales] = useState<SucursalResponse[]>([]);
-    const [sucursalId, setSucursalId] = useState<string>('');
+    const [sucursalId, setSucursalId] = useState<string>(globalSucursalId ?? '');
     const [stock, setStock] = useState<StockSucursalResponse[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingSucursales, setLoadingSucursales] = useState(true);
     const [ajusteTarget, setAjusteTarget] = useState<StockSucursalResponse | null>(null);
+
+    // Sync local state when global sucursal selector changes
+    useEffect(() => {
+        setSucursalId(globalSucursalId ?? '');
+    }, [globalSucursalId]);
 
     // ── Fetch sucursales on mount ───────────────────────────────────────────
     useEffect(() => {

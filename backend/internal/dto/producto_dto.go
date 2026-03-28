@@ -5,17 +5,18 @@ import "github.com/shopspring/decimal"
 // ─── Request DTOs ────────────────────────────────────────────────────────────
 
 type CrearProductoRequest struct {
-	CodigoBarras string          `json:"codigo_barras" validate:"required,min=8,max=18"`
-	Nombre       string          `json:"nombre"        validate:"required,min=2,max=120"`
-	Descripcion  *string         `json:"descripcion"`
-	Categoria    string          `json:"categoria"     validate:"required"`
-	PrecioCosto  decimal.Decimal `json:"precio_costo"  validate:"required"`
-	PrecioVenta  decimal.Decimal `json:"precio_venta"  validate:"required"`
-	StockActual  int             `json:"stock_actual"  validate:"min=0"`
-	StockMinimo  int             `json:"stock_minimo"  validate:"min=0"`
-	UnidadMedida string          `json:"unidad_medida"`
-	ProveedorID  *string         `json:"proveedor_id"  validate:"omitempty,uuid"`
-	EsPadre      bool            `json:"es_padre"`
+	CodigoBarras        string          `json:"codigo_barras" validate:"required,min=8,max=18"`
+	Nombre              string          `json:"nombre"        validate:"required,min=2,max=120"`
+	Descripcion         *string         `json:"descripcion"`
+	Categoria           string          `json:"categoria"     validate:"required"`
+	PrecioCosto         decimal.Decimal `json:"precio_costo"  validate:"required"`
+	PrecioVenta         decimal.Decimal `json:"precio_venta"  validate:"required"`
+	StockActual         int             `json:"stock_actual"  validate:"min=0"`
+	StockMinimo         int             `json:"stock_minimo"  validate:"min=0"`
+	UnidadMedida        string          `json:"unidad_medida"`
+	ProveedorID         *string         `json:"proveedor_id"  validate:"omitempty,uuid"`
+	EsPadre             bool            `json:"es_padre"`
+	ControlaVencimiento bool            `json:"controla_vencimiento"`
 }
 
 type ActualizarProductoRequest struct {
