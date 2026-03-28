@@ -94,7 +94,7 @@ export const PrintableTicket = forwardRef<HTMLDivElement, PrintableTicketProps>(
 
                 {/* Totals */}
                 <div className={styles.section}>
-                    {record.totalConDescuento > 0 && record.total !== record.totalConDescuento && (
+                    {hasDiscount && (
                         <>
                             <div className={styles.row}>
                                 <span className={styles.label}>Subtotal:</span>

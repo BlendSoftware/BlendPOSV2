@@ -4,8 +4,33 @@
 // GET /v1/facturacion/pdf/:id  → blob descarga
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { apiClient } from '../../api/client';
+import { apiClient, refreshAccessToken } from '../../api/client';
 import { tokenStore } from '../../store/tokenStore';
+
+/**
+ * Helper: fetch with 401 retry via silent token refresh.
+ * Same pattern as apiClient interceptor and configuracion_fiscal.ts.
+ */
+async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
+    const token = tokenStore.getAccessToken();
+    const headers: Record<string, string> = { ...(init?.headers as Record<string, string> ?? {}) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    let resp = await fetch(url, { ...init, headers });
+
+    if (resp.status === 401) {
+        try {
+            await refreshAccessToken();
+            const newToken = tokenStore.getAccessToken();
+            if (newToken) headers['Authorization'] = `Bearer ${newToken}`;
+            resp = await fetch(url, { ...init, headers });
+        } catch {
+            // Refresh failed — return original 401 response
+        }
+    }
+
+    return resp;
+}
 
 // ── Response Types ────────────────────────────────────────────────────────────
 
@@ -51,12 +76,9 @@ export function getPDFUrl(comprobanteId: string): string {
  * (evita que el popup blocker la bloquee al estar dentro de un async handler).
  */
 export async function fetchFacturaHTML(comprobanteId: string): Promise<string> {
-    const token = tokenStore.getAccessToken();
     const baseUrl = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
     const url = `${baseUrl}/v1/facturacion/html/${comprobanteId}`;
-    const resp = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const resp = await fetchWithRetry(url);
     if (!resp.ok) throw new Error(`Factura HTML no disponible: ${resp.status}`);
     return resp.text();
 }
@@ -69,7 +91,6 @@ export async function fetchFacturaHTML(comprobanteId: string): Promise<string> {
  * @param esCopia - Si es true, muestra "DUPLICADO" en lugar de "ORIGINAL"
  */
 export async function abrirFacturaHTML(comprobanteId: string, autoPrint = false, esCopia = false): Promise<void> {
-    const token = tokenStore.getAccessToken();
     const baseUrl = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
     const params = new URLSearchParams();
     if (autoPrint) params.set('autoprint', 'true');
@@ -86,9 +107,7 @@ export async function abrirFacturaHTML(comprobanteId: string, autoPrint = false,
     win.document.close();
 
     try {
-        const resp = await fetch(url, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const resp = await fetchWithRetry(url);
 
         if (!resp.ok) throw new Error(`Factura HTML no disponible: ${resp.status}`);
 
@@ -123,12 +142,8 @@ export async function abrirFacturaHTML(comprobanteId: string, autoPrint = false,
  * Descarga el PDF del comprobante en el navegador.
  */
 export async function descargarPDF(comprobanteId: string, nombreArchivo?: string): Promise<void> {
-    const token = tokenStore.getAccessToken();
-
     const url = getPDFUrl(comprobanteId);
-    const resp = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const resp = await fetchWithRetry(url);
 
     if (!resp.ok) throw new Error(`PDF no disponible: ${resp.status}`);
 

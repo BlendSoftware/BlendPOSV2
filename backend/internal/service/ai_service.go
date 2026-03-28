@@ -81,7 +81,6 @@ func (s *aiService) GetMetricas(ctx context.Context, tenantID uuid.UUID) (*dto.A
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	startOfLastMonth := startOfMonth.AddDate(0, -1, 0)
-	endOfLastMonth := startOfMonth.AddDate(0, 0, -1)
 
 	// Ventas mes actual
 	var ventasActual struct {
@@ -107,8 +106,8 @@ func (s *aiService) GetMetricas(ctx context.Context, tenantID uuid.UUID) (*dto.A
 	s.db.WithContext(ctx).Raw(`
 		SELECT COALESCE(SUM(total), 0) as total
 		FROM ventas
-		WHERE tenant_id = ? AND estado != 'anulada' AND created_at >= ? AND created_at <= ?`,
-		tenantID, startOfLastMonth, endOfLastMonth).Scan(&ventasAnterior)
+		WHERE tenant_id = ? AND estado != 'anulada' AND created_at >= ? AND created_at < ?`,
+		tenantID, startOfLastMonth, startOfMonth).Scan(&ventasAnterior)
 
 	metrics.VentasMesAnterior = ventasAnterior.Total
 	if ventasAnterior.Total > 0 {

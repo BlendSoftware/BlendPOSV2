@@ -249,28 +249,32 @@ export function PaymentModal() {
             }
         }
 
-        const record = confirmSale({
-            metodoPago,
-            pagos,
-            efectivoRecibido: efectivoRecibidoToSave,
-            vuelto: vueltoCalc,
-            clienteEmail: clienteEmail.trim() || undefined,
-            receptorNombre: requiresFiscalBuyerData ? nombreReceptor.trim() : undefined,
-            tipoComprobante: tipoComprobante === 'auto' ? undefined : tipoComprobante,
-            cuitReceptor: requiresFiscalBuyerData && resolvedDocType === 'cuit' ? normalizedDocumento : undefined,
-            tipoDocReceptor: requiresFiscalBuyerData
-                ? (resolvedDocType === 'cuit' ? 80 : 96)
-                : undefined,
-            nroDocReceptor: requiresFiscalBuyerData ? normalizedDocumento : undefined,
-            receptorDomicilio: requiresFiscalBuyerData ? domicilioReceptor.trim() : undefined,
-            clienteId: metodoPago === 'fiado' ? fiadoClienteId ?? undefined : undefined,
-            clienteNombre: metodoPago === 'fiado' ? selectedFiadoCliente?.nombre : undefined,
-        });
-        closePaymentModal();
+        try {
+            const record = confirmSale({
+                metodoPago,
+                pagos,
+                efectivoRecibido: efectivoRecibidoToSave,
+                vuelto: vueltoCalc,
+                clienteEmail: clienteEmail.trim() || undefined,
+                receptorNombre: requiresFiscalBuyerData ? nombreReceptor.trim() : undefined,
+                tipoComprobante: tipoComprobante === 'auto' ? undefined : tipoComprobante,
+                cuitReceptor: requiresFiscalBuyerData && resolvedDocType === 'cuit' ? normalizedDocumento : undefined,
+                tipoDocReceptor: requiresFiscalBuyerData
+                    ? (resolvedDocType === 'cuit' ? 80 : 96)
+                    : undefined,
+                nroDocReceptor: requiresFiscalBuyerData ? normalizedDocumento : undefined,
+                receptorDomicilio: requiresFiscalBuyerData ? domicilioReceptor.trim() : undefined,
+                clienteId: metodoPago === 'fiado' ? fiadoClienteId ?? undefined : undefined,
+                clienteNombre: metodoPago === 'fiado' ? selectedFiadoCliente?.nombre : undefined,
+            });
+            closePaymentModal();
 
-        // Open the post-sale modal for print option
-        const { openPostSaleModal } = usePOSUIStore.getState();
-        openPostSaleModal(record);
+            // Open the post-sale modal for print option
+            const { openPostSaleModal } = usePOSUIStore.getState();
+            openPostSaleModal(record);
+        } finally {
+            setIsSubmitting(false);
+        }
     }, [
         canConfirm, isSubmitting, metodoPago, finalTotal, efectivoRecibido,
         mixtoDebito, mixtoCredito, mixtoQr, mixtoTransferencia, cashDue,

@@ -2,7 +2,7 @@
 // Proveedores API — CRUD, actualización masiva de precios, import CSV.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { apiClient } from '../../api/client';
+import { apiClient, refreshAccessToken } from '../../api/client';
 import { tokenStore } from '../../store/tokenStore';
 
 // ── Response Types ────────────────────────────────────────────────────────────
@@ -135,14 +135,28 @@ export async function importarCSV(
     form.append('proveedor_id', proveedorId);
 
     // Usamos fetch directo porque apiClient serializa a JSON
-    const token = tokenStore.getAccessToken();
-
     const baseUrl = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
-    const resp = await fetch(`${baseUrl}/v1/csv/import`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: form,
-    });
+
+    const doFetch = async (): Promise<Response> => {
+        const token = tokenStore.getAccessToken();
+        return fetch(`${baseUrl}/v1/csv/import`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: form,
+        });
+    };
+
+    let resp = await doFetch();
+
+    // Handle 401 with silent token refresh (same pattern as apiClient)
+    if (resp.status === 401) {
+        try {
+            await refreshAccessToken();
+            resp = await doFetch();
+        } catch {
+            // Refresh failed — throw original 401
+        }
+    }
 
     if (!resp.ok) {
         const txt = await resp.text();
