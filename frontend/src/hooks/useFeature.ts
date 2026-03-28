@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { obtenerPlanActual } from '../services/api/tenant';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -47,13 +47,15 @@ function ensureFeatures(tenantId: string | null) {
         });
 }
 
+interface FeatureSnapshot { enabled: boolean; loading: boolean }
+
 /**
  * useFeature — checks if a plan feature flag is enabled for the current tenant.
  *
  * @example
  * const { enabled, loading } = useFeature('analytics_avanzados');
  */
-export function useFeature(feature: string): { enabled: boolean; loading: boolean } {
+export function useFeature(feature: string): FeatureSnapshot {
     const tenantId = useAuthStore((s) => s.tenantId);
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
@@ -62,12 +64,29 @@ export function useFeature(feature: string): { enabled: boolean; loading: boolea
         ensureFeatures(tenantId);
     }
 
-    const getSnapshot = useCallback(() => {
-        if (!isAuthenticated || !tenantId) return { enabled: false, loading: false, rev: revision };
-        if (cachedFeatures && cachedForTenant === tenantId) {
-            return { enabled: cachedFeatures[feature] ?? false, loading: false, rev: revision };
+    // Stable snapshot ref — useSyncExternalStore requires Object.is equality
+    const prevRef = useRef<{ enabled: boolean; loading: boolean; rev: number }>({ enabled: false, loading: false, rev: -1 });
+
+    const getSnapshot = useCallback((): FeatureSnapshot => {
+        let enabled = false;
+        let loading = false;
+
+        if (!isAuthenticated || !tenantId) {
+            // defaults: enabled=false, loading=false
+        } else if (cachedFeatures && cachedForTenant === tenantId) {
+            enabled = cachedFeatures[feature] ?? false;
+        } else {
+            loading = true;
         }
-        return { enabled: false, loading: true, rev: revision };
+
+        const prev = prevRef.current;
+        if (prev.rev === revision && prev.enabled === enabled && prev.loading === loading) {
+            return prev;
+        }
+
+        const next = { enabled, loading, rev: revision };
+        prevRef.current = next;
+        return next;
     }, [feature, tenantId, isAuthenticated]);
 
     const snapshot = useSyncExternalStore(subscribe, getSnapshot);
