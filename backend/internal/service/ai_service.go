@@ -119,7 +119,7 @@ func (s *aiService) GetMetricas(ctx context.Context, tenantID uuid.UUID) (*dto.A
 	var topProds []dto.AIProductoMetric
 	s.db.WithContext(ctx).Raw(`
 		SELECT p.nombre, SUM(di.cantidad) as cantidad, SUM(di.subtotal) as total
-		FROM detalle_ventas di
+		FROM venta_items di
 		JOIN ventas v ON v.id = di.venta_id
 		JOIN productos p ON p.id = di.producto_id
 		WHERE v.tenant_id = ? AND v.estado != 'anulada' AND v.created_at >= ?
@@ -132,7 +132,7 @@ func (s *aiService) GetMetricas(ctx context.Context, tenantID uuid.UUID) (*dto.A
 	var worstProds []dto.AIProductoMetric
 	s.db.WithContext(ctx).Raw(`
 		SELECT p.nombre, SUM(di.cantidad) as cantidad, SUM(di.subtotal) as total
-		FROM detalle_ventas di
+		FROM venta_items di
 		JOIN ventas v ON v.id = di.venta_id
 		JOIN productos p ON p.id = di.producto_id
 		WHERE v.tenant_id = ? AND v.estado != 'anulada' AND v.created_at >= ?
@@ -157,7 +157,7 @@ func (s *aiService) GetMetricas(ctx context.Context, tenantID uuid.UUID) (*dto.A
 	s.db.WithContext(ctx).Raw(`
 		SELECT COUNT(*)
 		FROM productos
-		WHERE tenant_id = ? AND activo = true AND stock <= stock_minimo`,
+		WHERE tenant_id = ? AND activo = true AND stock_actual <= stock_minimo`,
 		tenantID).Scan(&alertasStock)
 	metrics.AlertasStock = int(alertasStock)
 
@@ -202,7 +202,7 @@ func (s *aiService) buildMetricsContext(ctx context.Context, tenantID uuid.UUID)
 	}
 	s.db.WithContext(ctx).Raw(`
 		SELECT p.nombre, SUM(di.cantidad) as cantidad, SUM(di.subtotal) as total
-		FROM detalle_ventas di
+		FROM venta_items di
 		JOIN ventas v ON v.id = di.venta_id
 		JOIN productos p ON p.id = di.producto_id
 		WHERE v.tenant_id = ? AND v.estado != 'anulada' AND v.created_at >= ?
@@ -213,7 +213,7 @@ func (s *aiService) buildMetricsContext(ctx context.Context, tenantID uuid.UUID)
 	var alertasStock int64
 	s.db.WithContext(ctx).Raw(`
 		SELECT COUNT(*) FROM productos
-		WHERE tenant_id = ? AND activo = true AND stock <= stock_minimo`,
+		WHERE tenant_id = ? AND activo = true AND stock_actual <= stock_minimo`,
 		tenantID).Scan(&alertasStock)
 
 	ticket := 0.0

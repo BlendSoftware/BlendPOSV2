@@ -99,7 +99,7 @@ func (s *stubCajaServiceHTTP) GetActiva(_ context.Context, usuarioID uuid.UUID) 
 	return s.sesiones[*s.activeSesion], nil
 }
 
-func (s *stubCajaServiceHTTP) Historial(_ context.Context, page, limit int) ([]dto.ReporteCajaResponse, error) {
+func (s *stubCajaServiceHTTP) Historial(_ context.Context, page, limit int, _ *uuid.UUID) ([]dto.ReporteCajaResponse, error) {
 	result := make([]dto.ReporteCajaResponse, 0, len(s.sesiones))
 	for _, r := range s.sesiones {
 		result = append(result, *r)

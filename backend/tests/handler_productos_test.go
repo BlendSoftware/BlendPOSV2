@@ -117,6 +117,14 @@ func (s *stubProductoService) AjustarStock(_ context.Context, id uuid.UUID, req 
 	return p, nil
 }
 
+func (s *stubProductoService) CrearVariante(_ context.Context, _ uuid.UUID, _ dto.CrearVarianteRequest) (*dto.ProductoResponse, error) {
+	return nil, errors.New("not implemented in stub")
+}
+
+func (s *stubProductoService) ListarVariantes(_ context.Context, _ uuid.UUID) ([]dto.ProductoResponse, error) {
+	return nil, nil
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 // injectClaims creates a test middleware that sets JWT claims directly on the

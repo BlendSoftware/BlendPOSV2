@@ -119,7 +119,9 @@ export const useSaleStore = create<SaleState>()(
 
                 // Always build a pagos array for ALL payment methods so that
                 // MovimientoCaja entries are created for debit/credit/qr too.
-                const finalTotal = totalConDescuento || total;
+                // Use nullish check — `|| total` would be wrong for 100% discounted sales
+                // where totalConDescuento is legitimately 0.
+                const finalTotal = descuentoGlobal > 0 ? totalConDescuento : total;
                 let pagos: PagoDetalle[] | undefined = pago.pagos;
                 if (!pagos || pagos.length === 0) {
                     if (pago.metodoPago !== 'mixto') {

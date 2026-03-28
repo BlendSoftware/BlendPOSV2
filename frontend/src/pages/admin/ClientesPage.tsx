@@ -58,14 +58,14 @@ export function ClientesPage() {
     const fetchClientes = useCallback(async () => {
         setLoading(true);
         try {
-            const resp = await listarClientes({ search: busqueda, limit: 100 });
+            const resp = await listarClientes({ limit: 100 });
             setClientes(resp.data);
         } catch {
             notifications.show({ title: 'Error', message: 'No se pudieron cargar los clientes', color: 'red' });
         } finally {
             setLoading(false);
         }
-    }, [busqueda]);
+    }, []);
 
     const fetchDeudores = useCallback(async () => {
         try {

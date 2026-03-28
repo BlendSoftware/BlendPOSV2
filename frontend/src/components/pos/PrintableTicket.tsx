@@ -18,7 +18,8 @@ const METODO_LABEL: Record<string, string> = {
 
 export const PrintableTicket = forwardRef<HTMLDivElement, PrintableTicketProps>(
     ({ record }, ref) => {
-        const total = record.totalConDescuento || record.total;
+        const hasDiscount = record.descuentoGlobal != null && record.descuentoGlobal > 0;
+        const total = hasDiscount ? record.totalConDescuento : record.total;
         const vuelto = record.vuelto ?? 0;
         const fecha = new Date(record.fecha);
 

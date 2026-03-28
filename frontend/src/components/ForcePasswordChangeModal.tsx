@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Stack, Title, Text, PasswordInput, Button, Alert } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { AlertCircle, Lock } from 'lucide-react';
@@ -13,7 +13,6 @@ import { useAuthStore } from '../store/useAuthStore';
 import { changePasswordApi } from '../services/api/auth';
 
 interface FormValues {
-    currentPassword: string;
     newPassword: string;
     confirmPassword: string;
 }
@@ -23,18 +22,17 @@ export function ForcePasswordChangeModal() {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const clearMustChangePassword = useAuthStore((s) => s.clearMustChangePassword);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     const form = useForm<FormValues>({
         initialValues: {
-            currentPassword: '',
             newPassword: '',
             confirmPassword: '',
         },
         validate: {
-            currentPassword: (v) => (v.trim().length > 0 ? null : 'Ingresá tu contraseña actual'),
             newPassword: (v) => (v.length >= 8 ? null : 'Mínimo 8 caracteres'),
             confirmPassword: (v, values) =>
                 v === values.newPassword ? null : 'Las contraseñas no coinciden',
@@ -56,7 +54,8 @@ export function ForcePasswordChangeModal() {
         }
     });
 
-    if (!isAuthenticated || !mustChangePassword) return null;
+    // Don't render when on login page — LoginPage handles its own password change UI
+    if (!isAuthenticated || !mustChangePassword || location.pathname === '/login') return null;
 
     return (
         <Modal
@@ -85,12 +84,6 @@ export function ForcePasswordChangeModal() {
                         </Alert>
                     )}
 
-                    <PasswordInput
-                        label="Contrasena actual"
-                        placeholder="Tu contraseña actual"
-                        required
-                        {...form.getInputProps('currentPassword')}
-                    />
                     <PasswordInput
                         label="Nueva contraseña"
                         placeholder="Mínimo 8 caracteres"

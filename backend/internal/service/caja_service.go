@@ -316,10 +316,14 @@ func (s *cajaService) buildReporte(ctx context.Context, sesion *model.SesionCaja
 	}
 	esperado.Total = esperado.Efectivo.Add(esperado.Debito).Add(esperado.Credito).Add(esperado.Transferencia).Add(esperado.QR)
 
+	usuarioNombre := ""
+	if sesion.Usuario.ID != uuid.Nil {
+		usuarioNombre = sesion.Usuario.Nombre
+	}
 	reporte := &dto.ReporteCajaResponse{
 		SesionCajaID:  sesion.ID.String(),
 		PuntoDeVenta:  sesion.PuntoDeVenta,
-		Usuario:       sesion.Usuario.Nombre, // Include user name from preloaded relation
+		Usuario:       usuarioNombre,
 		MontoInicial:  sesion.MontoInicial,
 		MontoEsperado: esperado,
 		Estado:        sesion.Estado,

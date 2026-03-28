@@ -1,4 +1,4 @@
-import { apiClient } from '../../api/client';
+import { apiClient, refreshAccessToken } from '../../api/client';
 
 export interface ConfiguracionFiscalResponse {
     cuit_emisor: string;
@@ -57,13 +57,27 @@ export async function updateConfiguracionFiscal(
     // apiClient doesn't support multipart, so use fetch directly.
     const BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000';
     const { tokenStore } = await import('../../store/tokenStore');
-    const token = tokenStore.getAccessToken();
 
-    const res = await fetch(`${BASE_URL}/v1/configuracion/fiscal`, {
-        method: 'PUT',
-        body: form,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const doFetch = async (): Promise<Response> => {
+        const token = tokenStore.getAccessToken();
+        return fetch(`${BASE_URL}/v1/configuracion/fiscal`, {
+            method: 'PUT',
+            body: form,
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+    };
+
+    let res = await doFetch();
+
+    // Handle 401 with silent token refresh (same pattern as apiClient)
+    if (res.status === 401) {
+        try {
+            await refreshAccessToken();
+            res = await doFetch();
+        } catch {
+            // Refresh failed — throw original 401
+        }
+    }
 
     if (!res.ok) {
         const body = await res.text();

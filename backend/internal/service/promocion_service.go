@@ -11,7 +11,6 @@ import (
 	"blendpos/internal/repository"
 
 	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 )
 
 // PromocionService handles promotion business logic.
@@ -50,7 +49,7 @@ func promocionToResponse(p *model.Promocion) dto.PromocionResponse {
 		prods = append(prods, dto.PromocionProducto{
 			ID:          pr.ID.String(),
 			Nombre:      pr.Nombre,
-			PrecioVenta: pr.PrecioVenta.InexactFloat64(),
+			PrecioVenta: pr.PrecioVenta,
 		})
 	}
 	cantReq := p.CantidadRequerida
@@ -62,7 +61,7 @@ func promocionToResponse(p *model.Promocion) dto.PromocionResponse {
 		Nombre:            p.Nombre,
 		Descripcion:       p.Descripcion,
 		Tipo:              p.Tipo,
-		Valor:             p.Valor.InexactFloat64(),
+		Valor:             p.Valor,
 		CantidadRequerida: cantReq,
 		FechaInicio:       p.FechaInicio.Format(time.RFC3339),
 		FechaFin:          p.FechaFin.Format(time.RFC3339),
@@ -132,7 +131,7 @@ func (s *promocionService) Crear(ctx context.Context, req dto.CrearPromocionRequ
 		Nombre:            req.Nombre,
 		Descripcion:       req.Descripcion,
 		Tipo:              req.Tipo,
-		Valor:             decimal.NewFromFloat(req.Valor),
+		Valor:             req.Valor,
 		CantidadRequerida: qtyReq,
 		FechaInicio:       fi,
 		FechaFin:          ff,
@@ -200,7 +199,7 @@ func (s *promocionService) Actualizar(ctx context.Context, id string, req dto.Ac
 	p.Nombre = req.Nombre
 	p.Descripcion = req.Descripcion
 	p.Tipo = req.Tipo
-	p.Valor = decimal.NewFromFloat(req.Valor)
+	p.Valor = req.Valor
 	p.FechaInicio = fi
 	p.FechaFin = ff
 	p.Activa = req.Activa

@@ -13,6 +13,7 @@ import type { IUser, Rol } from '../types';
 import { loginApi } from '../services/api/auth';
 import { apiClient, scheduleProactiveRefresh, cancelProactiveRefresh, refreshAccessToken } from '../api/client';
 import { tokenStore } from './tokenStore';
+import { useSucursalStore } from './useSucursalStore';
 
 // ── Usuarios demo — SOLO desarrollo (P1-004) ──────────────────────────────────
 // La constante es accesible únicamente cuando el bundler incluye el bloque
@@ -143,6 +144,8 @@ export const useAuthStore = create<AuthState>()(
                 }
                 cancelProactiveRefresh();
                 tokenStore.clearTokens();
+                // Clear sucursal selection to prevent multi-tenant data leak
+                useSucursalStore.getState().setSucursal(null, null);
                 set({ user: null, isAuthenticated: false, tenantId: null, mustChangePassword: false });
             },
 

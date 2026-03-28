@@ -73,9 +73,9 @@ export function LastScannedProduct() {
                     </Text>
                 </Stack>
                 <Stack gap={0} align="flex-end">
-                    <Text size="xs" c="dimmed">Cant. / Subtotal</Text>
+                    <Text size="xs" c="dimmed">Subtotal</Text>
                     <Text size="lg" fw={800} ff="monospace">
-                        {lastAdded.cantidad} × {formatCurrency(lastAdded.subtotal)}
+                        {lastAdded.cantidad > 1 ? `${lastAdded.cantidad}× ` : ''}{formatCurrency(lastAdded.subtotal)}
                     </Text>
                 </Stack>
             </Group>

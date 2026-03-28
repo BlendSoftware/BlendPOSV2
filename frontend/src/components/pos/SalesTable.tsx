@@ -396,9 +396,12 @@ export function SalesTable() {
                                                     color="gray"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        const newTotal = cartItem.cantidad - 1;
-                                                        if (newTotal <= 0) removeItem(cartItem.id);
-                                                        else updateQuantity(cartItem.id, newTotal);
+                                                        if (displayQty <= 1) {
+                                                            // Remove only the extra (non-combo) units
+                                                            handleDeleteIndividual(row);
+                                                        } else {
+                                                            updateQuantity(cartItem.id, cartItem.cantidad - 1);
+                                                        }
                                                     }}
                                                 >
                                                     <Minus size={10} />

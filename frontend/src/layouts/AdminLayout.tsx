@@ -174,10 +174,10 @@ export function AdminLayout() {
                             <Menu.Target>
                                 <Group gap="xs" className={styles.userTrigger}>
                                     <Avatar size="sm" radius="xl" color="blue" className={styles.userAvatar}>
-                                        {user?.nombre.charAt(0).toUpperCase()}
+                                        {user?.nombre?.charAt(0)?.toUpperCase() ?? '?'}
                                     </Avatar>
                                     <Text size="sm" fw={500} visibleFrom="sm">
-                                        {user?.nombre.split(' ')[0]}
+                                        {user?.nombre?.split(' ')[0] ?? ''}
                                     </Text>
                                     <ChevronRight size={14} className={styles.userChevron} />
                                 </Group>

@@ -203,6 +203,14 @@ func (r *stubProductoRepo) AjustarStock(_ context.Context, id uuid.UUID, delta i
 	return nil
 }
 
+func (r *stubProductoRepo) CountByPadreID(_ context.Context, _ uuid.UUID) (int64, error) {
+	return 0, nil
+}
+
+func (r *stubProductoRepo) FindByPadreID(_ context.Context, _ uuid.UUID) ([]model.Producto, error) {
+	return nil, nil
+}
+
 // Ensure the stub satisfies the interface at compile time.
 var _ repository.ProductoRepository = (*stubProductoRepo)(nil)
 

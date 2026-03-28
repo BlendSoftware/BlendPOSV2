@@ -558,7 +558,23 @@ export function InventarioPage() {
                                 </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
-                                {movimientos.map((m) => (
+                                {loading ? (
+                                    Array.from({ length: 3 }).map((_, i) => (
+                                        <Table.Tr key={i}>
+                                            {Array.from({ length: 7 }).map((__, j) => (
+                                                <Table.Td key={j}><Skeleton height={20} radius="sm" /></Table.Td>
+                                            ))}
+                                        </Table.Tr>
+                                    ))
+                                ) : movimientos.length === 0 ? (
+                                    <Table.Tr>
+                                        <Table.Td colSpan={7}>
+                                            <Text size="sm" c="dimmed" ta="center" py="xl">
+                                                No hay movimientos de stock registrados
+                                            </Text>
+                                        </Table.Td>
+                                    </Table.Tr>
+                                ) : movimientos.map((m) => (
                                     <Table.Tr key={m.id}>
                                         <Table.Td>
                                             <Text size="xs">

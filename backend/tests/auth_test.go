@@ -101,6 +101,14 @@ func (r *stubUsuarioRepo) SoftDelete(_ context.Context, id uuid.UUID) error {
 	return errors.New("not found")
 }
 
+func (r *stubUsuarioRepo) FindByIDUnscoped(_ context.Context, id uuid.UUID) (*model.Usuario, error) {
+	return r.FindByID(context.Background(), id)
+}
+
+func (r *stubUsuarioRepo) UpdateUnscoped(_ context.Context, u *model.Usuario) error {
+	return r.Update(context.Background(), u)
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const testSecret = "test_jwt_secret_32_chars_minimum!"

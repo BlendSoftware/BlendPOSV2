@@ -88,7 +88,11 @@ export function PriceCheckModal() {
             }
             size="sm"
             centered
+            trapFocus
         >
+            {/* Stop Enter/Escape from propagating to the global POS hotkey handler */}
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+            <div onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') e.stopPropagation(); }}>
             <Stack gap="md">
                 <TextInput
                     value={query}
@@ -139,6 +143,7 @@ export function PriceCheckModal() {
                     </Box>
                 )}
             </Stack>
+            </div>
         </Modal>
     );
 }

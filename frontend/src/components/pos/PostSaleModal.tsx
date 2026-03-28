@@ -110,13 +110,6 @@ export function PostSaleModal() {
 
     if (!record) return null;
 
-    console.log('[PostSaleModal] Rendered with record:', {
-        numeroTicket: record.numeroTicket,
-        total: record.total,
-        clienteEmail: record.clienteEmail,
-        metodoPago: record.metodoPago,
-    });
-
     const handlePrint = () => {
         const printWindow = window.open('', '_blank', 'width=800,height=700');
         if (!printWindow) {
@@ -131,8 +124,8 @@ export function PostSaleModal() {
 
         setPrinting(true);
 
-        const totalFinal = record.totalConDescuento || record.total;
-        const tieneDescuento = record.totalConDescuento > 0 && record.total !== record.totalConDescuento;
+        const tieneDescuento = record.descuentoGlobal != null && record.descuentoGlobal > 0;
+        const totalFinal = tieneDescuento ? record.totalConDescuento : record.total;
         const vuelto = record.vuelto ?? 0;
 
         const METODO_PRINT: Record<string, string> = {
@@ -332,7 +325,8 @@ export function PostSaleModal() {
         }
     };
 
-    const total = record.totalConDescuento || record.total;
+    const hasRecordDiscount = record.descuentoGlobal != null && record.descuentoGlobal > 0;
+    const total = hasRecordDiscount ? record.totalConDescuento : record.total;
     const vuelto = record.vuelto ?? 0;
 
     const TIPO_COMPROBANTE_LABEL: Record<string, { label: string; color: string }> = {

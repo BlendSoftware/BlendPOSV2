@@ -129,9 +129,7 @@ export function ConfiguracionFiscalPage() {
                 notifications.show({ title: 'Guardado', message: 'Configuración fiscal actualizada', color: 'teal', icon: <Check size={14} /> });
             }
         } catch (err: unknown) {
-            const detail = (err as { response?: { data?: { data?: string; message?: string } } })?.response?.data?.data
-                ?? (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-                ?? 'Error desconocido';
+            const detail = err instanceof Error ? err.message : 'Error desconocido';
             setAfipResponse({ ok: false, message: detail });
             notifications.show({ title: 'Error al guardar', message: detail, color: 'red', icon: <AlertTriangle size={14} /> });
         } finally {
@@ -403,7 +401,7 @@ export function ConfiguracionFiscalPage() {
                             type="submit"
                             size="md"
                             loading={saving}
-                            leftSection={saving ? <Loader size={14} color="white" /> : <Save size={16} />}
+                            leftSection={<Save size={16} />}
                             color="teal"
                         >
                             Guardar Configuración

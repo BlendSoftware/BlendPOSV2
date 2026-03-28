@@ -104,13 +104,15 @@ export function TotalPanel() {
                     variant="outline"
                     leftSection={<X size={22} />}
                     fullWidth
-                    onClick={clearCart}
+                    onClick={() => {
+                        if (cart.length > 0 && !window.confirm('¿Cancelar la venta y vaciar el carrito?')) return;
+                        clearCart();
+                    }}
                     disabled={cart.length === 0}
                     className={`${styles.actionButton} ${styles.cancelButton}`}
                 >
                     <Stack gap={0} align="flex-start">
                         <Text size="lg" fw={700}>CANCELAR</Text>
-                        <Text size="xs" className={styles.shortcutLabel}>ESC</Text>
                     </Stack>
                 </Button>
             </Stack>

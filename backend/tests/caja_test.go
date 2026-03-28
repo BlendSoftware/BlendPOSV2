@@ -121,7 +121,7 @@ func (r *fullCajaRepo) FindSesionAbiertaPorUsuario(_ context.Context, usuarioID 
 	return nil, nil
 }
 
-func (r *fullCajaRepo) ListSesiones(_ context.Context, page, limit int) ([]model.SesionCaja, int64, error) {
+func (r *fullCajaRepo) ListSesiones(_ context.Context, page, limit int, _ *uuid.UUID) ([]model.SesionCaja, int64, error) {
 	all := make([]model.SesionCaja, 0, len(r.sesiones))
 	for _, s := range r.sesiones {
 		all = append(all, *s)

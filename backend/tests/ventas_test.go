@@ -133,7 +133,7 @@ func (s *stubCajaService) GetActiva(_ context.Context, _ uuid.UUID) (*dto.Report
 	return nil, nil
 }
 
-func (s *stubCajaService) Historial(_ context.Context, _, _ int) ([]dto.ReporteCajaResponse, error) {
+func (s *stubCajaService) Historial(_ context.Context, _, _ int, _ *uuid.UUID) ([]dto.ReporteCajaResponse, error) {
 	return nil, nil
 }
 
@@ -171,7 +171,7 @@ func (r *stubCajaRepo) FindSesionAbiertaPorUsuario(_ context.Context, _ uuid.UUI
 	return nil, nil
 }
 
-func (r *stubCajaRepo) ListSesiones(_ context.Context, _, _ int) ([]model.SesionCaja, int64, error) {
+func (r *stubCajaRepo) ListSesiones(_ context.Context, _, _ int, _ *uuid.UUID) ([]model.SesionCaja, int64, error) {
 	return nil, 0, nil
 }
 

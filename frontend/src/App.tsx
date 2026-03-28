@@ -108,7 +108,7 @@ function App() {
                     <Route
                         path="/admin"
                         element={
-                            <ProtectedRoute roles={['admin', 'supervisor', 'cajero']}>
+                            <ProtectedRoute roles={['admin', 'supervisor']}>
                                 <AdminLayout />
                             </ProtectedRoute>
                         }
@@ -288,14 +288,19 @@ function App() {
                             }
                         />
 
-                        {/* Superadmin — solo rol superadmin (mapeado como 'admin' con validación BE) */}
-                        <Route path="superadmin" element={
-                            <RouteErrorBoundary>
-                                <Suspense fallback={<LoadingSpinner />}>
-                                    <SuperadminPage />
-                                </Suspense>
-                            </RouteErrorBoundary>
-                        } />
+                        {/* Superadmin — solo rol superadmin */}
+                        <Route
+                            path="superadmin"
+                            element={
+                                <ProtectedRoute roles={['superadmin']}>
+                                    <RouteErrorBoundary>
+                                        <Suspense fallback={<LoadingSpinner />}>
+                                            <SuperadminPage />
+                                        </Suspense>
+                                    </RouteErrorBoundary>
+                                </ProtectedRoute>
+                            }
+                        />
                     </Route>
 
                     {/* Catch-all */}

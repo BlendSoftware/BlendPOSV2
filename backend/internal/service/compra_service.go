@@ -58,7 +58,7 @@ func compraToResponse(c *model.Compra) dto.CompraResponse {
 		pagos = append(pagos, dto.PagoCompraResponse{
 			ID:         p.ID.String(),
 			Metodo:     p.Metodo,
-			Monto:      p.Monto.InexactFloat64(),
+			Monto:      p.Monto,
 			Referencia: p.Referencia,
 			CreatedAt:  p.CreatedAt.Format(time.RFC3339),
 		})
@@ -127,6 +127,7 @@ func (s *compraService) Crear(ctx context.Context, req dto.CrearCompraRequest) (
 	items := make([]model.CompraItem, 0, len(req.Items))
 	subtotal := decimal.Zero
 	descuentoTotal := decimal.Zero
+	total := decimal.Zero
 
 	for _, ir := range req.Items {
 		if ir.Cantidad < 1 {
@@ -149,6 +150,7 @@ func (s *compraService) Crear(ctx context.Context, req dto.CrearCompraRequest) (
 
 		subtotal = subtotal.Add(lineBase)
 		descuentoTotal = descuentoTotal.Add(descMonto)
+		total = total.Add(lineTotal)
 
 		item := model.CompraItem{
 			NombreProducto: ir.NombreProducto,
@@ -167,8 +169,6 @@ func (s *compraService) Crear(ctx context.Context, req dto.CrearCompraRequest) (
 		}
 		items = append(items, item)
 	}
-
-	total := subtotal.Sub(descuentoTotal)
 
 	compra := &model.Compra{
 		Numero:           req.Numero,
@@ -189,13 +189,12 @@ func (s *compraService) Crear(ctx context.Context, req dto.CrearCompraRequest) (
 	pagosTotal := decimal.Zero
 	pagos := make([]model.CompraPago, 0, len(req.Pagos))
 	for _, pr := range req.Pagos {
-		monto := decimal.NewFromFloat(pr.Monto)
 		pagos = append(pagos, model.CompraPago{
 			Metodo:     pr.Metodo,
-			Monto:      monto,
+			Monto:      pr.Monto,
 			Referencia: pr.Referencia,
 		})
-		pagosTotal = pagosTotal.Add(monto)
+		pagosTotal = pagosTotal.Add(pr.Monto)
 	}
 	if len(pagos) > 0 && pagosTotal.GreaterThanOrEqual(total) {
 		compra.Estado = "pagada"

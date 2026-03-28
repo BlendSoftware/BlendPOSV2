@@ -939,7 +939,14 @@ export function GestionProductosPage() {
                         <Divider label="Stock" labelPosition="left" />
 
                         <Group grow>
-                            <NumberInput label="Stock actual" min={0} {...form.getInputProps('stock')} />
+                            <NumberInput
+                                label="Stock actual"
+                                min={0}
+                                {...form.getInputProps('stock')}
+                                readOnly={!!editTarget}
+                                description={editTarget ? 'Ajustá el stock desde el botón de ajuste en la tabla' : undefined}
+                                styles={editTarget ? { input: { cursor: 'not-allowed', opacity: 0.6 } } : undefined}
+                            />
                             <NumberInput label="Stock mínimo" min={0} {...form.getInputProps('stockMinimo')} />
                         </Group>
 

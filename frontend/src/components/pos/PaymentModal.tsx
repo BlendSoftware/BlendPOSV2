@@ -207,8 +207,17 @@ export function PaymentModal() {
         }
     }, [isOpen]);
 
-    const handleConfirmPayment = () => {
-        if (!canConfirm) return;
+    // Guard against double-submit (rapid clicks / Enter + click)
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Reset submitting guard when modal opens
+    useEffect(() => {
+        if (isOpen) setIsSubmitting(false);
+    }, [isOpen]);
+
+    const handleConfirmPayment = useCallback(() => {
+        if (!canConfirm || isSubmitting) return;
+        setIsSubmitting(true);
 
         let pagos: PagoDetalle[] | undefined;
         let vueltoCalc: number | undefined;
@@ -262,7 +271,13 @@ export function PaymentModal() {
         // Open the post-sale modal for print option
         const { openPostSaleModal } = usePOSUIStore.getState();
         openPostSaleModal(record);
-    };
+    }, [
+        canConfirm, isSubmitting, metodoPago, finalTotal, efectivoRecibido,
+        mixtoDebito, mixtoCredito, mixtoQr, mixtoTransferencia, cashDue,
+        clienteEmail, requiresFiscalBuyerData, nombreReceptor, tipoComprobante,
+        resolvedDocType, normalizedDocumento, domicilioReceptor,
+        fiadoClienteId, selectedFiadoCliente, confirmSale, closePaymentModal,
+    ]);
 
     // Confirm with Enter key when modal is open and not on efectivo input
     useEffect(() => {
@@ -276,8 +291,8 @@ export function PaymentModal() {
         };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, canConfirm, metodoPago]);
+        // All state consumed by handleConfirmPayment must be in deps to avoid stale closures
+    }, [isOpen, canConfirm, metodoPago, handleConfirmPayment]);
 
     return (
         <Modal
@@ -480,7 +495,7 @@ export function PaymentModal() {
                                     {formatCurrency(m)}
                                 </Button>
                             ))}
-                            <Button variant="light" size="compact-xs" color="teal" onClick={() => setMontoRecibido(Math.ceil(finalTotal / 1000) * 1000)}>
+                            <Button variant="light" size="compact-xs" color="teal" onClick={() => setMontoRecibido(finalTotal)}>
                                 Exacto
                             </Button>
                         </Group>

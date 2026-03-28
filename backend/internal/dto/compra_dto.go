@@ -5,17 +5,17 @@ import "github.com/shopspring/decimal"
 // ─── Request DTOs ────────────────────────────────────────────────────────────
 
 type PagoCompraRequest struct {
-	Metodo     string  `json:"metodo"     validate:"required,oneof=efectivo transferencia cheque tarjeta_debito tarjeta_credito cuenta_corriente otro"`
-	Monto      float64 `json:"monto"      validate:"required,gt=0"`
-	Referencia *string `json:"referencia"`
+	Metodo     string          `json:"metodo"     validate:"required,oneof=efectivo transferencia cheque tarjeta_debito tarjeta_credito cuenta_corriente otro"`
+	Monto      decimal.Decimal `json:"monto"      validate:"required,gt=0"`
+	Referencia *string         `json:"referencia"`
 }
 
 type PagoCompraResponse struct {
-	ID         string  `json:"id"`
-	Metodo     string  `json:"metodo"`
-	Monto      float64 `json:"monto"`
-	Referencia *string `json:"referencia"`
-	CreatedAt  string  `json:"created_at"`
+	ID         string          `json:"id"`
+	Metodo     string          `json:"metodo"`
+	Monto      decimal.Decimal `json:"monto"`
+	Referencia *string         `json:"referencia"`
+	CreatedAt  string          `json:"created_at"`
 }
 
 type CompraItemRequest struct {

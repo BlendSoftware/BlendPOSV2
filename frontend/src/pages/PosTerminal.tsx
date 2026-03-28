@@ -162,7 +162,7 @@ export function PosTerminal() {
 
     const { isTouch } = useIsTouchDevice();
 
-    const anyModalOpen = isPaymentModalOpen || isPriceCheckModalOpen || isDiscountModalOpen || historyOpen || weightModalOpen;
+    const anyModalOpen = isPaymentModalOpen || isPriceCheckModalOpen || isDiscountModalOpen || historyOpen || weightModalOpen || searchVisible;
 
     // Sticky focus: auto-return to scanner after 2s inactivity
     usePosFocus(scannerRef, anyModalOpen);
@@ -347,26 +347,26 @@ export function PosTerminal() {
                     break;
 
                 case 'ArrowUp':
-                    if (anyModalOpen || searchVisible) break;
+                    if (anyModalOpen) break;
                     e.preventDefault();
                     moveSelectionUp();
                     break;
 
                 case 'ArrowDown':
-                    if (anyModalOpen || searchVisible) break;
+                    if (anyModalOpen) break;
                     e.preventDefault();
                     moveSelectionDown();
                     break;
 
                 case 'Delete':
-                    if (anyModalOpen || searchVisible) break;
+                    if (anyModalOpen) break;
                     e.preventDefault();
                     if (cart.length > 0) removeSelectedItem();
                     break;
 
                 case '+':
                 case 'Add':
-                    if (anyModalOpen || searchVisible) break;
+                    if (anyModalOpen) break;
                     if (selectedRowIndex >= 0 && selectedRowIndex < cart.length) {
                         e.preventDefault();
                         const itemP = cart[selectedRowIndex];
@@ -376,7 +376,7 @@ export function PosTerminal() {
 
                 case '-':
                 case 'Subtract':
-                    if (anyModalOpen || searchVisible) break;
+                    if (anyModalOpen) break;
                     if (selectedRowIndex >= 0 && selectedRowIndex < cart.length) {
                         e.preventDefault();
                         const itemM = cart[selectedRowIndex];
@@ -389,7 +389,7 @@ export function PosTerminal() {
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
     }, [
-        anyModalOpen, searchVisible,
+        anyModalOpen,
         cart,
         isPaymentModalOpen, isPriceCheckModalOpen, isDiscountModalOpen, historyOpen,
         openSearch, closeSearch,
@@ -439,7 +439,7 @@ export function PosTerminal() {
                                 classNames={{ input: `${styles.scannerInputField} ${scannerFeedback === 'success' ? styles.scannerInputFieldSuccess : ''} ${scannerFeedback === 'error' ? styles.scannerInputFieldError : ''}` }}
                                 onKeyDown={handleScannerKeyDown}
                                 onChange={(e) => {
-                                    const val = e.currentTarget.value;
+                                    const val = e.currentTarget.value ?? '';
                                     setScannerValue(val);
                                     // Si el valor contiene letras, abrir búsqueda automáticamente
                                     if (val && /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/.test(val) && !searchVisible && !anyModalOpen) {

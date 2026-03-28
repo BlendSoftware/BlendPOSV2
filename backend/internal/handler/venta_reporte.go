@@ -69,8 +69,8 @@ func (h *VentaReporteHandler) GetReporte(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "parámetro 'hasta' inválido, use YYYY-MM-DD"})
 		return
 	}
-	// Include the full last day
-	hastaFin := hasta.Add(24*time.Hour - time.Second)
+	// Exclusive upper bound: start of the next day (half-open interval)
+	hastaFin := hasta.AddDate(0, 0, 1)
 
 	type result struct {
 		TotalVentas int64
@@ -82,7 +82,7 @@ func (h *VentaReporteHandler) GetReporte(c *gin.Context) {
 	err = h.dbRead.
 		Table("ventas").
 		Select("COUNT(*) AS total_ventas, COALESCE(SUM(total), 0) AS monto_total").
-		Where("tenant_id = ? AND anulada = false AND created_at BETWEEN ? AND ?",
+		Where("tenant_id = ? AND estado = 'completada' AND created_at >= ? AND created_at < ?",
 			tenantID, desde, hastaFin).
 		Scan(&r).Error
 	if err != nil {

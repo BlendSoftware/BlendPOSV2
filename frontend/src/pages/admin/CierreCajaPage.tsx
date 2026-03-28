@@ -38,12 +38,15 @@ export function CierreCajaPage() {
     const cargarReporte = async () => {
         if (!sesionId) return;
         setLoadingReporte(true);
-        recargarReporte().then((r) => { setReporte(r); setLoadingReporte(false); }).catch(() => setLoadingReporte(false));
+        recargarReporte().then((r) => {
+            if (r) setReporte(r);
+            setLoadingReporte(false);
+        }).catch(() => setLoadingReporte(false));
     };
 
-    // Cargar reporte de la sesión activa
+    // Cargar reporte de la sesión activa (only when sesionId is set, not on close)
     useEffect(() => {
-        cargarReporte();
+        if (sesionId) cargarReporte();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sesionId]);
 
@@ -299,7 +302,7 @@ export function CierreCajaPage() {
                                     </Paper>
                                 )}
 
-                                <Button variant="outline" onClick={() => { setSubmitted(false); setApiResult(null); form.reset(); }}>
+                                <Button variant="outline" onClick={() => { setSubmitted(false); setApiResult(null); setDesvioCritico(false); form.reset(); }}>
                                     Nuevo arqueo
                                 </Button>
                             </Stack>

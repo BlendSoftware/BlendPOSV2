@@ -11,6 +11,7 @@ import (
 
 	"blendpos/internal/dto"
 	"blendpos/internal/handler"
+	"blendpos/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -116,6 +117,8 @@ func (s *stubVentaServiceHTTP) ListVentas(_ context.Context, filter dto.VentaFil
 		Limit: filter.Limit,
 	}, nil
 }
+
+func (s *stubVentaServiceHTTP) SetClienteService(_ service.ClienteService) {}
 
 // ── Router ────────────────────────────────────────────────────────────────────
 
