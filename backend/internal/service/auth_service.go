@@ -34,13 +34,14 @@ type AuthService interface {
 }
 
 type authService struct {
-	repo repository.UsuarioRepository
-	cfg  *config.Config
-	rdb  *redis.Client
+	repo        repository.UsuarioRepository
+	sucursalRepo repository.SucursalRepository
+	cfg         *config.Config
+	rdb         *redis.Client
 }
 
-func NewAuthService(repo repository.UsuarioRepository, cfg *config.Config, rdb *redis.Client) AuthService {
-	return &authService{repo: repo, cfg: cfg, rdb: rdb}
+func NewAuthService(repo repository.UsuarioRepository, sucursalRepo repository.SucursalRepository, cfg *config.Config, rdb *redis.Client) AuthService {
+	return &authService{repo: repo, sucursalRepo: sucursalRepo, cfg: cfg, rdb: rdb}
 }
 
 func (s *authService) Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) {
@@ -68,7 +69,7 @@ func (s *authService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 		TokenType:          "bearer",
 		ExpiresIn:          s.cfg.JWTExpirationHours * 3600,
 		MustChangePassword: user.MustChangePassword,
-		User:               *usuarioToResponse(user),
+		User:               *s.usuarioToResponseWithSucursal(ctx, user),
 	}, nil
 }
 
@@ -144,7 +145,7 @@ func (s *authService) Refresh(ctx context.Context, refreshToken string) (*dto.Lo
 		RefreshToken: newRefresh,
 		TokenType:    "bearer",
 		ExpiresIn:    s.cfg.JWTExpirationHours * 3600,
-		User: *usuarioToResponse(user),
+		User:         *s.usuarioToResponseWithSucursal(ctx, user),
 	}, nil
 }
 
@@ -172,7 +173,7 @@ func (s *authService) CrearUsuario(ctx context.Context, req dto.CrearUsuarioRequ
 	if err := s.repo.Create(ctx, user); err != nil {
 		return nil, err
 	}
-	return usuarioToResponse(user), nil
+	return s.usuarioToResponseWithSucursal(ctx, user), nil
 }
 
 func (s *authService) ListarUsuarios(ctx context.Context, incluirInactivos bool) ([]dto.UsuarioResponse, error) {
@@ -188,7 +189,7 @@ func (s *authService) ListarUsuarios(ctx context.Context, incluirInactivos bool)
 	}
 	resp := make([]dto.UsuarioResponse, len(users))
 	for i, u := range users {
-		resp[i] = *usuarioToResponse(&u)
+		resp[i] = *s.usuarioToResponseWithSucursal(ctx, &u)
 	}
 	return resp, nil
 }
@@ -231,7 +232,7 @@ func (s *authService) ActualizarUsuario(ctx context.Context, id uuid.UUID, req d
 	if err := s.repo.Update(ctx, user); err != nil {
 		return nil, err
 	}
-	return usuarioToResponse(user), nil
+	return s.usuarioToResponseWithSucursal(ctx, user), nil
 }
 
 func (s *authService) DesactivarUsuario(ctx context.Context, id uuid.UUID) error {
@@ -274,6 +275,7 @@ func (s *authService) ChangePassword(ctx context.Context, userID uuid.UUID, req 
 }
 
 // usuarioToResponse maps a model.Usuario to dto.UsuarioResponse including SucursalID.
+// Does not resolve sucursal_nombre — use usuarioToResponseWithSucursal for that.
 func usuarioToResponse(u *model.Usuario) *dto.UsuarioResponse {
 	var sucID *string
 	if u.SucursalID != nil {
@@ -292,10 +294,26 @@ func usuarioToResponse(u *model.Usuario) *dto.UsuarioResponse {
 	}
 }
 
+// usuarioToResponseWithSucursal enriches the response with the sucursal name
+// by looking it up via the sucursal repository.
+func (s *authService) usuarioToResponseWithSucursal(ctx context.Context, u *model.Usuario) *dto.UsuarioResponse {
+	resp := usuarioToResponse(u)
+	if u.SucursalID != nil && s.sucursalRepo != nil {
+		if suc, err := s.sucursalRepo.FindByID(ctx, *u.SucursalID); err == nil {
+			resp.SucursalNombre = &suc.Nombre
+		}
+	}
+	return resp
+}
+
 func (s *authService) generateToken(user *model.Usuario, duration time.Duration, tokenType string) (string, error) {
 	deviceID := ""
 	if user.DeviceID != nil {
 		deviceID = *user.DeviceID
+	}
+	var sucursalID string
+	if user.SucursalID != nil {
+		sucursalID = user.SucursalID.String()
 	}
 	claims := jwt.MapClaims{
 		"jti":            uuid.New().String(),
@@ -305,6 +323,7 @@ func (s *authService) generateToken(user *model.Usuario, duration time.Duration,
 		"punto_de_venta": user.PuntoDeVenta,
 		"tid":            user.TenantID.String(), // tenant_id
 		"did":            deviceID,               // device_id
+		"sid":            sucursalID,             // sucursal_id
 		"type":           tokenType,              // "access" or "refresh"
 		"exp":            time.Now().Add(duration).Unix(),
 		"iat":            time.Now().Unix(),

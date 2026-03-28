@@ -155,7 +155,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	movimientoStockRepo := repository.NewMovimientoStockRepository(db)
 	categoriaRepo := repository.NewCategoriaRepository(db)
 
-	authSvc := service.NewAuthService(usuarioRepo, cfg, rdb)
+	authSvc := service.NewAuthService(usuarioRepo, nil, cfg, rdb)
 	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb, nil, nil)
 	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo, nil)
 	cajaSvc := service.NewCajaService(cajaRepo, usuarioRepo)

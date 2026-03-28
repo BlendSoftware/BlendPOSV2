@@ -216,25 +216,31 @@ export function AdminLayout() {
                     </Group>
 
                     <div className={styles.userMenu}>
-                        {sucursales.length > 0 && (
-                            <Select
-                                className={styles.branchSelect}
-                                placeholder="Todas las sucursales"
-                                data={[
-                                    { value: '', label: 'Todas las sucursales' },
-                                    ...sucursales.map((s) => ({ value: s.id, label: s.nombre })),
-                                ]}
-                                value={sucursalId ?? ''}
-                                onChange={(val) => {
-                                    const selected = sucursales.find((s) => s.id === val);
-                                    setSucursal(val || null, selected?.nombre ?? null);
-                                }}
-                                leftSection={<Building2 size={16} />}
-                                clearable={false}
-                                size="xs"
-                                w={200}
-                            />
-                        )}
+                        {sucursales.length > 0 && (() => {
+                            const isCajero = user?.rol === 'cajero';
+                            const isLocked = isCajero && !!user?.sucursalId;
+                            return (
+                                <Select
+                                    className={styles.branchSelect}
+                                    placeholder="Todas las sucursales"
+                                    data={[
+                                        ...(!isCajero ? [{ value: '', label: 'Todas las sucursales' }] : []),
+                                        ...sucursales.map((s) => ({ value: s.id, label: s.nombre })),
+                                    ]}
+                                    value={sucursalId ?? ''}
+                                    onChange={(val) => {
+                                        if (isLocked) return;
+                                        const selected = sucursales.find((s) => s.id === val);
+                                        setSucursal(val || null, selected?.nombre ?? null);
+                                    }}
+                                    leftSection={<Building2 size={16} />}
+                                    clearable={false}
+                                    size="xs"
+                                    w={200}
+                                    disabled={isLocked}
+                                />
+                            );
+                        })()}
                         <div className={styles.themeToggleWrap}>
                             <ThemeToggle size="sm" />
                         </div>

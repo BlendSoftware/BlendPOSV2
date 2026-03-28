@@ -132,7 +132,7 @@ func main() {
 	transferenciaRepo := repository.NewTransferenciaRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
-	authSvc := service.NewAuthService(usuarioRepo, cfg, rdb)
+	authSvc := service.NewAuthService(usuarioRepo, sucursalRepo, cfg, rdb)
 	tenantSvc := service.NewTenantService(tenantRepo, usuarioRepo, cfg, rdb)
 	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb, stockSucursalRepo, sucursalRepo)
 	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo, stockSucursalRepo)

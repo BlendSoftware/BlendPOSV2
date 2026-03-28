@@ -33,14 +33,15 @@ type ActualizarUsuarioRequest struct {
 // ─── Response DTOs ───────────────────────────────────────────────────────────
 
 type UsuarioResponse struct {
-	ID           string  `json:"id"`
-	Username     string  `json:"username"`
-	Nombre       string  `json:"nombre"`
-	Email        *string `json:"email"`
-	Rol          string  `json:"rol"`
-	PuntoDeVenta *int    `json:"punto_de_venta"`
-	SucursalID   *string `json:"sucursal_id,omitempty"`
-	Activo       bool    `json:"activo"`
+	ID              string  `json:"id"`
+	Username        string  `json:"username"`
+	Nombre          string  `json:"nombre"`
+	Email           *string `json:"email"`
+	Rol             string  `json:"rol"`
+	PuntoDeVenta    *int    `json:"punto_de_venta"`
+	SucursalID      *string `json:"sucursal_id,omitempty"`
+	SucursalNombre  *string `json:"sucursal_nombre,omitempty"`
+	Activo          bool    `json:"activo"`
 }
 
 type LoginResponse struct {

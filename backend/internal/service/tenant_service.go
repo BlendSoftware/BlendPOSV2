@@ -395,6 +395,10 @@ func (s *tenantService) generateToken(u *model.Usuario, dur time.Duration, token
 	if u.DeviceID != nil {
 		deviceID = *u.DeviceID
 	}
+	var sucursalID string
+	if u.SucursalID != nil {
+		sucursalID = u.SucursalID.String()
+	}
 	claims := jwt.MapClaims{
 		"jti":            uuid.New().String(),
 		"user_id":        u.ID.String(),
@@ -403,6 +407,7 @@ func (s *tenantService) generateToken(u *model.Usuario, dur time.Duration, token
 		"punto_de_venta": u.PuntoDeVenta,
 		"tid":            u.TenantID.String(),
 		"did":            deviceID,
+		"sid":            sucursalID, // sucursal_id
 		"type":           tokenType,
 		"exp":            time.Now().Add(dur).Unix(),
 		"iat":            time.Now().Unix(),

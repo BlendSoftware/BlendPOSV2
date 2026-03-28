@@ -28,6 +28,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useCajaStore } from '../store/useCajaStore';
 import { usePromocionesStore } from '../store/usePromocionesStore';
 import { usePosThemeStore } from '../store/usePosThemeStore';
+import { useSucursalStore } from '../store/useSucursalStore';
 import { usePosFocus } from '../hooks/usePosFocus';
 import { findCatalogProductByBarcode, searchCatalogProducts, seedCatalogFromMocksIfEmpty, forceRefreshCatalog } from '../offline/catalog';
 import { getPrecioPorBarcode } from '../services/api/products';
@@ -147,6 +148,15 @@ export function PosTerminal() {
     useEffect(() => {
         if (user?.nombre) setCajero(user.nombre);
     }, [user?.nombre, setCajero]);
+
+    // Auto-lock sucursal for users with an assigned branch (cajeros).
+    // This ensures all POS operations are scoped to their branch.
+    const { setSucursal } = useSucursalStore();
+    useEffect(() => {
+        if (user?.sucursalId) {
+            setSucursal(user.sucursalId, user.sucursalNombre ?? null);
+        }
+    }, [user?.sucursalId, user?.sucursalNombre, setSucursal]);
 
     // ── Combo / quantity promotion detection ────────────────────────────
     // Re-runs when the cart's product composition or quantities change, or when

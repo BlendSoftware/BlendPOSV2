@@ -179,7 +179,7 @@ func ginTestRouter() *gin.Engine {
 func TestLogin_Success(t *testing.T) {
 	repo := newStubRepo()
 	seedUser(t, repo, "admin", "password123", "administrador")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	w := doLoginRequest(t, svc, dto.LoginRequest{Username: "admin", Password: "password123"})
 
@@ -195,7 +195,7 @@ func TestLogin_Success(t *testing.T) {
 func TestLogin_InvalidCredentials(t *testing.T) {
 	repo := newStubRepo()
 	seedUser(t, repo, "cajero1", "correctpass", "cajero")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	w := doLoginRequest(t, svc, dto.LoginRequest{Username: "cajero1", Password: "wrongpass"})
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -203,7 +203,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 
 func TestLogin_UserNotFound(t *testing.T) {
 	repo := newStubRepo()
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	w := doLoginRequest(t, svc, dto.LoginRequest{Username: "noexiste", Password: "anypass123"})
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -212,7 +212,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 func TestLogin_ShortPassword_Rejected(t *testing.T) {
 	// DTO validation: password must be >= 6 chars
 	repo := newStubRepo()
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	w := doLoginRequest(t, svc, dto.LoginRequest{Username: "u", Password: "12"})
 	// 422 Unprocessable Entity from bindAndValidate
@@ -224,7 +224,7 @@ func TestLogin_ShortPassword_Rejected(t *testing.T) {
 func TestRefresh_Success(t *testing.T) {
 	repo := newStubRepo()
 	u := seedUser(t, repo, "super1", "pass1234", "supervisor")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	loginW := doLoginRequest(t, svc, dto.LoginRequest{Username: "super1", Password: "pass1234"})
 	assert.Equal(t, http.StatusOK, loginW.Code)
@@ -239,7 +239,7 @@ func TestRefresh_Success(t *testing.T) {
 
 func TestRefresh_InvalidToken(t *testing.T) {
 	repo := newStubRepo()
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	_, err := svc.Refresh(context.Background(), "this.is.garbage")
 	assert.Error(t, err)
@@ -248,7 +248,7 @@ func TestRefresh_InvalidToken(t *testing.T) {
 func TestRefresh_ExpiredToken(t *testing.T) {
 	repo := newStubRepo()
 	u := seedUser(t, repo, "cajero2", "pass12345", "cajero")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	expired := signToken(t, u.ID.String(), "cajero", -1*time.Second)
 	_, err := svc.Refresh(context.Background(), expired)
@@ -313,7 +313,7 @@ func TestRequireRole_CorrectRole(t *testing.T) {
 
 func TestCrearUsuario_Success(t *testing.T) {
 	repo := newStubRepo()
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	resp, err := svc.CrearUsuario(context.Background(), dto.CrearUsuarioRequest{
 		Username: "nuevo", Nombre: "Nuevo User", Password: "securepass",
@@ -328,7 +328,7 @@ func TestListarUsuarios(t *testing.T) {
 	repo := newStubRepo()
 	seedUser(t, repo, "u1", "pass1234", "cajero")
 	seedUser(t, repo, "u2", "pass1234", "supervisor")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	users, err := svc.ListarUsuarios(context.Background(), false)
 	assert.NoError(t, err)
@@ -338,7 +338,7 @@ func TestListarUsuarios(t *testing.T) {
 func TestDesactivarUsuario(t *testing.T) {
 	repo := newStubRepo()
 	u := seedUser(t, repo, "goodbye", "pass1234", "cajero")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	err := svc.DesactivarUsuario(context.Background(), u.ID)
 	assert.NoError(t, err)
@@ -352,7 +352,7 @@ func TestDesactivarUsuario(t *testing.T) {
 func TestActualizarUsuario_Nombre(t *testing.T) {
 	repo := newStubRepo()
 	u := seedUser(t, repo, "johndoe", "pass12345", "cajero")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	resp, err := svc.ActualizarUsuario(context.Background(), u.ID, dto.ActualizarUsuarioRequest{
 		Nombre: "John Updated",
@@ -365,7 +365,7 @@ func TestActualizarUsuario_Nombre(t *testing.T) {
 func TestActualizarUsuario_Rol(t *testing.T) {
 	repo := newStubRepo()
 	u := seedUser(t, repo, "promoted", "pass12345", "cajero")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	resp, err := svc.ActualizarUsuario(context.Background(), u.ID, dto.ActualizarUsuarioRequest{
 		Rol: "supervisor",
@@ -377,7 +377,7 @@ func TestActualizarUsuario_Rol(t *testing.T) {
 func TestActualizarUsuario_CambiaPassword(t *testing.T) {
 	repo := newStubRepo()
 	u := seedUser(t, repo, "passchange", "oldpassword", "cajero")
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	_, err := svc.ActualizarUsuario(context.Background(), u.ID, dto.ActualizarUsuarioRequest{
 		Password: "newpassword1",
@@ -394,7 +394,7 @@ func TestActualizarUsuario_CambiaPassword(t *testing.T) {
 
 func TestActualizarUsuario_NoExiste(t *testing.T) {
 	repo := newStubRepo()
-	svc := service.NewAuthService(repo, newTestCfg(), nil)
+	svc := service.NewAuthService(repo, nil, newTestCfg(), nil)
 
 	_, err := svc.ActualizarUsuario(context.Background(), uuid.New(), dto.ActualizarUsuarioRequest{
 		Nombre: "Ghost",

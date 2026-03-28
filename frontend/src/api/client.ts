@@ -33,6 +33,7 @@ export interface RefreshResult {
         rol: string;
         punto_de_venta: number | null;
         sucursal_id: string | null;
+        sucursal_nombre: string | null;
     };
 }
 

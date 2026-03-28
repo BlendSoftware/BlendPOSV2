@@ -159,7 +159,7 @@ func setupIsolationEnv(t *testing.T) *isolationTestEnv {
 	subscriptionRepo := repository.NewSubscriptionRepository(db)
 
 	// Build services
-	authSvc := service.NewAuthService(usuarioRepo, cfg, rdb)
+	authSvc := service.NewAuthService(usuarioRepo, nil, cfg, rdb)
 	tenantSvc := service.NewTenantService(tenantRepo, usuarioRepo, cfg, rdb)
 	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb, nil, nil)
 	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo, nil)

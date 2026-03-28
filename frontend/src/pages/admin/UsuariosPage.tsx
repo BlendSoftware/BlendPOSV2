@@ -294,9 +294,11 @@ export function UsuariosPage() {
                         <Select
                             label="Sucursal"
                             placeholder="Sin sucursal asignada"
+                            description={form.values.rol === 'cajero' ? 'Requerido para cajeros — determina donde operan en el POS' : 'Opcional para administradores y supervisores'}
                             clearable
                             data={sucursales.map((s) => ({ value: s.id, label: s.nombre }))}
                             {...form.getInputProps('sucursalId')}
+                            error={form.values.rol === 'cajero' && !form.values.sucursalId ? 'Selecciona una sucursal para el cajero' : undefined}
                         />
                         <NumberInput
                             label="Punto de Venta (opcional)"

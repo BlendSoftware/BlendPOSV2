@@ -14,6 +14,7 @@ export interface UsuarioResponse {
     rol: 'cajero' | 'supervisor' | 'administrador';
     punto_de_venta: number | null;
     sucursal_id: string | null;
+    sucursal_nombre: string | null;
 }
 
 export interface LoginResponse {

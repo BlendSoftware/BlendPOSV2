@@ -115,6 +115,7 @@ export const useAuthStore = create<AuthState>()(
                             creadoEn: new Date().toISOString(),
                             puntoDeVenta: u.punto_de_venta ?? undefined,
                             sucursalId: u.sucursal_id ?? undefined,
+                            sucursalNombre: u.sucursal_nombre ?? undefined,
                         };
                         // Store tokens in memory only — never in localStorage
                         tokenStore.setTokens(resp.access_token, resp.refresh_token);
@@ -122,6 +123,10 @@ export const useAuthStore = create<AuthState>()(
                         // Extract tenant_id from JWT payload (claim "tid")
                         const tenantId = extractTenantIdFromToken(resp.access_token);
                         set({ user, isAuthenticated: true, tenantId, mustChangePassword: resp.must_change_password ?? false });
+                        // Auto-set sucursal store for users with an assigned branch
+                        if (u.sucursal_id) {
+                            useSucursalStore.getState().setSucursal(u.sucursal_id, u.sucursal_nombre ?? null);
+                        }
                         // Fetch plan name in background (best-effort)
                         fetchPlanName().then((planName) => set({ plan: planName }));
                         return true;
@@ -188,8 +193,13 @@ export const useAuthStore = create<AuthState>()(
                             activo: true,
                             creadoEn: new Date().toISOString(),
                             sucursalId: u.sucursal_id ?? undefined,
+                            sucursalNombre: u.sucursal_nombre ?? undefined,
                         };
                         set({ user, isAuthenticated: true, tenantId });
+                        // Auto-set sucursal store on refresh for assigned users
+                        if (u.sucursal_id) {
+                            useSucursalStore.getState().setSucursal(u.sucursal_id, u.sucursal_nombre ?? null);
+                        }
                     } else {
                         // No user in response — keep existing user, just update tenantId
                         set({ isAuthenticated: true, tenantId });

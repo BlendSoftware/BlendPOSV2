@@ -4,6 +4,7 @@ import { Wifi, WifiOff, User, Printer, PanelLeftOpen, Settings, LogOut, Calculat
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSucursalStore } from '../../store/useSucursalStore';
 import { thermalPrinter } from '../../services/ThermalPrinterService';
 import { useSyncStatus } from '../../hooks/useSyncStatus';
 import { usePrinterStore } from '../../store/usePrinterStore';
@@ -69,6 +70,7 @@ export function PosHeader() {
     const { pending: syncPending, syncState } = useSyncStatus();
 
     const { user, hasRole, logout } = useAuthStore();
+    const { sucursalNombre } = useSucursalStore();
     const { config: printerConfig } = usePrinterStore();
     const { limpiar: limpiarCaja } = useCajaStore();
     const navigate = useNavigate();
@@ -234,6 +236,11 @@ export function PosHeader() {
                                 ? String(user.puntoDeVenta).padStart(2, '0')
                                 : 'POS'}
                         </Text>
+                        {sucursalNombre && (
+                            <Badge color="blue" size="xs" variant="light">
+                                {sucursalNombre}
+                            </Badge>
+                        )}
                     </div>
 
                     <Group gap="xs" className={styles.actionsBlock}>
