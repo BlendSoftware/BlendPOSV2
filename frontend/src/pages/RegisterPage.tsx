@@ -6,11 +6,35 @@ import {
     Card, Group, Badge, ThemeIcon,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { AlertCircle, Store, Beef, ShoppingCart, Apple, Check } from 'lucide-react';
+import { AlertCircle, Store, Beef, ShoppingCart, Apple, Check, ArrowLeft } from 'lucide-react';
 import { registerTenant, listarPresets, type PresetResponse } from '../services/api/tenant';
 import { tokenStore } from '../store/tokenStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { BrandMark } from '../components/BrandMark';
 import classes from './RegisterPage.module.css';
+
+// ── Manrope font injection ────────────────────────────────────────────────────
+const MANROPE_HREF = 'https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap';
+function ensureManrope() {
+    if (typeof document === 'undefined') return;
+    if (document.querySelector(`link[href="${MANROPE_HREF}"]`)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet'; link.href = MANROPE_HREF;
+    document.head.appendChild(link);
+}
+ensureManrope();
+
+// ── Brand icon ────────────────────────────────────────────────────────────────
+function BrandIcon() {
+    return (
+        <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="8" height="8" rx="2" fill="white" fillOpacity="0.9" />
+            <rect x="12" y="2" width="8" height="8" rx="2" fill="white" fillOpacity="0.55" />
+            <rect x="2" y="12" width="8" height="8" rx="2" fill="white" fillOpacity="0.55" />
+            <rect x="12" y="12" width="8" height="8" rx="2" fill="white" fillOpacity="0.3" />
+        </svg>
+    );
+}
 
 // ── Business type config ────────────────────────────────────────────────────
 
@@ -107,13 +131,19 @@ export function RegisterPage() {
 
     return (
         <div className={classes.wrapper}>
+            {/* Back to login button */}
+            <Link to="/login" className={classes.backButton}>
+                <ArrowLeft size={13} />
+                Volver al login
+            </Link>
+
             <div className={classes.container}>
                 {/* Branding */}
                 <div className={`${classes.branding} ${classes.fadeIn}`}>
-                    <div className={classes.logo}>BlendPOS</div>
-                    <Text c="dimmed" size="sm">
+                    <BrandMark layout="col" size={52} />
+                    <p className={classes.brandingTagline}>
                         Creá tu cuenta — es gratis para empezar
-                    </Text>
+                    </p>
                 </div>
 
                 {/* Step indicator */}

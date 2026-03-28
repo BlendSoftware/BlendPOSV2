@@ -84,18 +84,17 @@
     margin-bottom: 2.6rem;
 }
 
-.logoIcon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: #2563eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.brandLogo {
+    height: 56px;
+    width: auto;
+    object-fit: contain;
+    /* White-ify for visibility on dark hero background */
+    filter: brightness(0) invert(1);
     flex-shrink: 0;
-    /* Subtle border to reinforce precision feel */
-    border: 0.5px solid rgba(37, 99, 235, 0.7);
-    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25), 0 4px 16px rgba(37, 99, 235, 0.22);
+}
+
+:global([data-mantine-color-scheme='light']) .brandLogo {
+    filter: none;
 }
 
 .logoText {
@@ -567,4 +566,60 @@
         color: rgba(148, 163, 184, 0.8);
         font-family: 'Manrope', sans-serif;
     }
+}
+
+/* ── Form footer (copyright + links) ──────────────────────────────────────── */
+
+.formFooter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.4rem;
+    text-align: center;
+}
+
+.footerLinks {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    color: rgba(100, 116, 139, 0.75);
+    font-family: 'Manrope', sans-serif;
+}
+
+.footerDivider {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(100, 116, 139, 0.4);
+    flex-shrink: 0;
+}
+
+.footerLink {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: rgba(100, 116, 139, 0.75);
+    text-decoration: none;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.72rem;
+    transition: color 150ms ease;
+}
+
+.footerLink:hover {
+    color: rgba(148, 163, 184, 0.95);
+}
+
+:global([data-mantine-color-scheme='light']) .footerLinks,
+:global([data-mantine-color-scheme='light']) .footerLink {
+    color: rgba(100, 116, 139, 0.65);
+}
+
+:global([data-mantine-color-scheme='light']) .footerLink:hover {
+    color: #334155;
 }

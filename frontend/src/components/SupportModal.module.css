@@ -1,0 +1,260 @@
+/* ── SupportModal — Digital Engineering ──────────────────────────── */
+
+.body {
+    font-family: 'Manrope', sans-serif;
+}
+
+/* ── Title icon ──────────────────────────────────────────────────── */
+
+.titleIcon {
+    background: rgba(37, 99, 235, 0.15) !important;
+    color: #60a5fa !important;
+    border: 0.5px solid rgba(37, 99, 235, 0.3) !important;
+}
+
+/* ── Section titles ──────────────────────────────────────────────── */
+
+.sectionTitle {
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    color: rgba(37, 99, 235, 0.8) !important;
+    font-family: 'Manrope', sans-serif !important;
+}
+
+:global([data-mantine-color-scheme='light']) .sectionTitle {
+    color: #2563eb !important;
+}
+
+/* ── Channel cards ───────────────────────────────────────────────── */
+
+.channelCard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 0.5px solid rgba(37, 99, 235, 0.15);
+    background: rgba(2, 6, 23, 0.4);
+    transition: border-color 150ms ease, background 150ms ease;
+}
+
+.channelCard:hover {
+    border-color: rgba(37, 99, 235, 0.3);
+    background: rgba(37, 99, 235, 0.07);
+}
+
+:global([data-mantine-color-scheme='light']) .channelCard {
+    background: #f8faff;
+    border-color: rgba(37, 99, 235, 0.12);
+}
+
+:global([data-mantine-color-scheme='light']) .channelCard:hover {
+    background: #eef2ff;
+    border-color: rgba(37, 99, 235, 0.25);
+}
+
+.channelIconWrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(37, 99, 235, 0.12);
+    border: 0.5px solid rgba(37, 99, 235, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #60a5fa;
+}
+
+:global([data-mantine-color-scheme='light']) .channelIconWrap {
+    background: #eef2ff;
+    border-color: rgba(37, 99, 235, 0.22);
+    color: #2563eb;
+}
+
+.channelInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.channelTitle {
+    font-size: 0.84rem !important;
+    font-weight: 700 !important;
+    color: rgba(241, 245, 249, 0.95) !important;
+    font-family: 'Manrope', sans-serif !important;
+    line-height: 1.2;
+}
+
+:global([data-mantine-color-scheme='light']) .channelTitle {
+    color: #0f172a !important;
+}
+
+.channelDesc {
+    font-size: 0.73rem !important;
+    color: rgba(100, 116, 139, 0.85) !important;
+    font-family: 'Manrope', sans-serif !important;
+    margin-top: 2px;
+    line-height: 1.3;
+}
+
+:global([data-mantine-color-scheme='light']) .channelDesc {
+    color: rgba(71, 85, 105, 0.8) !important;
+}
+
+.channelBadge {
+    font-family: 'Manrope', sans-serif !important;
+}
+
+.channelAction {
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    color: #60a5fa !important;
+    font-family: 'Manrope', sans-serif !important;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    text-decoration: none !important;
+    transition: color 150ms ease;
+}
+
+.channelAction:hover {
+    color: #93c5fd !important;
+}
+
+:global([data-mantine-color-scheme='light']) .channelAction {
+    color: #2563eb !important;
+}
+
+:global([data-mantine-color-scheme='light']) .channelAction:hover {
+    color: #1d4ed8 !important;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────── */
+
+.divider {
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .divider {
+    border-color: rgba(37, 99, 235, 0.1) !important;
+}
+
+/* ── Status banner ───────────────────────────────────────────────── */
+
+.statusBanner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 0.5px solid rgba(34, 197, 94, 0.25);
+}
+
+.statusIcon {
+    color: #4ade80;
+    flex-shrink: 0;
+}
+
+:global([data-mantine-color-scheme='light']) .statusIcon {
+    color: #16a34a;
+}
+
+.statusText {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: rgba(74, 222, 128, 0.9) !important;
+    font-family: 'Manrope', sans-serif !important;
+}
+
+:global([data-mantine-color-scheme='light']) .statusBanner {
+    background: rgba(22, 163, 74, 0.06);
+    border-color: rgba(22, 163, 74, 0.22);
+}
+
+:global([data-mantine-color-scheme='light']) .statusText {
+    color: #15803d !important;
+}
+
+/* ── FAQ ─────────────────────────────────────────────────────────── */
+
+.faqIcon {
+    color: rgba(37, 99, 235, 0.75);
+}
+
+:global([data-mantine-color-scheme='light']) .faqIcon {
+    color: #2563eb;
+}
+
+.faqItem {
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(2, 6, 23, 0.35);
+    border: 0.5px solid rgba(255, 255, 255, 0.06);
+    transition: border-color 150ms ease;
+}
+
+.faqItem:hover {
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+:global([data-mantine-color-scheme='light']) .faqItem {
+    background: #f8faff;
+    border-color: rgba(37, 99, 235, 0.1);
+}
+
+:global([data-mantine-color-scheme='light']) .faqItem:hover {
+    background: #f0f4ff;
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.faqQ {
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    color: rgba(226, 232, 240, 0.95) !important;
+    font-family: 'Manrope', sans-serif !important;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+:global([data-mantine-color-scheme='light']) .faqQ {
+    color: #0f172a !important;
+}
+
+.faqA {
+    font-size: 0.76rem !important;
+    color: rgba(100, 116, 139, 0.85) !important;
+    font-family: 'Manrope', sans-serif !important;
+    line-height: 1.45;
+}
+
+:global([data-mantine-color-scheme='light']) .faqA {
+    color: rgba(71, 85, 105, 0.8) !important;
+}
+
+/* ── Footer note ─────────────────────────────────────────────────── */
+
+.footerNote {
+    font-size: 0.7rem !important;
+    color: rgba(100, 116, 139, 0.6) !important;
+    font-family: 'Manrope', sans-serif !important;
+    text-align: center;
+}
+
+.footerLink {
+    color: rgba(37, 99, 235, 0.7) !important;
+    text-decoration: none !important;
+    transition: color 150ms ease;
+}
+
+.footerLink:hover {
+    color: #60a5fa !important;
+}
+
+:global([data-mantine-color-scheme='light']) .footerLink {
+    color: #2563eb !important;
+}

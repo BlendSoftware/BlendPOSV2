@@ -1,0 +1,181 @@
+/* ── TermsModal — Digital Engineering ────────────────────────────── */
+
+.body {
+    font-family: 'Manrope', sans-serif;
+}
+
+/* ── Title icon ──────────────────────────────────────────────────── */
+
+.titleIcon {
+    background: rgba(37, 99, 235, 0.15) !important;
+    color: #60a5fa !important;
+    border: 0.5px solid rgba(37, 99, 235, 0.3) !important;
+}
+
+/* ── Disclaimer banner ───────────────────────────────────────────── */
+
+.disclaimer {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 0.5px solid rgba(245, 158, 11, 0.22);
+    margin-bottom: 14px;
+}
+
+.disclaimerIcon {
+    color: #f59e0b;
+    flex-shrink: 0;
+}
+
+:global([data-mantine-color-scheme='light']) .disclaimerIcon {
+    color: #d97706;
+}
+
+.disclaimerText {
+    font-size: 0.73rem !important;
+    font-weight: 600 !important;
+    color: rgba(245, 158, 11, 0.9) !important;
+    font-family: 'Manrope', sans-serif !important;
+}
+
+:global([data-mantine-color-scheme='light']) .disclaimer {
+    background: rgba(245, 158, 11, 0.06);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+:global([data-mantine-color-scheme='light']) .disclaimerText {
+    color: #92400e !important;
+}
+
+/* ── Intro text ──────────────────────────────────────────────────── */
+
+.intro {
+    font-size: 0.82rem !important;
+    color: rgba(148, 163, 184, 0.85) !important;
+    font-family: 'Manrope', sans-serif !important;
+    line-height: 1.55;
+}
+
+.intro strong {
+    color: rgba(226, 232, 240, 0.95) !important;
+    font-weight: 700;
+}
+
+:global([data-mantine-color-scheme='light']) .intro {
+    color: rgba(51, 65, 85, 0.8) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .intro strong {
+    color: #0f172a !important;
+}
+
+/* ── Dividers ────────────────────────────────────────────────────── */
+
+.divider {
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.sectionDivider {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .divider {
+    border-color: rgba(37, 99, 235, 0.1) !important;
+}
+
+:global([data-mantine-color-scheme='light']) .sectionDivider {
+    border-color: rgba(37, 99, 235, 0.07) !important;
+}
+
+/* ── Sections ────────────────────────────────────────────────────── */
+
+.section {
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: background 130ms ease;
+}
+
+.section:hover {
+    background: rgba(37, 99, 235, 0.04);
+}
+
+:global([data-mantine-color-scheme='light']) .section:hover {
+    background: rgba(37, 99, 235, 0.03);
+}
+
+.sectionTitle {
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    color: rgba(226, 232, 240, 0.95) !important;
+    font-family: 'Manrope', sans-serif !important;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+}
+
+:global([data-mantine-color-scheme='light']) .sectionTitle {
+    color: #0f172a !important;
+}
+
+.sectionContent {
+    font-size: 0.78rem !important;
+    color: rgba(100, 116, 139, 0.85) !important;
+    font-family: 'Manrope', sans-serif !important;
+    line-height: 1.55;
+}
+
+:global([data-mantine-color-scheme='light']) .sectionContent {
+    color: rgba(71, 85, 105, 0.82) !important;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+
+.footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(37, 99, 235, 0.07);
+    border: 0.5px solid rgba(37, 99, 235, 0.18);
+}
+
+.footerIcon {
+    color: rgba(37, 99, 235, 0.75);
+    flex-shrink: 0;
+}
+
+:global([data-mantine-color-scheme='light']) .footerIcon {
+    color: #2563eb;
+}
+
+.footerText {
+    font-size: 0.76rem !important;
+    color: rgba(100, 116, 139, 0.85) !important;
+    font-family: 'Manrope', sans-serif !important;
+}
+
+:global([data-mantine-color-scheme='light']) .footerText {
+    color: rgba(51, 65, 85, 0.75) !important;
+}
+
+.footerLink {
+    color: #60a5fa !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+    transition: color 150ms ease;
+}
+
+.footerLink:hover {
+    color: #93c5fd !important;
+}
+
+:global([data-mantine-color-scheme='light']) .footerLink {
+    color: #2563eb !important;
+}
+
+:global([data-mantine-color-scheme='light']) .footerLink:hover {
+    color: #1d4ed8 !important;
+}

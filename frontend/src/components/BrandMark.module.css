@@ -1,0 +1,77 @@
+/* ── BrandMark component ─────────────────────────────────────────── */
+
+.root {
+    display: inline-flex;
+    align-items: center;
+    user-select: none;
+}
+
+.row {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.col {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── Logo mark image ─────────────────────────────────────────────── */
+
+.mark {
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: block;
+    /* White monochrome to match midnight-blue palette */
+    filter: brightness(0) invert(1) drop-shadow(0 1px 6px rgba(37, 99, 235, 0.3));
+}
+
+/* ── "BlendPOS" wordmark ─────────────────────────────────────────── */
+
+.wordmark {
+    display: flex;
+    align-items: baseline;
+    line-height: 1;
+}
+
+.word {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #f8fafc;
+    font-family: 'Manrope', -apple-system, sans-serif;
+    line-height: 1;
+}
+
+.accent {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #2563eb;
+    font-family: 'Manrope', -apple-system, sans-serif;
+    line-height: 1;
+}
+
+:global([data-mantine-color-scheme='light']) .word {
+    color: #0f172a;
+}
+
+:global([data-mantine-color-scheme='light']) .accent {
+    color: #2563eb;
+}
+
+/* light mode: white bg → show the original gold/teal gradient */
+:global([data-mantine-color-scheme='light']) .mark {
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.12));
+}
+
+/* ── Column layout: larger text ──────────────────────────────────── */
+
+.col .word,
+.col .accent {
+    font-size: 2rem;
+    letter-spacing: -0.05em;
+}

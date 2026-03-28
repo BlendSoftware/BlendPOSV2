@@ -8,6 +8,9 @@ import { useForm } from '@mantine/form';
 import { AlertCircle, ShieldAlert, WifiOff, Building2, FileCheck, Chrome } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { changePasswordApi } from '../../services/api/auth';
+import { SupportModal } from '../../components/SupportModal';
+import { TermsModal } from '../../components/TermsModal';
+import { BrandMark } from '../../components/BrandMark';
 import classes from './LoginPage.module.css';
 
 // ── Manrope font — injected once ────────────────────────────────────────────
@@ -43,19 +46,6 @@ const FEATURES = [
     },
 ];
 
-// ── Logo SVG icon ─────────────────────────────────────────────────────────────
-
-function BrandIcon() {
-    return (
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2" y="2" width="8" height="8" rx="2" fill="white" fillOpacity="0.9" />
-            <rect x="12" y="2" width="8" height="8" rx="2" fill="white" fillOpacity="0.55" />
-            <rect x="2" y="12" width="8" height="8" rx="2" fill="white" fillOpacity="0.55" />
-            <rect x="12" y="12" width="8" height="8" rx="2" fill="white" fillOpacity="0.3" />
-        </svg>
-    );
-}
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function LoginPage() {
@@ -65,6 +55,8 @@ export function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [rememberMe, setRememberMe] = useState(true);
+    const [supportOpen, setSupportOpen] = useState(false);
+    const [termsOpen, setTermsOpen] = useState(false);
 
     const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/';
 
@@ -153,12 +145,7 @@ export function LoginPage() {
             <div className={`${classes.heroContent} ${classes.fadeIn}`}>
                 {/* Logo */}
                 <div className={classes.logoMark}>
-                    <div className={classes.logoIcon}>
-                        <BrandIcon />
-                    </div>
-                    <span className={classes.logoText}>
-                        Blend<span className={classes.logoTextAccent}>POS</span>
-                    </span>
+                    <BrandMark size={52} />
                 </div>
 
                 {/* Headlines */}
@@ -367,11 +354,27 @@ export function LoginPage() {
                             <div className={classes.footerLinks}>
                                 <span>© 2026 BlendPOS</span>
                                 <div className={classes.footerDivider} />
-                                <a href="#" className={classes.footerLink}>Soporte técnico</a>
+                                <button
+                                    type="button"
+                                    className={classes.footerLink}
+                                    onClick={() => setSupportOpen(true)}
+                                >
+                                    Soporte técnico
+                                </button>
                                 <div className={classes.footerDivider} />
-                                <a href="#" className={classes.footerLink}>Términos y condiciones</a>
+                                <button
+                                    type="button"
+                                    className={classes.footerLink}
+                                    onClick={() => setTermsOpen(true)}
+                                >
+                                    Términos y condiciones
+                                </button>
                             </div>
                         </div>
+
+                        {/* Modals */}
+                        <SupportModal opened={supportOpen} onClose={() => setSupportOpen(false)} />
+                        <TermsModal opened={termsOpen} onClose={() => setTermsOpen(false)} />
                     </Paper>
                 </div>
             </div>
