@@ -19,6 +19,7 @@ import {
 } from '../../services/api/products';
 import { listarCategorias, type CategoriaResponse } from '../../services/api/categorias';
 import { listarLotes, crearLote, eliminarLote, type LoteResponse, type CrearLoteRequest } from '../../services/api/lotes';
+import { useSucursalStore } from '../../store/useSucursalStore';
 import type { IProducto, CategoriaProducto } from '../../types';
 
 // ── Mapper ────────────────────────────────────────────────────────────────────
@@ -92,6 +93,9 @@ export function GestionProductosPage() {
     const [activeTab, setActiveTab] = useState<string>(
         searchParams.get('tab') === 'promociones' ? 'promociones' : 'productos'
     );
+
+    // Subscribe to sucursal changes so product list refetches with correct per-branch stock
+    const { sucursalId: activeSucursalId } = useSucursalStore();
 
     const [productos, setProductos] = useState<IProducto[]>([]);
     const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
@@ -173,7 +177,10 @@ export function GestionProductosPage() {
         setLoading(true);
         setApiError(null);
         try {
-            // Fetch all products including inactive so that client-side filter works
+            // Fetch all products including inactive so that client-side filter works.
+            // sucursal_id is also sent via X-Sucursal-Id header automatically, but
+            // including activeSucursalId in the dependency array ensures a refetch
+            // when the user switches sucursal.
             const [productosResp, categoriasResp] = await Promise.all([
                 listarProductos({ limit: 500, page: 1, activo: 'all' }),
                 listarCategorias(),
@@ -186,7 +193,8 @@ export function GestionProductosPage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeSucursalId]);
 
     useEffect(() => { fetchProductos(); }, [fetchProductos]);
 

@@ -56,3 +56,10 @@ export const usePosThemeStore = create<PosThemeState>()(
         },
     ),
 );
+
+// ── Eager apply: set CSS variables immediately on module load ───────────
+// This prevents a flash of unstyled content before zustand rehydrates from
+// localStorage. The onRehydrate callback will override with the persisted
+// theme once async hydration completes.
+applyThemeCSSVariables(DEFAULT_THEME);
+injectThemeFont(DEFAULT_THEME.id);

@@ -33,6 +33,7 @@ type ventaService struct {
 	productoRepo    repository.ProductoRepository
 	comprobanteRepo repository.ComprobanteRepository
 	configFiscalRepo repository.ConfiguracionFiscalRepository
+	stockSucRepo    repository.StockSucursalRepository
 	dispatcher      *worker.Dispatcher
 	clienteSvc      ClienteService
 }
@@ -46,6 +47,7 @@ func NewVentaService(
 	dispatcher *worker.Dispatcher,
 	comprobanteRepo repository.ComprobanteRepository,
 	configFiscalRepo repository.ConfiguracionFiscalRepository,
+	stockSucRepo repository.StockSucursalRepository,
 ) VentaService {
 	return &ventaService{
 		repo:            repo,
@@ -55,6 +57,7 @@ func NewVentaService(
 		productoRepo:    productoRepo,
 		comprobanteRepo: comprobanteRepo,
 		configFiscalRepo: configFiscalRepo,
+		stockSucRepo:    stockSucRepo,
 		dispatcher:      dispatcher,
 	}
 }
@@ -343,6 +346,12 @@ func (s *ventaService) registrarVentaInternal(ctx context.Context, usuarioID uui
 				return fmt.Errorf("error descontando stock de %s: %w", r.nombre, err)
 			}
 
+			// Also deduct from per-sucursal stock when the sale is scoped to a branch.
+			// Best-effort inside the same TX — if stock_sucursal record doesn't exist, skip.
+			if sucursalID != nil && s.stockSucRepo != nil {
+				_ = s.stockSucRepo.AjustarStockSucursalTx(tx, r.productoID, *sucursalID, -r.cantidad)
+			}
+
 			// Record movimiento de stock
 			ventaRef := venta.ID
 			mov := &model.MovimientoStock{
@@ -471,6 +480,11 @@ func (s *ventaService) AnularVenta(ctx context.Context, id uuid.UUID, motivo str
 
 			if err := s.productoRepo.UpdateStockTx(tx, item.ProductoID, item.Cantidad); err != nil {
 				return err
+			}
+
+			// Also restore per-sucursal stock when the sale was scoped to a branch.
+			if venta.SucursalID != nil && s.stockSucRepo != nil {
+				_ = s.stockSucRepo.AjustarStockSucursalTx(tx, item.ProductoID, *venta.SucursalID, item.Cantidad)
 			}
 
 			ventaRef := venta.ID

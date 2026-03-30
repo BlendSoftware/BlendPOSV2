@@ -194,14 +194,21 @@ func (r *productoRepo) FindByProveedorID(ctx context.Context, proveedorID uuid.U
 }
 
 func (r *productoRepo) CreateVinculo(ctx context.Context, v *model.ProductoHijo) error {
+	tid, err := tenantctx.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+	v.TenantID = tid
 	return r.db.WithContext(ctx).Create(v).Error
 }
 
-// FindVinculoByHijoID is not tenant-scoped: ProductoHijo has no tenant_id column.
-// Isolation is guaranteed implicitly — hijoID is a product UUID scoped to the calling tenant.
 func (r *productoRepo) FindVinculoByHijoID(ctx context.Context, hijoID uuid.UUID) (*model.ProductoHijo, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
 	var v model.ProductoHijo
-	err := r.db.WithContext(ctx).Where("producto_hijo_id = ? AND desarme_auto = true", hijoID).First(&v).Error
+	err = db.Where("producto_hijo_id = ? AND desarme_auto = true", hijoID).First(&v).Error
 	return &v, err
 }
 
@@ -212,24 +219,32 @@ func (r *productoRepo) FindVinculoByHijoIDTx(tx *gorm.DB, hijoID uuid.UUID) (*mo
 	return &v, err
 }
 
-// FindVinculoByID is not tenant-scoped: ProductoHijo has no tenant_id column.
-// The UUID primary key is globally unique — no cross-tenant lookup is possible.
 func (r *productoRepo) FindVinculoByID(ctx context.Context, id uuid.UUID) (*model.ProductoHijo, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
 	var v model.ProductoHijo
-	err := r.db.WithContext(ctx).First(&v, id).Error
+	err = db.First(&v, id).Error
 	return &v, err
 }
 
-// ListVinculos is not tenant-scoped: ProductoHijo has no tenant_id column.
-// TODO(F1-x): add tenant_id to producto_hijo and scope this query.
 func (r *productoRepo) ListVinculos(ctx context.Context) ([]model.ProductoHijo, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
 	var vinculos []model.ProductoHijo
-	err := r.db.WithContext(ctx).Preload("Padre").Preload("Hijo").Find(&vinculos).Error
+	err = db.Preload("Padre").Preload("Hijo").Find(&vinculos).Error
 	return vinculos, err
 }
 
 func (r *productoRepo) DeleteVinculo(ctx context.Context, id uuid.UUID) error {
-	result := r.db.WithContext(ctx).Delete(&model.ProductoHijo{}, id)
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return err
+	}
+	result := db.Delete(&model.ProductoHijo{}, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -240,7 +255,11 @@ func (r *productoRepo) DeleteVinculo(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *productoRepo) UpdateVinculo(ctx context.Context, id uuid.UUID, unidadesPorPadre int, desarmeAuto bool) error {
-	result := r.db.WithContext(ctx).Model(&model.ProductoHijo{}).Where("id = ?", id).
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return err
+	}
+	result := db.Model(&model.ProductoHijo{}).Where("id = ?", id).
 		Updates(map[string]interface{}{"unidades_por_padre": unidadesPorPadre, "desarme_auto": desarmeAuto})
 	if result.Error != nil {
 		return result.Error

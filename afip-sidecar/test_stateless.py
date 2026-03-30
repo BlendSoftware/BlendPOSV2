@@ -88,8 +88,8 @@ class TestFacturarRequestSchema:
             ))
         assert "-----BEGIN" in str(exc_info.value)
 
-    def test_legacy_mode_no_certs_accepted(self):
-        """Request without cert_pem/key_pem is valid (legacy mode)."""
+    def test_no_certs_schema_valid_but_endpoint_rejects(self):
+        """Request without cert_pem/key_pem passes schema validation but endpoint returns 410."""
         req = FacturarRequest(**self._base_payload())
         assert req.cert_pem is None
         assert req.key_pem is None
@@ -296,8 +296,8 @@ class TestFacturarEndpointRouting:
         # The endpoint checks `if req.cert_pem and req.key_pem`
         assert bool(req.cert_pem and req.key_pem) is True
 
-    def test_legacy_mode_when_no_cert_pem(self):
-        """Request without cert_pem should use legacy global client."""
+    def test_legacy_mode_rejected_when_no_cert_pem(self):
+        """Request without cert_pem will be rejected by endpoint with 410 Gone."""
         req = FacturarRequest(
             cuit_emisor="20123456789",
             punto_de_venta=1,
@@ -308,4 +308,5 @@ class TestFacturarEndpointRouting:
             importe_neto="1000.00",
             importe_total="1000.00",
         )
+        # Schema still accepts it, but the /facturar endpoint returns 410
         assert bool(req.cert_pem and req.key_pem) is False

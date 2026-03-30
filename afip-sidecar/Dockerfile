@@ -59,7 +59,11 @@ RUN useradd -m -u 1001 afipsidecar && \
     chown -R afipsidecar:afipsidecar /tmp/afip_cache && \
     chown -R afipsidecar:afipsidecar /usr/local/lib/python3.11/site-packages/pyafipws/cache
 
-# Bajar seguridad a Nivel Cero para AFIP
+# SECLEVEL=0 is required because AFIP's SOAP endpoints use legacy TLS parameters
+# (small DH keys) that OpenSSL 3.x rejects at SECLEVEL>=1. This is set globally
+# because pyafipws uses subprocess openssl commands that read openssl.cnf.
+# py3_compat.py also patches Python's ssl module for the same reason.
+# RISK: acceptable since this container ONLY talks to AFIP (single-purpose).
 RUN sed -i 's/DEFAULT@SECLEVEL=2/DEFAULT@SECLEVEL=0/g' /etc/ssl/openssl.cnf
 
 # En Docker Desktop/Windows los volúmenes se montan con UID root.

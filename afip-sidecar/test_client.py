@@ -70,16 +70,7 @@ def test_facturar(
         "importe_total": monto_total,
         "moneda": "PES",
         "cotizacion_moneda": 1.0,
-        "items": [
-            {
-                "codigo": "TEST001",
-                "descripcion": "Producto de prueba",
-                "cantidad": 1,
-                "precio_unitario": monto_neto,
-                "importe_total": monto_neto,
-                "alicuota_iva": 21.0
-            }
-        ]
+        # items field removed — WSFEv1 only uses totals, not line items
     }
     
     console.print("\n[bold]Request Payload:[/bold]")

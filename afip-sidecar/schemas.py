@@ -5,7 +5,7 @@ Pydantic models for request/response validation
 
 from decimal import Decimal
 from typing import Optional, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ConfigurarRequest(BaseModel):
@@ -18,20 +18,6 @@ class ConfigurarRequest(BaseModel):
     modo: str = Field("homologacion", description="'homologacion' o 'produccion'")
     crt_base64: str = Field(..., description="Contenido del .crt en base64")
     key_base64: str = Field(..., description="Contenido del .key en base64")
-
-
-
-class ItemFacturaRequest(BaseModel):
-    """
-    Representa un item dentro de una factura.
-    Usado para enviar detalle de productos al WSFEV1.
-    """
-    codigo: str = Field(..., description="Código del producto (interno)")
-    descripcion: str = Field(..., max_length=200, description="Descripción del producto")
-    cantidad: float = Field(..., gt=0, description="Cantidad vendida")
-    precio_unitario: float = Field(..., ge=0, description="Precio unitario sin IVA")
-    importe_total: float = Field(..., ge=0, description="Cantidad × Precio unitario")
-    alicuota_iva: float = Field(..., ge=0, description="% de IVA (ej: 21.0)")
 
 
 class FacturarRequest(BaseModel):
@@ -52,6 +38,16 @@ class FacturarRequest(BaseModel):
     # Conceptos: 1=Productos, 2=Servicios, 3=Ambos
     concepto: int = Field(1, ge=1, le=3, description="1=Productos, 2=Servicios, 3=Ambos")
 
+    # Fechas de servicio — obligatorias para concepto=2 (Servicios) o 3 (Ambos)
+    # Formato YYYYMMDD. AFIP rechaza si faltan con concepto != 1.
+    fecha_serv_desde: Optional[str] = Field(None, description="Fecha inicio servicio (YYYYMMDD), requerido si concepto=2 o 3")
+    fecha_serv_hasta: Optional[str] = Field(None, description="Fecha fin servicio (YYYYMMDD), requerido si concepto=2 o 3")
+    fecha_venc_pago: Optional[str] = Field(None, description="Fecha vencimiento pago (YYYYMMDD), requerido si concepto=2 o 3")
+
+    # Condición IVA del receptor (RG 5616, obligatorio desde 2024)
+    # 1=IVA Resp. Inscripto, 5=Consumidor Final, etc. Auto-detectado si no se envía.
+    condicion_iva_receptor_id: Optional[int] = Field(None, description="Condición IVA del receptor (1=RI, 5=CF). Auto-detectado si omitido.")
+
     # Montos — Decimal con 2 decimales para exactitud fiscal
     importe_neto: Decimal = Field(..., ge=Decimal('0'), description="Monto gravado (sin IVA)")
     importe_exento: Decimal = Field(Decimal('0'), ge=Decimal('0'), description="Monto exento de IVA")
@@ -63,8 +59,11 @@ class FacturarRequest(BaseModel):
     moneda: str = Field("PES", description="PES=Pesos argentinos, DOL=Dólar")
     cotizacion_moneda: float = Field(1.0, gt=0, description="Cotización de la moneda (1.0 para pesos)")
 
-    # Items (opcional, según requerimiento)
-    items: Optional[List[ItemFacturaRequest]] = Field(None, description="Detalle de productos vendidos")
+    # ── Traceability ──────────────────────────────────────────────────────────
+    # venta_id is sent by the Go backend for log correlation. It is NOT sent to
+    # AFIP — only used in sidecar log messages so we can trace invoicing issues
+    # back to the originating sale.
+    venta_id: Optional[str] = Field(None, description="UUID de la venta en el backend Go (solo para trazabilidad en logs)")
 
     # ── Multi-tenant stateless mode (F1-4) ────────────────────────────────────
     # Cuando el Go backend pasa cert_pem + key_pem, el sidecar crea un AFIPClient
@@ -74,8 +73,9 @@ class FacturarRequest(BaseModel):
     key_pem: Optional[str] = Field(None, description="Contenido PEM de la clave privada AFIP (modo stateless multi-tenant)")
     modo: str = Field("homologacion", description="'homologacion' o 'produccion' (aplica solo en modo stateless)")
 
-    @validator('cert_pem', 'key_pem')
-    def validar_pem_no_es_ruta(cls, v):
+    @field_validator('cert_pem', 'key_pem')
+    @classmethod
+    def validar_pem_no_es_ruta(cls, v: Optional[str]) -> Optional[str]:
         """
         Previene path traversal: el campo debe ser contenido PEM real, no una ruta de archivo.
         Un PEM válido siempre empieza con '-----BEGIN'.
@@ -86,20 +86,22 @@ class FacturarRequest(BaseModel):
             )
         return v
 
-    @validator('cuit_emisor', 'nro_doc_receptor')
-    def validar_formato_cuit(cls, v):
+    @field_validator('cuit_emisor', 'nro_doc_receptor')
+    @classmethod
+    def validar_formato_cuit(cls, v: str) -> str:
         """Valida que el CUIT/DNI no contenga guiones ni puntos"""
         if '-' in v or '.' in v:
             raise ValueError('El CUIT/DNI debe ser solo números, sin guiones ni puntos')
         return v
 
-    @validator('importe_total')
-    def validar_total(cls, v, values):
+    @field_validator('importe_total')
+    @classmethod
+    def validar_total(cls, v: Decimal, info) -> Decimal:
         """Valida que el total sea coherente con los componentes"""
-        neto = values.get('importe_neto', Decimal('0'))
-        exento = values.get('importe_exento', Decimal('0'))
-        iva = values.get('importe_iva', Decimal('0'))
-        tributos = values.get('importe_tributos', Decimal('0'))
+        neto = info.data.get('importe_neto', Decimal('0'))
+        exento = info.data.get('importe_exento', Decimal('0'))
+        iva = info.data.get('importe_iva', Decimal('0'))
+        tributos = info.data.get('importe_tributos', Decimal('0'))
         esperado = neto + exento + iva + tributos
 
         # Tolerancia de 0.01 por redondeos de presentación
@@ -124,13 +126,13 @@ class FacturarResponse(BaseModel):
     resultado: str = Field(..., description="A=Aprobado, R=Rechazado, P=Pendiente")
     numero_comprobante: int = Field(..., ge=1, description="Número de comprobante asignado por AFIP")
     fecha_comprobante: str = Field(..., description="Fecha del comprobante (YYYYMMDD)")
-    
+
     cae: Optional[str] = Field(None, description="Código de Autorización Electrónico (14 dígitos)")
     cae_vencimiento: Optional[str] = Field(None, description="Fecha de vencimiento del CAE (YYYYMMDD)")
-    
+
     observaciones: Optional[List[ObservacionAFIP]] = Field(None, description="Observaciones o errores de AFIP")
     reproceso: Optional[str] = Field(None, description="Tipo de reproceso (S=Sí, N=No)")
-    
+
     # Metadata para logging
     afip_request_id: Optional[str] = Field(None, description="ID interno de AFIP para trazabilidad")
 

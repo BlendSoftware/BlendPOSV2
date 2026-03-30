@@ -14,6 +14,11 @@ type SucursalRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Sucursal, error)
 	Update(ctx context.Context, s *model.Sucursal) error
 	List(ctx context.Context, incluirInactivas bool) ([]model.Sucursal, int64, error)
+	// CountActiveByTenant returns the number of active sucursales for the current tenant.
+	CountActiveByTenant(ctx context.Context) (int64, error)
+	// CreateWithDB creates a sucursal using the provided *gorm.DB (bypasses tenant-scoped middleware).
+	// Used during tenant registration when there is no JWT context yet.
+	CreateWithDB(db *gorm.DB, s *model.Sucursal) error
 }
 
 type sucursalRepo struct{ db *gorm.DB }
@@ -47,6 +52,20 @@ func (r *sucursalRepo) Update(ctx context.Context, s *model.Sucursal) error {
 		return err
 	}
 	return db.Save(s).Error
+}
+
+func (r *sucursalRepo) CountActiveByTenant(ctx context.Context) (int64, error) {
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = db.Model(&model.Sucursal{}).Where("activa = true").Count(&count).Error
+	return count, err
+}
+
+func (r *sucursalRepo) CreateWithDB(db *gorm.DB, s *model.Sucursal) error {
+	return db.Create(s).Error
 }
 
 func (r *sucursalRepo) List(ctx context.Context, incluirInactivas bool) ([]model.Sucursal, int64, error) {

@@ -18,6 +18,10 @@ type StockSucursalRepository interface {
 	AjustarStockSucursalTx(tx *gorm.DB, productoID, sucursalID uuid.UUID, delta int) error
 	ListBySucursal(ctx context.Context, sucursalID uuid.UUID) ([]model.StockSucursal, int64, error)
 	GetAlertasBySucursal(ctx context.Context, sucursalID uuid.UUID) ([]model.StockSucursal, error)
+	// GetStockMapBySucursal returns a map of productoID → StockSucursal for a set
+	// of product IDs in a given sucursal. Used to enrich product listings with
+	// per-branch stock instead of global stock.
+	GetStockMapBySucursal(ctx context.Context, productoIDs []uuid.UUID, sucursalID uuid.UUID) (map[uuid.UUID]*model.StockSucursal, error)
 	DB() *gorm.DB
 }
 
@@ -93,6 +97,26 @@ func (r *stockSucursalRepo) ListBySucursal(ctx context.Context, sucursalID uuid.
 	}
 	err = q.Preload("Producto").Preload("Sucursal").Order("updated_at DESC").Find(&items).Error
 	return items, total, err
+}
+
+func (r *stockSucursalRepo) GetStockMapBySucursal(ctx context.Context, productoIDs []uuid.UUID, sucursalID uuid.UUID) (map[uuid.UUID]*model.StockSucursal, error) {
+	if len(productoIDs) == 0 {
+		return make(map[uuid.UUID]*model.StockSucursal), nil
+	}
+	db, err := scopedDB(r.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	var items []model.StockSucursal
+	err = db.Where("sucursal_id = ? AND producto_id IN ?", sucursalID, productoIDs).Find(&items).Error
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[uuid.UUID]*model.StockSucursal, len(items))
+	for i := range items {
+		result[items[i].ProductoID] = &items[i]
+	}
+	return result, nil
 }
 
 func (r *stockSucursalRepo) GetAlertasBySucursal(ctx context.Context, sucursalID uuid.UUID) ([]model.StockSucursal, error) {

@@ -425,30 +425,39 @@ class AFIPClient:
     def obtener_ultimo_comprobante(self, punto_venta: int, tipo_cbte: int) -> int:
         """
         Obtiene el último número de comprobante emitido para un PV y tipo.
-        
+
         Args:
             punto_venta: Punto de venta (1-9999)
             tipo_cbte: Tipo de comprobante (1=FactA, 6=FactB, 11=FactC)
-        
+
         Returns:
             Número del último comprobante (0 si es el primero)
+
+        Raises:
+            Exception: Si AFIP no responde o hay error de comunicación.
+                El caller DEBE manejar este error y NO proceder con numero_cbte=1,
+                ya que eso podría generar un comprobante duplicado en AFIP.
         """
-        try:
-            wsfe = self._get_wsfev1()
-            ultimo = wsfe.CompUltimoAutorizado(tipo_cbte, punto_venta)
-            
-            if wsfe.ErrMsg:
-                logger.warning(
-                    "Advertencia al obtener último comprobante: %s",
-                    wsfe.ErrMsg
-                )
-            
-            return int(ultimo) if ultimo else 0
-            
-        except Exception as e:
-            logger.error("Error al obtener último comprobante: %s", e)
-            # En caso de error, devolver 0 (AFIP asignará el siguiente)
-            return 0
+        wsfe = self._get_wsfev1()
+        ultimo = wsfe.CompUltimoAutorizado(tipo_cbte, punto_venta)
+
+        if wsfe.ErrMsg:
+            logger.warning(
+                "Advertencia al obtener último comprobante: %s",
+                wsfe.ErrMsg
+            )
+
+        # ultimo can be None/"" if AFIP is unreachable or returns garbage.
+        # We MUST NOT silently return 0 — that would cause the caller to
+        # issue comprobante #1 which may already exist, leading to a
+        # duplicate/rejected invoice.
+        if ultimo is None or ultimo == "":
+            raise Exception(
+                f"AFIP no devolvió el último comprobante para PV={punto_venta}, "
+                f"tipo={tipo_cbte}. Posible fallo de conectividad."
+            )
+
+        return int(ultimo)
     
     def facturar(self, req: FacturarRequest) -> FacturarResponse:
         """
@@ -486,7 +495,16 @@ class AFIPClient:
             
             # Fecha de hoy (YYYYMMDD)
             fecha_hoy = datetime.now().strftime('%Y%m%d')
-            
+
+            # Validar fechas de servicio para concepto=2 (Servicios) o 3 (Ambos)
+            # AFIP rechaza el comprobante si faltan estos campos.
+            if req.concepto in (2, 3):
+                if not req.fecha_serv_desde or not req.fecha_serv_hasta or not req.fecha_venc_pago:
+                    raise ValueError(
+                        f"Para concepto={req.concepto} (servicios), los campos "
+                        "fecha_serv_desde, fecha_serv_hasta y fecha_venc_pago son obligatorios."
+                    )
+
             # Crear factura en pyafipws
             # Para Factura C (tipo 11, Monotributistas): el total va en imp_tot_conc
             # (concepto "no gravado" — monotributistas no son agentes de IVA).
@@ -534,9 +552,9 @@ class AFIPClient:
                 imp_trib=round(req.importe_tributos, 2),
                 imp_op_ex=_imp_op_ex,
                 fecha_cbte=fecha_hoy,
-                fecha_venc_pago=None,  # Solo si concepto=servicios
-                fecha_serv_desde=None,
-                fecha_serv_hasta=None,
+                fecha_venc_pago=req.fecha_venc_pago if req.concepto in (2, 3) else None,
+                fecha_serv_desde=req.fecha_serv_desde if req.concepto in (2, 3) else None,
+                fecha_serv_hasta=req.fecha_serv_hasta if req.concepto in (2, 3) else None,
                 moneda_id=req.moneda,
                 moneda_ctz=req.cotizacion_moneda
             )
@@ -545,7 +563,7 @@ class AFIPClient:
             # 5 = Consumidor Final (para tipo_doc=99 o 96 en Factura B/C)
             # 1 = IVA Responsable Inscripto (para tipo_doc=80 en Factura A)
             # El valor se toma del request; por defecto según el tipo de documento
-            condicion_iva = getattr(req, 'condicion_iva_receptor_id', None)
+            condicion_iva = req.condicion_iva_receptor_id
             if condicion_iva is None:
                 # Para Factura B/C: DNI (96) o Sin Identificar (99) → Consumidor Final (5)
                 # Para Factura A: CUIT (80) → Responsable Inscripto (1)
@@ -599,7 +617,7 @@ class AFIPClient:
                     )
             
             # Debug: verificar estructura de factura antes de CAESolicitar
-            logger.warning(f"DEBUG factura completa antes de CAESolicitar: {wsfe.factura}")
+            logger.debug(f"Factura completa antes de CAESolicitar: {wsfe.factura}")
             
             # Solicitar CAE
             resultado = wsfe.CAESolicitar()

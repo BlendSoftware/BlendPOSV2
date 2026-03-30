@@ -1,15 +1,16 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     Stack, Title, Text, Group, Button, TextInput, Textarea, Table,
-    Paper, Badge, ActionIcon, Tooltip, Modal, Skeleton,
+    Paper, Badge, ActionIcon, Tooltip, Modal, Skeleton, Alert,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { Plus, Edit, Search, X, Power, PowerOff } from 'lucide-react';
+import { Plus, Edit, Search, X, Power, PowerOff, Info } from 'lucide-react';
 import {
     listarSucursales, crearSucursal, actualizarSucursal,
     type SucursalResponse,
 } from '../../services/api/sucursales';
+import { useSucursalStore } from '../../store/useSucursalStore';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -81,6 +82,8 @@ export function SucursalesPage() {
             }
             setModalOpen(false);
             await fetchSucursales();
+            // Sync the global sucursal store so the header selector is up-to-date
+            useSucursalStore.getState().fetchSucursales();
         } catch (err) {
             notifications.show({
                 title: 'Error',
@@ -102,6 +105,8 @@ export function SucursalesPage() {
                 message: s.nombre,
                 color: s.activa ? 'gray' : 'teal',
             });
+            // Sync global store
+            useSucursalStore.getState().fetchSucursales();
         } catch (err) {
             notifications.show({
                 title: 'Error',
@@ -216,6 +221,15 @@ export function SucursalesPage() {
             >
                 <form onSubmit={handleSubmit}>
                     <Stack gap="md">
+                        {!editTarget && (
+                            <Alert
+                                icon={<Info size={16} />}
+                                color="blue"
+                                variant="light"
+                            >
+                                La nueva sucursal arranca desde cero: sin stock, sin ventas ni sesiones de caja. Carga sus productos y stock desde la pagina de inventario.
+                            </Alert>
+                        )}
                         <TextInput
                             label="Nombre"
                             placeholder="Sucursal Centro"

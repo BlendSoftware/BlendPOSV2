@@ -10,6 +10,7 @@ import (
 	"blendpos/internal/dto"
 	"blendpos/internal/model"
 	"blendpos/internal/repository"
+	"blendpos/internal/tenantctx"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -256,9 +257,34 @@ func (s *productoService) Listar(ctx context.Context, filter dto.ProductoFilter)
 		return nil, err
 	}
 
+	// When a sucursal is selected, batch-fetch per-branch stock to replace
+	// the global stock_actual values in the response. This is the core fix
+	// for "same stock shown in every sucursal".
+	var stockMap map[uuid.UUID]*model.StockSucursal
+	if filter.SucursalID != "" && s.stockSucRepo != nil {
+		sucID, parseErr := uuid.Parse(filter.SucursalID)
+		if parseErr == nil {
+			prodIDs := make([]uuid.UUID, len(productos))
+			for i := range productos {
+				prodIDs[i] = productos[i].ID
+			}
+			stockMap, _ = s.stockSucRepo.GetStockMapBySucursal(ctx, prodIDs, sucID)
+		}
+	}
+
 	items := make([]dto.ProductoResponse, 0, len(productos))
 	for i := range productos {
 		resp := toProductoResponse(&productos[i])
+		// Override global stock with per-sucursal stock when available
+		if stockMap != nil {
+			if ss, ok := stockMap[productos[i].ID]; ok {
+				resp.StockActual = ss.StockActual
+				resp.StockMinimo = ss.StockMinimo
+			} else {
+				// Product has no stock_sucursal record for this branch → stock is 0
+				resp.StockActual = 0
+			}
+		}
 		// Enrich parent products with the count of active variants
 		if productos[i].EsPadre {
 			if cnt, err := s.repo.CountByPadreID(ctx, productos[i].ID); err == nil {
@@ -372,6 +398,14 @@ func (s *productoService) AjustarStock(ctx context.Context, id uuid.UUID, req dt
 	stockAntes := p.StockActual
 	if err := s.repo.AjustarStock(ctx, id, req.Delta); err != nil {
 		return nil, err
+	}
+
+	// Also adjust per-sucursal stock when a sucursal is in context.
+	// This keeps stock_sucursal in sync with the global stock adjustment.
+	if s.stockSucRepo != nil {
+		if sucID := tenantctx.SucursalFromContext(ctx); sucID != nil {
+			_ = s.stockSucRepo.AjustarStockSucursal(ctx, id, *sucID, req.Delta)
+		}
 	}
 
 	// Record movimiento de stock

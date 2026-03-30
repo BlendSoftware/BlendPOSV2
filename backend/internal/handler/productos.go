@@ -39,6 +39,13 @@ func (h *ProductosHandler) Listar(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, apierror.New(err.Error()))
 		return
 	}
+	// When no explicit sucursal_id query param, fall back to X-Sucursal-Id header
+	// from SucursalMiddleware so stock is automatically scoped to the active branch.
+	if filter.SucursalID == "" {
+		if sid := parseSucursalID(c); sid != nil {
+			filter.SucursalID = sid.String()
+		}
+	}
 	resp, err := h.svc.Listar(c.Request.Context(), filter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, apierror.New("Error al listar productos"))

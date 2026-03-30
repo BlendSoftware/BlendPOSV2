@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 import logging
 import os
 import sys
+import threading
 from typing import Dict, Any
 
 import redis as redis_sync
@@ -68,10 +69,13 @@ logger = logging.getLogger("afip-sidecar")
 # ── Global state ──────────────────────────────────────────────────────────────
 # afip_client: legacy singleton initialized from env vars at startup.
 # _rdb: Redis singleton reused by per-request stateless clients (F1-4).
+# _client_lock: protects reads/writes of the global afip_client reference
+#   so that /configurar doesn't race with concurrent /facturar requests.
 
 afip_client: AFIPClient = None
 _rdb = None  # Redis connection shared with per-request clients
 _retry_task = None
+_client_lock = threading.Lock()
 
 
 async def _retry_auth_background():
@@ -82,13 +86,15 @@ async def _retry_auth_background():
     while True:
         wait = retry_intervals[min(idx, len(retry_intervals) - 1)]
         await asyncio.sleep(wait)
-        if afip_client is None:
+        with _client_lock:
+            client = afip_client
+        if client is None:
             continue
-        if afip_client._token_valido():
+        if client._token_valido():
             logger.info("✓ Token WSAA válido — deteniendo retry background")
             return
         try:
-            result = afip_client.autenticar(forzar=True)
+            result = client.autenticar(forzar=True)
             logger.info(f"✓ Retry auth exitoso — Token válido hasta: {result['expiracion']}")
             return  # Éxito — detener el loop
         except Exception as e:
@@ -245,10 +251,12 @@ def health() -> HealthResponse:
     """
     homologacion = os.getenv("AFIP_HOMOLOGACION", "true").lower() == "true"
     mode = "homologacion" if homologacion else "produccion"
-    
+
     # Probar conexión AFIP
-    afip_status = afip_client.probar_conexion() if afip_client else {}
-    
+    with _client_lock:
+        client = afip_client
+    afip_status = client.probar_conexion() if client else {}
+
     return HealthResponse(
         ok=True,
         service="afip-sidecar",
@@ -263,7 +271,7 @@ def configurar(req: "ConfigurarRequest") -> dict:
     """
     Reconfigura el sidecar con nuevos certificados AFIP en caliente.
     Llamado por el backend Go cuando el dueño sube certificados desde la UI de admin.
-    
+
     Los certificados llegan en base64 porque son binarios y el transporte es JSON.
     Se escriben a disco en /certs/ y se reinicia el AFIPClient para re-autenticar con WSAA.
     """
@@ -281,12 +289,12 @@ def configurar(req: "ConfigurarRequest") -> dict:
 
     crt_path = os.path.join(certs_dir, "afip.crt")
     key_path = os.path.join(certs_dir, "afip.key")
-    
+
     with open(crt_path, "wb") as f:
         f.write(crt_bytes)
     with open(key_path, "wb") as f:
         f.write(key_bytes)
-    
+
     logger.info(f"✓ Certificados guardados en {certs_dir} para CUIT {req.cuit_emisor}")
 
     # Reconstruir el cliente con la nueva configuración
@@ -311,7 +319,8 @@ def configurar(req: "ConfigurarRequest") -> dict:
     # Intentar autenticación inmediata para validar el certificado
     try:
         result = nuevo_client.autenticar(forzar=True)
-        afip_client = nuevo_client
+        with _client_lock:
+            afip_client = nuevo_client
         logger.info(f"✓ Nuevo cliente AFIP configurado y autenticado. Token válido hasta: {result.get('expiracion', 'N/A')}")
         return {"ok": True, "message": "Certificados actualizados y autenticación WSAA exitosa"}
     except Exception as e:
@@ -320,7 +329,8 @@ def configurar(req: "ConfigurarRequest") -> dict:
         logger.warning(f"⚠ Nuevo cert guardado pero WSAA rechazó: {error_str}")
         # Si es el error conocido de cert no confiable, aún reemplazamos el client
         # para que cuando AFIP homologue el cert funcione en el próximo request
-        afip_client = nuevo_client
+        with _client_lock:
+            afip_client = nuevo_client
         return {
             "ok": False,
             "message": "Certificados guardados, pero AFIP/WSAA devolvió error de autenticación.",
@@ -334,90 +344,95 @@ def facturar(req: FacturarRequest) -> FacturarResponse:
     """
     Emite una factura electrónica en AFIP via WSFEV1.
 
-    Soporta dos modos de operación:
-
     **Modo stateless (F1-4 — multi-tenant):**
-    Si el request incluye `cert_pem` y `key_pem`, se crea un AFIPClient efímero
+    El request DEBE incluir `cert_pem` y `key_pem`. Se crea un AFIPClient efímero
     para este request usando los certificados del tenant específico.
     Los archivos temporales se eliminan en el bloque `finally`.
 
-    **Modo legacy (single-tenant):**
-    Si no se incluyen PEM fields, se usa el cliente global `afip_client`
-    inicializado al startup desde las variables de entorno.
+    Legacy mode (sin cert_pem/key_pem) está DEPRECADO y devuelve 410 Gone.
+    Usar siempre el modo stateless enviando cert_pem + key_pem en el request.
 
     Raises:
         HTTPException 400: Datos inválidos
+        HTTPException 410: Legacy mode deprecated
         HTTPException 502: Error comunicación con AFIP
         HTTPException 503: AFIP no disponible
     """
+    venta_id_tag = f"[venta_id={req.venta_id}] " if req.venta_id else ""
+
     logger.info(
-        f"→ Solicitud de factura recibida — PV: {req.punto_de_venta}, "
+        f"→ {venta_id_tag}Solicitud de factura recibida — PV: {req.punto_de_venta}, "
         f"Tipo: {req.tipo_comprobante}, Total: ${req.importe_total:.2f}, "
-        f"Modo: {'stateless' if req.cert_pem else 'legacy'}"
+        f"Modo: {'stateless' if req.cert_pem else 'legacy (DEPRECATED)'}"
     )
-    logger.info(
-        f"DEBUG Payload: CUIT={req.cuit_emisor}, Neto={req.importe_neto}, "
+    logger.debug(
+        f"{venta_id_tag}Payload: CUIT={req.cuit_emisor}, Neto={req.importe_neto}, "
         f"IVA={req.importe_iva}, Exento={req.importe_exento}, "
         f"Tributos={req.importe_tributos}, Moneda={req.moneda}, Cotiz={req.cotizacion_moneda}"
     )
 
-    # ── Modo stateless: cliente efímero por request ───────────────────────────
-    if req.cert_pem and req.key_pem:
-        homologacion = req.modo.lower() != "produccion"
-        cache_dir = os.getenv("AFIP_CACHE_DIR", "/tmp/afip_cache")
-        per_req_client = AFIPClient(
-            cuit_emisor=req.cuit_emisor,
-            homologacion=homologacion,
-            cache_dir=cache_dir,
-            rdb=_rdb,
-            cert_pem=req.cert_pem,
-            key_pem=req.key_pem,
-        )
-        try:
-            return _ejecutar_facturacion(per_req_client, req)
-        finally:
-            per_req_client.cleanup()
-
-    # ── Modo legacy: cliente global configurado al startup ────────────────────
-    if not afip_client:
-        logger.error("Cliente AFIP no inicializado y no se recibieron certificados en el request")
+    # ── Legacy mode DEPRECATED ──────────────────────────────────────────────
+    # The stateless mode (F1-4) creates per-request clients and is race-condition
+    # free. The legacy mode used a global singleton that was vulnerable to
+    # concurrent mutation. It is now removed.
+    if not req.cert_pem or not req.key_pem:
+        logger.warning(f"{venta_id_tag}Legacy mode request rejected (410 Gone)")
         raise HTTPException(
-            status_code=503,
-            detail="Cliente AFIP no disponible. Configure AFIP_CUIT_EMISOR o pase cert_pem/key_pem en el request."
+            status_code=410,
+            detail=(
+                "Legacy mode (sin cert_pem/key_pem) está deprecado y fue removido. "
+                "Enviá cert_pem y key_pem en cada request para usar el modo stateless (F1-4)."
+            )
         )
-    return _ejecutar_facturacion(afip_client, req)
+
+    # ── Modo stateless: cliente efímero por request ───────────────────────────
+    homologacion = req.modo.lower() != "produccion"
+    cache_dir = os.getenv("AFIP_CACHE_DIR", "/tmp/afip_cache")
+    per_req_client = AFIPClient(
+        cuit_emisor=req.cuit_emisor,
+        homologacion=homologacion,
+        cache_dir=cache_dir,
+        rdb=_rdb,
+        cert_pem=req.cert_pem,
+        key_pem=req.key_pem,
+    )
+    try:
+        return _ejecutar_facturacion(per_req_client, req)
+    finally:
+        per_req_client.cleanup()
 
 
 def _ejecutar_facturacion(client: AFIPClient, req: FacturarRequest) -> FacturarResponse:
-    """Lógica de facturación compartida entre modo legacy y stateless."""
+    """Lógica de facturación compartida."""
+    venta_id_tag = f"[venta_id={req.venta_id}] " if req.venta_id else ""
     try:
         result = client.facturar(req)
 
         if result.resultado == 'A':
             logger.info(
-                f"✓ Factura aprobada — CAE: {result.cae}, Nro: {result.numero_comprobante}"
+                f"✓ {venta_id_tag}Factura aprobada — CAE: {result.cae}, Nro: {result.numero_comprobante}"
             )
         else:
             logger.warning(
-                f"✗ Factura rechazada — Resultado: {result.resultado}, "
+                f"✗ {venta_id_tag}Factura rechazada — Resultado: {result.resultado}, "
                 f"Obs: {len(result.observaciones or [])}"
             )
 
         return result
 
     except FileNotFoundError as e:
-        logger.error(f"Error de certificados: {e}")
+        logger.error(f"{venta_id_tag}Error de certificados: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Configuración de certificados inválida: {str(e)}"
         )
 
     except ValueError as e:
-        logger.error(f"Error de validación: {e}")
+        logger.error(f"{venta_id_tag}Error de validación: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
     except Exception as e:
-        logger.exception(f"Error al facturar: {e}")
+        logger.exception(f"{venta_id_tag}Error al facturar: {e}")
         raise HTTPException(
             status_code=502,
             detail=f"Error comunicación con AFIP: {str(e)}"
@@ -433,7 +448,7 @@ def root() -> Dict[str, str]:
         "status": "running",
         "endpoints": {
             "health": "GET /health",
-            "facturar": "POST /facturar"
+            "facturar": "POST /facturar (requiere cert_pem + key_pem, modo stateless)"
         }
     }
 
@@ -442,9 +457,9 @@ def root() -> Dict[str, str]:
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     port = int(os.getenv("AFIP_PORT", "8001"))
-    
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

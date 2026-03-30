@@ -62,6 +62,12 @@ export interface ProductoFilter {
      * the full catalog on every POS mount.
      */
     updated_after?: string;
+    /**
+     * When set, stock_actual in the response is replaced with per-branch
+     * stock from the stock_sucursal table. If omitted, falls back to the
+     * X-Sucursal-Id header (auto-injected by apiClient).
+     */
+    sucursal_id?: string;
     page?: number;
     limit?: number;
 }
@@ -133,6 +139,7 @@ export async function listarProductos(filter: ProductoFilter = {}): Promise<Prod
         activo: filter.activo,
         incluir_variantes: filter.incluir_variantes,
         updated_after: filter.updated_after,
+        sucursal_id: filter.sucursal_id,
         page: filter.page ?? 1,
         limit: filter.limit ?? 50,
     });

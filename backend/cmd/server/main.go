@@ -133,11 +133,12 @@ func main() {
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := service.NewAuthService(usuarioRepo, sucursalRepo, cfg, rdb)
-	tenantSvc := service.NewTenantService(tenantRepo, usuarioRepo, cfg, rdb)
+	sucursalSvc := service.NewSucursalService(sucursalRepo, tenantRepo)
+	tenantSvc := service.NewTenantService(tenantRepo, usuarioRepo, cfg, rdb, sucursalSvc)
 	productoSvc := service.NewProductoService(productoRepo, movimientoStockRepo, categoriaRepo, rdb, stockSucursalRepo, sucursalRepo)
 	inventarioSvc := service.NewInventarioService(productoRepo, movimientoStockRepo, stockSucursalRepo)
 	cajaSvc := service.NewCajaService(cajaRepo, usuarioRepo)
-	ventaSvc := service.NewVentaService(ventaRepo, inventarioSvc, cajaSvc, cajaRepo, productoRepo, dispatcher, comprobanteRepo, configFiscalRepo)
+	ventaSvc := service.NewVentaService(ventaRepo, inventarioSvc, cajaSvc, cajaRepo, productoRepo, dispatcher, comprobanteRepo, configFiscalRepo, stockSucursalRepo)
 	facturacionSvc := service.NewFacturacionService(comprobanteRepo, dispatcher)
 	proveedorSvc := service.NewProveedorService(proveedorRepo, productoRepo, categoriaRepo)
 	categoriaSvc := service.NewCategoriaService(categoriaRepo)
@@ -151,7 +152,6 @@ func main() {
 	reportesSvc := service.NewReportesService(reportesRepo)
 	loteSvc := service.NewLoteService(loteRepo, productoRepo)
 	clienteSvc := service.NewClienteService(clienteRepo)
-	sucursalSvc := service.NewSucursalService(sucursalRepo)
 	transferenciaSvc := service.NewTransferenciaService(transferenciaRepo, stockSucursalRepo, sucursalRepo)
 	// Inject clienteSvc into ventaSvc after both are created (avoids circular init)
 	ventaSvc.SetClienteService(clienteSvc)
@@ -219,6 +219,7 @@ func main() {
 		ComprobanteRepo:     comprobanteRepo,
 		VentaRepo:           ventaRepo,
 		TenantRepo:          tenantRepo,
+		StockSucursalRepo:   stockSucursalRepo,
 		Dispatcher:          dispatcher,
 		ReportesSvc:         reportesSvc,
 		LoteSvc:             loteSvc,

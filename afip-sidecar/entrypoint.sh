@@ -23,7 +23,7 @@ fi
 if [ -n "$AFIP_KEY_B64" ]; then
     echo "✅ Escribiendo afip.key desde AFIP_KEY_B64..."
     echo "$AFIP_KEY_B64" | base64 -d > /certs/afip.key
-    chmod 644 /certs/afip.key
+    chmod 600 /certs/afip.key
 else
     echo "⚠️  AFIP_KEY_B64 no está definida. Verificando si /certs/afip.key existe..."
     if [ ! -f /certs/afip.key ]; then

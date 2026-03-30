@@ -59,10 +59,11 @@ type TenantService interface {
 }
 
 type tenantService struct {
-	repo     repository.TenantRepository
-	usuRepo  repository.UsuarioRepository
-	cfg      *config.Config
-	rdb      *redis.Client
+	repo        repository.TenantRepository
+	usuRepo     repository.UsuarioRepository
+	sucursalSvc SucursalService
+	cfg         *config.Config
+	rdb         *redis.Client
 }
 
 func NewTenantService(
@@ -70,8 +71,13 @@ func NewTenantService(
 	usuRepo repository.UsuarioRepository,
 	cfg *config.Config,
 	rdb *redis.Client,
+	sucursalSvc ...SucursalService,
 ) TenantService {
-	return &tenantService{repo: repo, usuRepo: usuRepo, cfg: cfg, rdb: rdb}
+	svc := &tenantService{repo: repo, usuRepo: usuRepo, cfg: cfg, rdb: rdb}
+	if len(sucursalSvc) > 0 {
+		svc.sucursalSvc = sucursalSvc[0]
+	}
+	return svc
 }
 
 // slugRegex strips everything that is not lowercase alphanumeric or hyphen.
@@ -194,6 +200,16 @@ func (s *tenantService) Registrar(ctx context.Context, req dto.RegisterTenantReq
 		Str("slug", slug).
 		Str("admin_user", admin.Username).
 		Msg("tenant registered successfully")
+
+	// Create default sucursal "Casa Central" for the new tenant.
+	// This runs synchronously (fast, single INSERT) so the JWT and
+	// login response can include sucursal context from the start.
+	if db := s.repo.DB(); db != nil && s.sucursalSvc != nil {
+		if err := s.sucursalSvc.EnsureDefaultSucursal(db, tenant.ID); err != nil {
+			log.Error().Err(err).Str("tenant_id", tenant.ID.String()).Msg("failed to create default sucursal")
+			// Non-fatal: registration continues
+		}
+	}
 
 	// Seed preset categories and sample products in background.
 	// Best-effort: registration succeeds regardless of seeding outcome.

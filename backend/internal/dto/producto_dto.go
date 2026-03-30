@@ -46,6 +46,10 @@ type ProductoFilter struct {
 	// UpdatedAfter: ISO-8601 timestamp — return only products updated after this time.
 	// Used by the frontend delta-sync to avoid downloading the full catalog on every POS mount.
 	UpdatedAfter string `form:"updated_after"`
+	// SucursalID: when set, stock_actual in the response is replaced with the
+	// per-branch stock from stock_sucursal. Not a DB filter — it enriches the
+	// response after the main query.
+	SucursalID string `form:"sucursal_id"`
 	Page         int    `form:"page,default=1"  validate:"min=1"`
 	Limit        int    `form:"limit,default=20" validate:"min=1,max=100"`
 }

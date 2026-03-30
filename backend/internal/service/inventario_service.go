@@ -8,6 +8,7 @@ import (
 	"blendpos/internal/dto"
 	"blendpos/internal/model"
 	"blendpos/internal/repository"
+	"blendpos/internal/tenantctx"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -143,7 +144,23 @@ func (s *inventarioService) DesarmeManual(ctx context.Context, req dto.DesarmeMa
 		if err := s.repo.UpdateStockTx(tx, vinculo.ProductoPadreID, -req.CantidadPadres); err != nil {
 			return err
 		}
-		return s.repo.UpdateStockTx(tx, vinculo.ProductoHijoID, unidadesGeneradas)
+		if err := s.repo.UpdateStockTx(tx, vinculo.ProductoHijoID, unidadesGeneradas); err != nil {
+			return err
+		}
+
+		// Also adjust per-sucursal stock when a sucursal is in context.
+		if s.stockSucRepo != nil {
+			if sucID := tenantctx.SucursalFromContext(ctx); sucID != nil {
+				if err := s.stockSucRepo.AjustarStockSucursalTx(tx, vinculo.ProductoPadreID, *sucID, -req.CantidadPadres); err != nil {
+					return err
+				}
+				if err := s.stockSucRepo.AjustarStockSucursalTx(tx, vinculo.ProductoHijoID, *sucID, unidadesGeneradas); err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
 	})
 	if txErr != nil {
 		return nil, txErr

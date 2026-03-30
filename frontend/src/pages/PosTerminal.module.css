@@ -8,24 +8,9 @@
 /* ── CSS custom properties (fallback defaults = Clasico) ──────────────── */
 
 .posLayout {
-    --pos-primary:      #2563eb;
-    --pos-primary-rgb:  37, 99, 235;
-    --pos-bg:           #020617;
-    --pos-workspace:    #0d1526;
-    --pos-surface:      #0d1526;
-    --pos-surface-2:    #0a1220;
-    --pos-border:       rgba(255, 255, 255, 0.09);
-    --pos-border-hi:    rgba(37, 99, 235, 0.28);
-    --pos-text:         #f8fafc;
-    --pos-text-sub:     rgba(148, 163, 184, 0.85);
-    --pos-grid-color:   rgba(37, 99, 235, 0.03);
-    --pos-success:      #22c55e;
-    --pos-danger:       #ef4444;
-    --pos-warning:      #f59e0b;
-    --pos-font:         'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --pos-font-heading: 'Manrope', sans-serif;
-    --pos-font-mono:    'Manrope', monospace;
-    --pos-radius:       10px;
+    /* CSS variables are injected on :root by usePosThemeStore via applyThemeCSSVariables().
+       Do NOT redeclare them here — .posLayout specificity would override :root,
+       preventing theme switching from taking effect. */
 
     height: 100vh;
     width: 100vw;
@@ -52,19 +37,9 @@
     z-index: 0;
 }
 
-/* ── Light mode variables — kept for Mantine toggle compat ────────────── */
-
-:global([data-mantine-color-scheme='light']) .posLayout {
-    --pos-bg:           #f0f4ff;
-    --pos-workspace:    #ffffff;
-    --pos-surface:      #f8fafc;
-    --pos-surface-2:    #eef2ff;
-    --pos-border:       rgba(var(--pos-primary-rgb), 0.13);
-    --pos-border-hi:    rgba(var(--pos-primary-rgb), 0.32);
-    --pos-text:         #0f172a;
-    --pos-text-sub:     rgba(51, 65, 85, 0.72);
-    --pos-grid-color:   rgba(var(--pos-primary-rgb), 0.045);
-}
+/* Light mode variables are handled by applyThemeCSSVariables() on :root.
+   No need to redeclare here — each PosTheme preset defines its own colors
+   (light themes like "Moderno Claro" or "Minimalista" already have light palette). */
 
 :global([data-mantine-color-scheme='light']) .posLayout::before {
     opacity: 0.5;

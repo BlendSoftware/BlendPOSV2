@@ -83,18 +83,38 @@ hashlib.sha512 = _wrapped_sha512
 
 print("[py3_compat] Monkey-patch de hashlib aplicado para compatibilidad Python 2->3", file=sys.stderr)
 
-# --- PARCHE SEGURO PARA AFIP (DH_KEY_TOO_SMALL) ---
+# --- PARCHE SSL SECLEVEL=0 PARA AFIP (DH_KEY_TOO_SMALL) ---
+#
+# WHY THIS IS GLOBAL: AFIP's WSAA and WSFEV1 SOAP endpoints use legacy TLS
+# parameters (small DH keys) that OpenSSL 3.x rejects at SECLEVEL>=1. The
+# pyafipws library uses Python's default SSL context internally (via
+# pysimplesoap → httplib2/urllib) and does NOT expose an API to inject a
+# custom SSL context per-connection.
+#
+# Scoping SECLEVEL=0 to only AFIP connections would require monkey-patching
+# deep inside pysimplesoap's HTTP transport layer, which is fragile and
+# breaks across pyafipws versions. Since this sidecar is a single-purpose
+# container that ONLY talks to AFIP (no other outbound HTTPS), the global
+# override is acceptable.
+#
+# RISK: If this container ever makes HTTPS calls to non-AFIP services,
+# those connections will also use SECLEVEL=0 (weaker cipher negotiation).
+# Mitigate by keeping this sidecar single-purpose — only AFIP traffic.
+#
+# The Dockerfile also sets SECLEVEL=0 in openssl.cnf as a belt-and-suspenders
+# measure, since some pyafipws code paths use subprocess openssl commands.
+
 import ssl
 
 _orig_create_default_context = ssl.create_default_context
 
 def _legacy_default_context(*args, **kwargs):
     ctx = _orig_create_default_context(*args, **kwargs)
-    # Forzamos Nivel Cero solo en los cifrados, sin romper la clase base
     ctx.set_ciphers('DEFAULT@SECLEVEL=0')
     return ctx
 
-# Reemplazamos los creadores de contexto por defecto
+# Replace default context creators so ALL SSL connections in this process
+# use SECLEVEL=0. See comment above for why this must be global.
 ssl.create_default_context = _legacy_default_context
 if hasattr(ssl, '_create_default_https_context'):
     ssl._create_default_https_context = _legacy_default_context

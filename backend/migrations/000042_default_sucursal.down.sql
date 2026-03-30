@@ -1,0 +1,2 @@
+-- Down: no-op. We cannot safely delete sucursales that may have been used.
+-- This migration only inserts default sucursales for tenants that had none.

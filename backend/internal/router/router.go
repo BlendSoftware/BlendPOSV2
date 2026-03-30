@@ -61,6 +61,7 @@ type Deps struct {
 	ComprobanteRepo     repository.ComprobanteRepository
 	VentaRepo           repository.VentaRepository
 	TenantRepo          repository.TenantRepository
+	StockSucursalRepo   repository.StockSucursalRepository
 
 	// Worker dispatcher for email/facturacion jobs
 	Dispatcher interface{}
@@ -101,7 +102,7 @@ func New(d Deps) *gin.Engine {
 	facturacionH.SetDispatcher(d.Dispatcher) // Inyectar dispatcher para envío de emails
 	proveedoresH := handler.NewProveedoresHandler(d.ProveedorSvc)
 	usuariosH := handler.NewUsuariosHandler(d.AuthSvc)
-	consultaH := handler.NewConsultaPreciosHandler(d.ProductoRepo, d.RDB)
+	consultaH := handler.NewConsultaPreciosHandler(d.ProductoRepo, d.RDB, d.StockSucursalRepo)
 	historialPreciosH := handler.NewHistorialPreciosHandler(d.HistorialPrecioRepo)
 	categoriasH := handler.NewCategoriasHandler(d.CategoriaSvc)
 	auditH := handler.NewAuditHandler(d.AuditRepo)

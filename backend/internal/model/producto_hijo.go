@@ -7,6 +7,7 @@ import "github.com/google/uuid"
 // When child stock is zero, the automatic disassembly engine triggers.
 type ProductoHijo struct {
 	ID               uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	TenantID         uuid.UUID `gorm:"type:uuid;not null;index"`
 	ProductoPadreID  uuid.UUID `gorm:"type:uuid;uniqueIndex:idx_padre_hijo;not null"`
 	ProductoHijoID   uuid.UUID `gorm:"type:uuid;uniqueIndex:idx_padre_hijo;not null"`
 	UnidadesPorPadre int       `gorm:"not null"`
@@ -16,3 +17,5 @@ type ProductoHijo struct {
 	Padre *Producto `gorm:"foreignKey:ProductoPadreID"`
 	Hijo  *Producto `gorm:"foreignKey:ProductoHijoID"`
 }
+
+func (ProductoHijo) TableName() string { return "producto_hijo" }
